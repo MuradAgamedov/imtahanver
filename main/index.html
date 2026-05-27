@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İmtahanVer — Rəqəmsal İmtahan Platforması</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/index.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="container navbar__inner">
+      <a href="#" class="logo">
+        <span class="logo__icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="8" fill="url(#logoGrad)"/>
+            <path d="M7 9h14M7 14h10M7 19h12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="21" cy="19" r="3" fill="#fff" opacity=".9"/>
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4F46E5"/>
+                <stop offset="1" stop-color="#7C3AED"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <span class="logo__text">İmtahan<strong>Ver</strong></span>
+      </a>
+
+      <nav class="nav__links">
+        <a href="#exams">İmtahanlar</a>
+        <a href="#how">Necə işləyir</a>
+        <a href="#stats">Statistika</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div class="navbar__actions">
+        <a href="login.html" class="btn btn--ghost">Daxil ol</a>
+        <a href="register.html" class="btn btn--primary">Qeydiyyat</a>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Menyunu aç">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#exams">İmtahanlar</a>
+      <a href="#how">Necə işləyir</a>
+      <a href="#stats">Statistika</a>
+      <a href="#faq">FAQ</a>
+      <a href="login.html" class="btn btn--ghost">Daxil ol</a>
+      <a href="register.html" class="btn btn--primary">Qeydiyyat</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__bg">
+      <div class="blob blob--1"></div>
+      <div class="blob blob--2"></div>
+      <div class="blob blob--3"></div>
+      <div class="grid-overlay"></div>
+    </div>
+    <div class="container hero__inner">
+      <div class="hero__badge">
+        <span class="badge__dot"></span>
+        Azərbaycanın №1 imtahan platforması
+      </div>
+      <h1 class="hero__title">
+        Gələcəyinizə aparan<br/>
+        <span class="gradient-text">rəqəmsal imtahan</span><br/>
+        platforması
+      </h1>
+      <p class="hero__desc">
+        MİQ, müəllim işə qəbulu, abituriyent, buraxılış və magistr imtahanlarına hazırlaşın və onlayn keçin. Ağıllı analitika, ani nəticələr.
+      </p>
+      <div class="hero__cta">
+        <a href="register.html" class="btn btn--primary btn--lg">
+          Pulsuz başla
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.75 9h10.5M9.75 4.5 14.25 9l-4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#how" class="btn btn--ghost btn--lg">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 6.364 11.636 9 7.5 11.636V6.364Z" fill="currentColor"/></svg>
+          Videoya bax
+        </a>
+      </div>
+      <div class="hero__trust">
+        <div class="trust__item">
+          <strong>50 000+</strong>
+          <span>İstifadəçi</span>
+        </div>
+        <div class="trust__divider"></div>
+        <div class="trust__item">
+          <strong>200+</strong>
+          <span>İmtahan testi</span>
+        </div>
+        <div class="trust__divider"></div>
+        <div class="trust__item">
+          <strong>98%</strong>
+          <span>Məmnuniyyət</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero__visual">
+      <div class="mockup">
+        <div class="mockup__bar">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="mockup__body">
+          <div class="mockup__header">
+            <div class="mock-avatar"></div>
+            <div>
+              <div class="mock-line w-32"></div>
+              <div class="mock-line w-20 thin"></div>
+            </div>
+            <div class="mock-badge">Aktiv</div>
+          </div>
+          <div class="mock-question">
+            <div class="mock-line w-full mb-8"></div>
+            <div class="mock-line w-4-5 mb-16"></div>
+            <div class="mock-option selected">A) Doğru cavab</div>
+            <div class="mock-option">B) Yanlış cavab</div>
+            <div class="mock-option">C) Digər variant</div>
+            <div class="mock-option">D) Başqa seçim</div>
+          </div>
+          <div class="mock-progress-row">
+            <span>Sual 14/40</span>
+            <span>22:15 qalıb</span>
+          </div>
+          <div class="mock-progress-bar"><div class="mock-progress-fill" style="width:35%"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXAM CATEGORIES -->
+  <section class="section" id="exams">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__label">İmtahan növləri</span>
+        <h2 class="section__title">Hansı imtahana<br/>hazırlaşırsınız?</h2>
+        <p class="section__desc">Hər kateqoriya üçün xüsusi hazırlanmış test bankı, keçmiş imtahan sualları və analitika.</p>
+      </div>
+
+      <div class="cards">
+
+        <div class="card card--miq">
+          <div class="card__icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 4 4 10v2l12 6 12-6v-2L16 4Z" fill="currentColor" opacity=".2"/><path d="M4 10v10l12 6 12-6V10" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 4 4 10l12 6 12-6-12-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="card__tag">Müəllimlər üçün</div>
+          <h3 class="card__title">MİQ İmtahanı</h3>
+          <p class="card__desc">Müəllim İnkişaf Qrantı imtahanına hazırlıq. Pedaqogika, psixologiya və fənn biliklərini yoxla.</p>
+          <div class="card__stats">
+            <span>120+ test</span>
+            <span>·</span>
+            <span>8 fənn</span>
+          </div>
+          <a href="#" class="card__link">Başla <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8.5 4 13 8l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+        <div class="card card--teacher">
+          <div class="card__icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="6" width="24" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M4 22h24M12 26h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="14" r="4" stroke="currentColor" stroke-width="2"/></svg>
+          </div>
+          <div class="card__tag">Pedaqoqlar üçün</div>
+          <h3 class="card__title">Müəllim İşə Qəbulu</h3>
+          <p class="card__desc">Dövlət məktəblərinə müəllim vəzifəsinə qəbul imtahanlarına tam hazırlıq proqramı.</p>
+          <div class="card__stats">
+            <span>85+ test</span>
+            <span>·</span>
+            <span>12 fənn</span>
+          </div>
+          <a href="#" class="card__link">Başla <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8.5 4 13 8l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+        <div class="card card--abi card--featured">
+          <div class="card__featured-badge">Ən populyar</div>
+          <div class="card__icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 4c6.627 0 12 5.373 12 12S22.627 28 16 28 4 22.627 4 16 9.373 4 16 4Z" stroke="currentColor" stroke-width="2"/><path d="M16 10v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="card__tag">Ali təhsil üçün</div>
+          <h3 class="card__title">Abituriyent İmtahanı</h3>
+          <p class="card__desc">DİM imtahan formatında tam simulyasiya. Bütün fənlər, keçmiş il sualları, anlık nəticə.</p>
+          <div class="card__stats">
+            <span>300+ test</span>
+            <span>·</span>
+            <span>20 fənn</span>
+          </div>
+          <a href="#" class="card__link">Başla <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8.5 4 13 8l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+        <div class="card card--bura">
+          <div class="card__icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M8 4h16a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="2"/><path d="M12 12h8M12 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 21.5 21 24l3-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="card__tag">Şagirdlər üçün</div>
+          <h3 class="card__title">Buraxılış İmtahanı</h3>
+          <p class="card__desc">IX və XI sinif buraxılış imtahanlarına hazırlıq. Milli kurikulum əsasında hazırlanmış suallar.</p>
+          <div class="card__stats">
+            <span>150+ test</span>
+            <span>·</span>
+            <span>10 fənn</span>
+          </div>
+          <a href="#" class="card__link">Başla <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8.5 4 13 8l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+        <div class="card card--magistr">
+          <div class="card__icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 6 6 12l10 6 10-6-10-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6 12v8M26 12v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 16.5v4a6 6 0 0 0 12 0v-4" stroke="currentColor" stroke-width="2"/></svg>
+          </div>
+          <div class="card__tag">Magistratura üçün</div>
+          <h3 class="card__title">Magistr İmtahanı</h3>
+          <p class="card__desc">Magistratura qəbul imtahanına hazırlıq. Xarici dil, ixtisas fənləri və ümumi bacarıqlar.</p>
+          <div class="card__stats">
+            <span>90+ test</span>
+            <span>·</span>
+            <span>15 fənn</span>
+          </div>
+          <a href="#" class="card__link">Başla <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8.5 4 13 8l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section section--alt" id="how">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__label">Proses</span>
+        <h2 class="section__title">3 addımda<br/>imtahana başla</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step__num">01</div>
+          <div class="step__content">
+            <h3>Qeydiyyatdan keç</h3>
+            <p>Email və ya telefon nömrəsi ilə 30 saniyəyə pulsuz hesab aç.</p>
+          </div>
+        </div>
+        <div class="step__arrow">
+          <svg width="40" height="16" viewBox="0 0 40 16" fill="none"><path d="M0 8h36M28 2l8 6-8 6" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="step">
+          <div class="step__num">02</div>
+          <div class="step__content">
+            <h3>İmtahan seç</h3>
+            <p>Kateqoriyanı, fənni və çətinlik səviyyəsini seç. Vaxt limitini özün təyin et.</p>
+          </div>
+        </div>
+        <div class="step__arrow">
+          <svg width="40" height="16" viewBox="0 0 40 16" fill="none"><path d="M0 8h36M28 2l8 6-8 6" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="step">
+          <div class="step__num">03</div>
+          <div class="step__content">
+            <h3>Nəticəni gör</h3>
+            <p>İmtahan bitən kimi ani nəticə, səhv analizi və tövsiyələr al.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__label">Xüsusiyyətlər</span>
+        <h2 class="section__title">Niyə İmtahanVer?</h2>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <div class="feature__icon feature__icon--blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 0 0 1.946-.806 3.42 3.42 0 0 1 4.438 0 3.42 3.42 0 0 0 1.946.806 3.42 3.42 0 0 1 3.138 3.138 3.42 3.42 0 0 0 .806 1.946 3.42 3.42 0 0 1 0 4.438 3.42 3.42 0 0 0-.806 1.946 3.42 3.42 0 0 1-3.138 3.138 3.42 3.42 0 0 0-1.946.806 3.42 3.42 0 0 1-4.438 0 3.42 3.42 0 0 0-1.946-.806 3.42 3.42 0 0 1-3.138-3.138 3.42 3.42 0 0 0-.806-1.946 3.42 3.42 0 0 1 0-4.438 3.42 3.42 0 0 0 .806-1.946 3.42 3.42 0 0 1 3.138-3.138Z" stroke="currentColor" stroke-width="1.8"/></svg>
+          </div>
+          <h4>Rəsmi format</h4>
+          <p>Suallar rəsmi imtahan formatına tam uyğundur. Keçmiş il imtahanlarından real suallar.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon feature__icon--purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h4>Ani nəticə</h4>
+          <p>Sualı cavablandıran kimi izahat gör. Hər səhvi analiz et, doğru cavabı öyrən.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon feature__icon--green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 8v8M12 11v5M8 14v2M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h4>Dərin analitika</h4>
+          <p>Güclü və zəif tərəflərin xəritəsi. Proqressini vaxt üzrə izlə.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon feature__icon--orange">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 18.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h4>İstənilən cihazda</h4>
+          <p>Kompüter, telefon və ya planşetdən rahat istifadə et. Tərəqqin saxlanılır.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon feature__icon--pink">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h4>Rəqabət rejiimi</h4>
+          <p>Digər istifadəçilərlə yarış. Lider cədvəlində yerini gör.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon feature__icon--teal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 7h6M9 12h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h4>Geniş test bazası</h4>
+          <p>700+ unikal test, mütəmadi yenilənən sual bazası, mütəxəssis müəlliflər.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="section section--dark" id="stats">
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat__num" data-target="50000">0</div>
+          <div class="stat__label">Qeydiyyatlı istifadəçi</div>
+        </div>
+        <div class="stat">
+          <div class="stat__num" data-target="700">0</div>
+          <div class="stat__label">Unikal test</div>
+        </div>
+        <div class="stat">
+          <div class="stat__num" data-target="1200000">0</div>
+          <div class="stat__label">Həll edilmiş sual</div>
+        </div>
+        <div class="stat">
+          <div class="stat__num" data-target="98">0</div>
+          <div class="stat__label">Məmnuniyyət faizi</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="section" id="testimonials">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__label">Rəylər</span>
+        <h2 class="section__title">İstifadəçilərimiz<br/>nə deyir?</h2>
+      </div>
+      <div class="testimonials">
+        <div class="testimonial">
+          <div class="testimonial__stars">★★★★★</div>
+          <p>"MİQ imtahanına buradan hazırlaşdım. İlk cəhddə keçdim! Sualların keyfiyyəti çox yüksəkdir."</p>
+          <div class="testimonial__author">
+            <div class="author__avatar">NA</div>
+            <div>
+              <strong>Nigar Əliyeva</strong>
+              <span>Riyaziyyat müəllimi, Bakı</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="testimonial__stars">★★★★★</div>
+          <p>"Abituriyent imtahanına hazırlıqda ən çox kömək edən resurs. Real imtahan formatı ilə eynidir."</p>
+          <div class="testimonial__author">
+            <div class="author__avatar">TM</div>
+            <div>
+              <strong>Tural Məmmədov</strong>
+              <span>Tələbə, BDU</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="testimonial__stars">★★★★★</div>
+          <p>"Analitika bölməsi çox gözəldir. Hansı mövzularda zəif olduğumu dəqiq göstərir."</p>
+          <div class="testimonial__author">
+            <div class="author__avatar">SH</div>
+            <div>
+              <strong>Sevinc Həsənova</strong>
+              <span>Magistrant, ADU</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section section--alt" id="faq">
+    <div class="container">
+      <div class="section__head">
+        <span class="section__label">Suallar</span>
+        <h2 class="section__title">Tez-tez verilən<br/>suallar</h2>
+      </div>
+      <div class="faq">
+        <div class="faq__item">
+          <button class="faq__q">Platform pulludur?
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq__a">Əsas funksiyalar tamamilə pulsuzdur. Premium paketdə əlavə testlər, dərin analitika və rəhbər müəllim dəstəyi var.</div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__q">Suallar nə qədər tez-tez yenilənir?
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq__a">Sual bazası hər həftə yenilənir. Hər rəsmi imtandan sonra yeni suallar əlavə edilir.</div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__q">Nəticə sertifikatı verilir?
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq__a">Bəli, hər simulyasiya imtahanından sonra nəticə sertifikatını PDF formatında yükləyə bilərsiniz.</div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__q">Mobil tətbiq var?
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq__a">Hazırda vebsayt bütün cihazlara uyğunlaşdırılmışdır. iOS və Android tətbiqləri tezliklə çıxacaq.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <div class="cta-banner__bg">
+      <div class="blob blob--cta1"></div>
+      <div class="blob blob--cta2"></div>
+    </div>
+    <div class="container cta-banner__inner">
+      <h2>İmtahana hazır olun.<br/>Uğuru qazanın.</h2>
+      <p>50 000+ istifadəçiyə qoşulun. Pulsuz başlamaq üçün cəmi 30 saniyə lazımdır.</p>
+      <a href="register.html" class="btn btn--white btn--lg">İndi başla — Pulsuzdur</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <a href="#" class="logo">
+          <span class="logo__icon">
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="url(#logoGrad2)"/><path d="M7 9h14M7 14h10M7 19h12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="21" cy="19" r="3" fill="#fff" opacity=".9"/><defs><linearGradient id="logoGrad2" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs></svg>
+          </span>
+          <span class="logo__text">İmtahan<strong>Ver</strong></span>
+        </a>
+        <p>Azərbaycanın aparıcı rəqəmsal imtahan platforması.</p>
+      </div>
+      <div class="footer__links">
+        <div class="footer__col">
+          <h5>İmtahanlar</h5>
+          <a href="#">MİQ İmtahanı</a>
+          <a href="#">Müəllim İşə Qəbulu</a>
+          <a href="#">Abituriyent</a>
+          <a href="#">Buraxılış</a>
+          <a href="#">Magistr</a>
+        </div>
+        <div class="footer__col">
+          <h5>Platforma</h5>
+          <a href="#">Necə işləyir</a>
+          <a href="#">Qiymətlər</a>
+          <a href="#">Rəylər</a>
+          <a href="#">Blog</a>
+        </div>
+        <div class="footer__col">
+          <h5>Şirkət</h5>
+          <a href="#">Haqqımızda</a>
+          <a href="#">Əlaqə</a>
+          <a href="#">Gizlilik siyasəti</a>
+          <a href="#">İstifadə şərtləri</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <div class="container">
+        <span>© 2026 İmtahanVer. Bütün hüquqlar qorunur.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/index.js"></script>
+</body>
+</html>
