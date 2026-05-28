@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit } from "react-router";
+import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit, useParams } from "react-router";
 import type { Route } from "./+types/miq-questions";
 import { cn } from "../lib/utils";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -187,6 +187,7 @@ export default function MiqQuestionsPage() {
   const actionData = useActionData() as any;
   const navigation = useNavigation();
   const submit = useSubmit();
+  const params = useParams();
 
   const [localQuestions, setLocalQuestions] = useState<any[]>(questions);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -413,7 +414,22 @@ export default function MiqQuestionsPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 mt-4 md:mt-0 pl-12 md:pl-4 justify-end">
+            <div className="flex items-center gap-2 mt-4 md:mt-0 pl-12 md:pl-4 justify-end flex-wrap">
+              {/* Options (Cavablar) Link */}
+              <Link
+                to={params.subjectId
+                  ? `/miq-exampages/${params.id}/question-types/${params.qtId}/subjects/${params.subjectId}/questions/${q.id}/options`
+                  : `/miq-exampages/${params.id}/question-types/${params.qtId}/questions/${q.id}/options`
+                }
+                title="Cavablara bax"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Cavablar
+              </Link>
               <button
                 onClick={() => {
                   setSelectedQuestion(q);
@@ -444,6 +460,7 @@ export default function MiqQuestionsPage() {
             </div>
           </div>
         ))}
+
 
         {localQuestions.length === 0 && (
           <div className="py-20 text-center bg-white border border-gray-150 rounded-2xl">

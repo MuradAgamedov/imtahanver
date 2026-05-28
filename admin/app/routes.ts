@@ -13,6 +13,8 @@ export default [
     route("miq-exampages/:id/question-types/:qtId/subjects", "routes/miq-exampage-subjects.tsx"),
     route("miq-exampages/:id/question-types/:qtId/questions", "routes/miq-questions.tsx"),
     route("miq-exampages/:id/question-types/:qtId/subjects/:subjectId/questions", "routes/miq-questions-subject.tsx"),
+    route("miq-exampages/:id/question-types/:qtId/questions/:questionId/options", "routes/miq-question-options.tsx"),
+    route("miq-exampages/:id/question-types/:qtId/subjects/:subjectId/questions/:questionId/options", "routes/miq-question-options-subject.tsx"),
     route("exams", "routes/exams.tsx"),
     route("questions", "routes/questions.tsx"),
     route("results", "routes/results.tsx"),
