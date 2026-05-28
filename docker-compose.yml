@@ -90,6 +90,7 @@ services:
       - "8000:80"
     volumes:
       - ./backend:/app
+      - /app/vendor
       - backend_storage:/app/storage
 
   # Laravel Queue Worker (Horizon)
@@ -130,6 +131,7 @@ services:
       MAIL_TO_ADDRESS: noreply@avicom.az
     volumes:
       - ./backend:/app
+      - /app/vendor
       - backend_storage:/app/storage
     command: ["php", "artisan", "horizon"]
     healthcheck:
