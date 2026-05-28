@@ -13,6 +13,10 @@ Route::prefix('front')->group(function () {
     Route::post('login', [LoginController::class, 'login']);
     Route::get('user-categories', [ProfileController::class, 'getCategories']);
     Route::get('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'index']);
+    Route::get('miq-exampages', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'index']);
+    Route::get('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'index']);
+    Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\MiqFrontQuestionsController::class, 'subjectQuestions']);
+    Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/direct-questions', [\App\Http\Controllers\Api\Front\MiqFrontQuestionsController::class, 'directQuestions']);
 
     // Authenticated routes
     Route::middleware(JwtAuthMiddleware::class)->group(function () {

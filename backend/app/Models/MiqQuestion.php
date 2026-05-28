@@ -52,4 +52,9 @@ class MiqQuestion extends Model
     {
         return $this->belongsTo(MiqSubject::class, 'miq_subject_id');
     }
+
+    public function options()
+    {
+        return $this->hasMany(MiqQuestionOption::class, 'miq_question_id')->orderBy('order');
+    }
 }
