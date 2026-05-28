@@ -494,6 +494,7 @@ img { display: block; max-width: 100%; }
 .card--abi::before    { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
 .card--bura::before   { background: linear-gradient(90deg, #10B981, #34D399); }
 .card--magistr::before { background: linear-gradient(90deg, #F59E0B, #FCD34D); }
+.card--ad::before      { background: linear-gradient(90deg, #EC4899, #F43F5E); }
 
 .card:hover {
   transform: translateY(-6px);
@@ -532,6 +533,7 @@ img { display: block; max-width: 100%; }
 .card--abi    .card__icon { background: var(--violet-light); color: var(--violet); }
 .card--bura   .card__icon { background: #DCFCE7; color: #15803D; }
 .card--magistr .card__icon { background: #FEF3C7; color: #D97706; }
+.card--ad      .card__icon { background: #FFE4E6; color: #E11D48; }
 
 .card__tag {
   font-size: 11px;
@@ -576,9 +578,7 @@ img { display: block; max-width: 100%; }
 }
 .card__link:hover { gap: 10px; }
 
-/* Cards: last 2 on second row center-aligned */
-.cards .card:nth-child(4) { grid-column: 1; }
-.cards .card:nth-child(5) { grid-column: 3; }
+/* Cards: default grid flow */
 
 /* ── STEPS ───────────────────────────────── */
 .steps {
