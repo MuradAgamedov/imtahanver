@@ -47,6 +47,14 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Contracts\UserCategoryServiceInterface::class,
             \App\Services\UserCategoryService::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\MiqSubjectRepositoryInterface::class,
+            \App\Repositories\Eloquent\MiqSubjectRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MiqSubjectServiceInterface::class,
+            \App\Services\MiqSubjectService::class
+        );
     }
 
     /**

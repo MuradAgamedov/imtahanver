@@ -12,6 +12,7 @@ Route::prefix('front')->group(function () {
     Route::post('verify-otp', [RegisterController::class, 'verifyOtp']);
     Route::post('login', [LoginController::class, 'login']);
     Route::get('user-categories', [ProfileController::class, 'getCategories']);
+    Route::get('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'index']);
 
     // Authenticated routes
     Route::middleware(JwtAuthMiddleware::class)->group(function () {
@@ -43,5 +44,11 @@ Route::prefix('adminapi')->group(function () {
         Route::post('user-categories', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'store']);
         Route::put('user-categories/{id}', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'update']);
         Route::delete('user-categories/{id}', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'destroy']);
+
+        Route::get('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'index']);
+        Route::post('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'store']);
+        Route::put('miq-subjects/reorder', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'reorder']);
+        Route::put('miq-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'update']);
+        Route::delete('miq-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'destroy']);
     });
 });

@@ -7,6 +7,7 @@ export default [
     route("users", "routes/users.tsx"),
     route("admins", "routes/admins.tsx"),
     route("user-categories", "routes/user-categories.tsx"),
+    route("miq-subjects", "routes/miq-subjects.tsx"),
     route("exams", "routes/exams.tsx"),
     route("questions", "routes/questions.tsx"),
     route("results", "routes/results.tsx"),
