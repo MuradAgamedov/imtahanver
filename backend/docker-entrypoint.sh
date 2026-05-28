@@ -49,5 +49,9 @@ exit(1);
 echo "Running migrations..."
 php artisan migrate --force
 
+# Create storage symlink
+echo "Creating storage symlink..."
+php artisan storage:link --force
+
 # Execute the main command
 exec "$@"
