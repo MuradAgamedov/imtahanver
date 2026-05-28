@@ -60,7 +60,14 @@ class JwtAuthMiddleware
                 throw new Exception('İstifadəçi tapılmadı.');
             }
 
-            // Attach user to request
+            // Check admin status for admin routes
+            if ($request->is('api/adminapi/*') && !$user->is_admin) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu panelə daxil olmaq üçün admin hüquqlarınız yoxdur.'
+                ], 403);
+            }
+
             $request->setUserResolver(fn () => $user);
 
         } catch (Exception $e) {

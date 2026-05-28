@@ -31,6 +31,22 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Contracts\ProfileServiceInterface::class,
             \App\Services\ProfileService::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\AdminRepositoryInterface::class,
+            \App\Repositories\Eloquent\AdminRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\AdminAuthServiceInterface::class,
+            \App\Services\AdminAuthService::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\AdminUserServiceInterface::class,
+            \App\Services\AdminUserService::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\UserCategoryServiceInterface::class,
+            \App\Services\UserCategoryService::class
+        );
     }
 
     /**

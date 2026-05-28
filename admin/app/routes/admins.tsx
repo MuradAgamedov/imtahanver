@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Form, redirect, useLoaderData, useActionData, useNavigation } from "react-router";
-import type { Route } from "./+types/users";
+import type { Route } from "./+types/admins";
 import { cn } from "../lib/utils";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "İstifadəçilər — İmtahanVer Admin" }];
+  return [{ title: "Adminlər — İmtahanVer Admin" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -17,15 +17,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 
   try {
-    // 1. Fetch Users
-    const usersRes = await fetch("http://backend:80/api/adminapi/users", {
+    const res = await fetch("http://backend:80/api/adminapi/admins", {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${session.token}`
       }
     });
 
-    if (usersRes.status === 401) {
+    if (res.status === 401) {
       return redirect("/login", {
         headers: {
           "Set-Cookie": await sessionCookie.serialize("", { maxAge: 0 })
@@ -33,18 +32,13 @@ export async function loader({ request }: Route.LoaderArgs) {
       });
     }
 
-    const usersData = await usersRes.json();
-    const users = usersData.success ? usersData.data : [];
+    const data = await res.json();
+    const admins = data.success ? data.data : [];
 
-    // 2. Fetch User Categories
-    const categoriesRes = await fetch("http://backend:80/api/front/user-categories");
-    const categoriesData = await categoriesRes.json();
-    const categories = categoriesData.success ? categoriesData.data : [];
-
-    return { users, categories, session };
+    return { admins, session };
   } catch (err) {
-    console.error("Users loader error:", err);
-    return { users: [], categories: [], session };
+    console.error("Admins loader error:", err);
+    return { admins: [], session };
   }
 }
 
@@ -72,17 +66,16 @@ export async function action({ request }: Route.ActionArgs) {
       const last_name = formData.get("last_name") as string;
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
-      const user_category_identify = formData.get("user_category_identify") as string || null;
 
-      const res = await fetch("http://backend:80/api/adminapi/users", {
+      const res = await fetch("http://backend:80/api/adminapi/admins", {
         method: "POST",
         headers,
-        body: JSON.stringify({ first_name, last_name, email, password, user_category_identify })
+        body: JSON.stringify({ first_name, last_name, email, password })
       });
 
       const data = await res.json();
-      if (!res.ok) return { error: data.message || "İstifadəçi yaradıla bilmədi." };
-      return { success: data.message || "İstifadəçi uğurla əlavə olundu." };
+      if (!res.ok) return { error: data.message || "Admin yaradıla bilmədi." };
+      return { success: data.message || "Admin hesabı uğurla əlavə olundu." };
     }
 
     if (intent === "update") {
@@ -91,12 +84,11 @@ export async function action({ request }: Route.ActionArgs) {
       const last_name = formData.get("last_name") as string;
       const email = formData.get("email") as string;
       const password = formData.get("password") as string || null;
-      const user_category_identify = formData.get("user_category_identify") as string || null;
 
-      const bodyData: any = { first_name, last_name, email, user_category_identify };
+      const bodyData: any = { first_name, last_name, email };
       if (password) bodyData.password = password;
 
-      const res = await fetch(`http://backend:80/api/adminapi/users/${id}`, {
+      const res = await fetch(`http://backend:80/api/adminapi/admins/${id}`, {
         method: "PUT",
         headers,
         body: JSON.stringify(bodyData)
@@ -110,14 +102,14 @@ export async function action({ request }: Route.ActionArgs) {
     if (intent === "delete") {
       const id = formData.get("id") as string;
 
-      const res = await fetch(`http://backend:80/api/adminapi/users/${id}`, {
+      const res = await fetch(`http://backend:80/api/adminapi/admins/${id}`, {
         method: "DELETE",
         headers
       });
 
       const data = await res.json();
-      if (!res.ok) return { error: data.message || "İstifadəçi silinmədi." };
-      return { success: data.message || "İstifadəçi uğurla silindi." };
+      if (!res.ok) return { error: data.message || "Admin silinmədi." };
+      return { success: data.message || "Admin uğurla silindi." };
     }
   } catch (err) {
     console.error("Action error:", err);
@@ -127,27 +119,20 @@ export async function action({ request }: Route.ActionArgs) {
   return {};
 }
 
-export default function UsersPage() {
-  const { users, categories } = useLoaderData<typeof loader>();
+export default function AdminsPage() {
+  const { admins, session } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
 
-  // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
-
-  // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Form inputs state
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-
+  const [selectedAdmin, setSelectedAdmin] = useState<any>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
 
-  // Auto close modals & show toast on success
   useEffect(() => {
     if (actionData) {
       if (actionData.success) {
@@ -156,7 +141,7 @@ export default function UsersPage() {
         setShowAddModal(false);
         setShowEditModal(false);
         setShowDeleteConfirm(false);
-        setSelectedUser(null);
+        setSelectedAdmin(null);
       } else if (actionData.error) {
         setToastMessage(actionData.error);
         setToastType("error");
@@ -164,7 +149,6 @@ export default function UsersPage() {
     }
   }, [actionData]);
 
-  // Toast timeout
   useEffect(() => {
     if (toastMessage) {
       const timer = setTimeout(() => setToastMessage(null), 5000);
@@ -172,12 +156,10 @@ export default function UsersPage() {
     }
   }, [toastMessage]);
 
-  // Filter users
-  const filteredUsers = users.filter((u: any) => {
-    const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchQuery.toLowerCase()) || (u.email || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategoryFilter === "all" || u.user_category_identify === selectedCategoryFilter;
-    return matchesSearch && matchesCategory;
+  const filteredAdmins = admins.filter((a: any) => {
+    const fullName = `${a.first_name || ""} ${a.last_name || ""}`.toLowerCase();
+    const matchesSearch = fullName.includes(searchQuery.toLowerCase()) || (a.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   return (
@@ -196,12 +178,12 @@ export default function UsersPage() {
       {/* Header Panel */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white border border-gray-150 rounded-2xl p-6 shadow-sm">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">İstifadəçilər</h2>
-          <p className="text-xs text-gray-500 mt-1">Platformadakı istifadəçilərin idarəetmə və qeydiyyat paneli.</p>
+          <h2 className="text-lg font-bold text-gray-900">Adminlər</h2>
+          <p className="text-xs text-gray-500 mt-1">Platformadakı idarəçi və admin hesablarının idarəetmə paneli.</p>
         </div>
         <button
           onClick={() => {
-            setSelectedUser(null);
+            setSelectedAdmin(null);
             setShowAddModal(true);
           }}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer"
@@ -209,7 +191,7 @@ export default function UsersPage() {
           <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
           </svg>
-          İstifadəçi Əlavə Et
+          Admin Əlavə Et
         </button>
       </div>
 
@@ -226,45 +208,17 @@ export default function UsersPage() {
             placeholder="Ad, soyad və ya email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-gray-250 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all"
+            className="w-full rounded-xl border border-gray-250 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none transition-all"
           />
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <button
-            onClick={() => setSelectedCategoryFilter("all")}
-            className={cn(
-              "rounded-xl px-4 py-2 text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap",
-              selectedCategoryFilter === "all"
-                ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-            )}
-          >
-            Hamısı
-          </button>
-          {categories.map((cat: any) => (
-            <button
-              key={cat.identify}
-              onClick={() => setSelectedCategoryFilter(cat.identify)}
-              className={cn(
-                "rounded-xl px-4 py-2 text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap",
-                selectedCategoryFilter === cat.identify
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-              )}
-            >
-              {cat.title}
-            </button>
-          ))}
         </div>
       </div>
 
-      {/* Users Count Summary */}
+      {/* Count Summary */}
       <p className="text-xs font-medium text-gray-450 uppercase tracking-wider">
-        Tapılan istifadəçi sayı: <strong className="text-gray-900">{filteredUsers.length}</strong>
+        Tapılan admin sayı: <strong className="text-gray-900">{filteredAdmins.length}</strong>
       </p>
 
-      {/* Users List Table */}
+      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-150 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -272,38 +226,32 @@ export default function UsersPage() {
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Ad Soyad</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">E-poçt Ünvanı</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Kateqoriya</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Tarix</th>
                 <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-450">Əməliyyatlar</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredUsers.map((user: any) => (
-                <tr key={user.id} className="hover:bg-slate-50/60 transition-colors">
+              {filteredAdmins.map((admin: any) => (
+                <tr key={admin.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-600">
-                        {(user.first_name?.[0] || "") + (user.last_name?.[0] || "")}
+                        {(admin.first_name?.[0] || "") + (admin.last_name?.[0] || "")}
                       </div>
                       <span className="font-semibold text-gray-900">
-                        {user.first_name} {user.last_name}
+                        {admin.first_name} {admin.last_name} {session?.admin?.id === admin.id && <span className="ml-1.5 text-xs text-indigo-500 font-semibold">(Siz)</span>}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{user.email}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-600">
-                      {categories.find((c: any) => c.identify === user.user_category_identify)?.title || "Seçilməyib"}
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-gray-600">{admin.email}</td>
                   <td className="px-6 py-4 text-gray-500">
-                    {user.created_at ? new Date(user.created_at).toLocaleDateString("az-AZ") : "-"}
+                    {admin.created_at ? new Date(admin.created_at).toLocaleDateString("az-AZ") : "-"}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2.5">
                       <button
                         onClick={() => {
-                          setSelectedUser(user);
+                          setSelectedAdmin(admin);
                           setShowEditModal(true);
                         }}
                         title="Redaktə et"
@@ -315,11 +263,17 @@ export default function UsersPage() {
                       </button>
                       <button
                         onClick={() => {
-                          setSelectedUser(user);
+                          setSelectedAdmin(admin);
                           setShowDeleteConfirm(true);
                         }}
-                        title="Sil"
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+                        disabled={session?.admin?.id === admin.id}
+                        title={session?.admin?.id === admin.id ? "Öz hesabınızı silə bilməzsiniz" : "Sil"}
+                        className={cn(
+                          "rounded-lg p-1.5 transition-colors cursor-pointer",
+                          session?.admin?.id === admin.id 
+                            ? "text-gray-200 cursor-not-allowed" 
+                            : "text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        )}
                       >
                         <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -332,12 +286,12 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
-        {filteredUsers.length === 0 && (
+        {filteredAdmins.length === 0 && (
           <div className="py-16 text-center">
             <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <p className="mt-3 text-sm text-gray-400 font-semibold">İstifadəçi tapılmadı</p>
+            <p className="mt-3 text-sm text-gray-400 font-semibold">Admin tapılmadı</p>
           </div>
         )}
       </div>
@@ -347,7 +301,7 @@ export default function UsersPage() {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-gray-150 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-base font-bold text-gray-900">İstifadəçi Əlavə Et</h3>
+              <h3 className="text-base font-bold text-gray-900">Admin Əlavə Et</h3>
               <button 
                 onClick={() => setShowAddModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
@@ -364,7 +318,7 @@ export default function UsersPage() {
                   type="text" 
                   name="first_name" 
                   required
-                  placeholder="Məs. Murad"
+                  placeholder="Məs. Əli"
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
               </div>
@@ -374,7 +328,7 @@ export default function UsersPage() {
                   type="text" 
                   name="last_name" 
                   required
-                  placeholder="Məs. Ağamedov"
+                  placeholder="Məs. Məmmədov"
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
               </div>
@@ -384,7 +338,7 @@ export default function UsersPage() {
                   type="email" 
                   name="email" 
                   required
-                  placeholder="adsoyad@imtahanver.az"
+                  placeholder="admin@imtahanver.az"
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
               </div>
@@ -397,18 +351,6 @@ export default function UsersPage() {
                   placeholder="Ən azı 8 simvol"
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Kateqoriya</label>
-                <select 
-                  name="user_category_identify"
-                  className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none cursor-pointer"
-                >
-                  <option value="">Seçilməyib</option>
-                  {categories.map((cat: any) => (
-                    <option key={cat.identify} value={cat.identify}>{cat.title}</option>
-                  ))}
-                </select>
               </div>
 
               <div className="flex gap-3 justify-end mt-6">
@@ -433,15 +375,15 @@ export default function UsersPage() {
       )}
 
       {/* EDIT MODAL */}
-      {showEditModal && selectedUser && (
+      {showEditModal && selectedAdmin && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-gray-150 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-base font-bold text-gray-900">İstifadəçini Redaktə Et</h3>
+              <h3 className="text-base font-bold text-gray-900">Admin Məlumatlarını Yenilə</h3>
               <button 
                 onClick={() => {
                   setShowEditModal(false);
-                  setSelectedUser(null);
+                  setSelectedAdmin(null);
                 }}
                 className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
               >
@@ -451,13 +393,13 @@ export default function UsersPage() {
 
             <Form method="post" className="space-y-4">
               <input type="hidden" name="intent" value="update" />
-              <input type="hidden" name="id" value={selectedUser.id} />
+              <input type="hidden" name="id" value={selectedAdmin.id} />
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Ad</label>
                 <input 
                   type="text" 
                   name="first_name" 
-                  defaultValue={selectedUser.first_name}
+                  defaultValue={selectedAdmin.first_name}
                   required
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
@@ -467,7 +409,7 @@ export default function UsersPage() {
                 <input 
                   type="text" 
                   name="last_name" 
-                  defaultValue={selectedUser.last_name}
+                  defaultValue={selectedAdmin.last_name}
                   required
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
@@ -477,7 +419,7 @@ export default function UsersPage() {
                 <input 
                   type="email" 
                   name="email" 
-                  defaultValue={selectedUser.email}
+                  defaultValue={selectedAdmin.email}
                   required
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
@@ -491,26 +433,13 @@ export default function UsersPage() {
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Kateqoriya</label>
-                <select 
-                  name="user_category_identify"
-                  defaultValue={selectedUser.user_category_identify || ""}
-                  className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none cursor-pointer"
-                >
-                  <option value="">Seçilməyib</option>
-                  {categories.map((cat: any) => (
-                    <option key={cat.identify} value={cat.identify}>{cat.title}</option>
-                  ))}
-                </select>
-              </div>
 
               <div className="flex gap-3 justify-end mt-6">
                 <button 
                   type="button" 
                   onClick={() => {
                     setShowEditModal(false);
-                    setSelectedUser(null);
+                    setSelectedAdmin(null);
                   }}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all cursor-pointer"
                 >
@@ -530,22 +459,22 @@ export default function UsersPage() {
       )}
 
       {/* DELETE CONFIRM */}
-      {showDeleteConfirm && selectedUser && (
+      {showDeleteConfirm && selectedAdmin && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-gray-150 rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in duration-200">
-            <h3 className="text-base font-bold text-gray-900 mb-2">İstifadəçini Sil</h3>
+            <h3 className="text-base font-bold text-gray-900 mb-2">Admin Hesabını Sil</h3>
             <p className="text-sm text-gray-500">
-              Siz həqiqətən də <strong>{selectedUser.first_name} {selectedUser.last_name}</strong> adlı istifadəçini silmək istəyirsiniz? Bu əməliyyat geri qaytarıla bilməz.
+              Siz həqiqətən də <strong>{selectedAdmin.first_name} {selectedAdmin.last_name}</strong> adlı admin hesabını silmək istəyirsiniz? Bu əməliyyat geri qaytarıla bilməz.
             </p>
 
             <Form method="post" className="flex gap-3 justify-end mt-6">
               <input type="hidden" name="intent" value="delete" />
-              <input type="hidden" name="id" value={selectedUser.id} />
+              <input type="hidden" name="id" value={selectedAdmin.id} />
               <button 
                 type="button" 
                 onClick={() => {
                   setShowDeleteConfirm(false);
-                  setSelectedUser(null);
+                  setSelectedAdmin(null);
                 }}
                 className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all cursor-pointer"
               >

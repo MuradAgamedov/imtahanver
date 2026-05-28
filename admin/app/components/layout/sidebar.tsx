@@ -1,5 +1,6 @@
-import { NavLink } from "react-router";
+import { NavLink, Form } from "react-router";
 import { cn } from "../../lib/utils";
+import type { AdminSession } from "../../lib/session";
 
 interface NavItem {
   to: string;
@@ -9,19 +10,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    to: "/",
-    label: "İdarə paneli",
-    end: true,
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-  },
   {
     to: "/users",
     label: "İstifadəçilər",
@@ -34,48 +22,23 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    to: "/exams",
-    label: "İmtahanlar",
+    to: "/admins",
+    label: "Adminlər",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     ),
   },
   {
-    to: "/questions",
-    label: "Suallar",
+    to: "/user-categories",
+    label: "Kateqoriyalar",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-    ),
-  },
-  {
-    to: "/results",
-    label: "Nəticələr",
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <line x1="18" y1="20" x2="18" y2="10" />
-        <line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6" y1="20" x2="6" y2="14" />
-      </svg>
-    ),
-  },
-  {
-    to: "/settings",
-    label: "Ayarlar",
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M5.27 5.27a10 10 0 0 0 0 13.46" />
-        <path d="M12 2v2M12 20v2M4.93 4.93 6.34 6.34M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
       </svg>
     ),
   },
@@ -90,7 +53,14 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  session?: AdminSession | null;
+}
+
+export function Sidebar({ session }: SidebarProps) {
+  const adminName = session?.admin?.name || "Admin";
+  const initials = adminName.split(" ").map(n => n[0]).join("").toUpperCase();
+
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-slate-900">
       {/* Logo */}
@@ -121,17 +91,32 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* User */}
-      <div className="border-t border-slate-800 px-3 py-4">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+      {/* User Info & Logout */}
+      <div className="border-t border-slate-800 px-3 py-4 space-y-3">
+        <div className="flex items-center gap-3 rounded-lg px-3 py-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
-            MA
+            {initials || "A"}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium text-white">Murad Ağamedov</p>
-            <p className="truncate text-xs text-slate-500">Super Admin</p>
+            <p className="truncate text-sm font-medium text-white">{adminName}</p>
+            <p className="truncate text-xs text-slate-500">{session?.admin?.email || "admin@imtahanver.az"}</p>
           </div>
         </div>
+
+        <Form method="post" action="/login">
+          <input type="hidden" name="intent" value="logout" />
+          <button
+            type="submit"
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-950/20 transition-all cursor-pointer"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Çıxış
+          </button>
+        </Form>
       </div>
     </aside>
   );

@@ -15,4 +15,12 @@ interface UserRepositoryInterface
     public function verifyEmail(User $user): bool;
     
     public function update(User $user, array $data): bool;
+
+    public function all(): \Illuminate\Database\Eloquent\Collection;
+
+    public function allNonAdmins(): \Illuminate\Database\Eloquent\Collection;
+
+    public function allAdmins(): \Illuminate\Database\Eloquent\Collection;
+
+    public function delete(User $user): bool;
 }

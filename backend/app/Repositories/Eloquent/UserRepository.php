@@ -38,4 +38,24 @@ class UserRepository implements UserRepositoryInterface
     {
         return $user->update($data);
     }
+
+    public function all(): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::orderBy('id', 'desc')->get();
+    }
+
+    public function allNonAdmins(): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::where('is_admin', false)->orderBy('id', 'desc')->get();
+    }
+
+    public function allAdmins(): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::where('is_admin', true)->orderBy('id', 'desc')->get();
+    }
+
+    public function delete(User $user): bool
+    {
+        return $user->delete();
+    }
 }

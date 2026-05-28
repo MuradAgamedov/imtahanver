@@ -24,3 +24,24 @@ Route::prefix('front')->group(function () {
         Route::put('profile/password/confirm', [ProfileController::class, 'confirmPasswordChange']);
     });
 });
+
+Route::prefix('adminapi')->group(function () {
+    Route::post('login', [\App\Http\Controllers\Api\AdminApi\LoginController::class, 'login']);
+
+    Route::middleware(JwtAuthMiddleware::class)->group(function () {
+        Route::get('users', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'index']);
+        Route::post('users', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'store']);
+        Route::put('users/{id}', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'update']);
+        Route::delete('users/{id}', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'destroy']);
+
+        Route::get('admins', [\App\Http\Controllers\Api\AdminApi\AdminController::class, 'index']);
+        Route::post('admins', [\App\Http\Controllers\Api\AdminApi\AdminController::class, 'store']);
+        Route::put('admins/{id}', [\App\Http\Controllers\Api\AdminApi\AdminController::class, 'update']);
+        Route::delete('admins/{id}', [\App\Http\Controllers\Api\AdminApi\AdminController::class, 'destroy']);
+
+        Route::get('user-categories', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'index']);
+        Route::post('user-categories', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'store']);
+        Route::put('user-categories/{id}', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'update']);
+        Route::delete('user-categories/{id}', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'destroy']);
+    });
+});
