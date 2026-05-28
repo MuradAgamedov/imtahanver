@@ -95,6 +95,24 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Contracts\MiqQuestionOptionServiceInterface::class,
             \App\Services\MiqQuestionOptionService::class
         );
+
+        // MIQ Direct Questions (question-type level, no subject)
+        $this->app->bind(
+            \App\Repositories\Contracts\MiqDirectQuestionRepositoryInterface::class,
+            \App\Repositories\Eloquent\MiqDirectQuestionRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MiqDirectQuestionServiceInterface::class,
+            \App\Services\MiqDirectQuestionService::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\MiqDirectQuestionOptionRepositoryInterface::class,
+            \App\Repositories\Eloquent\MiqDirectQuestionOptionRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MiqDirectQuestionOptionServiceInterface::class,
+            \App\Services\MiqDirectQuestionOptionService::class
+        );
     }
 
     /**

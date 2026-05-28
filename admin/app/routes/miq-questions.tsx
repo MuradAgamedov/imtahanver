@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit, useParams } from "react-router";
-import type { Route } from "./+types/miq-questions";
-import { cn } from "../lib/utils";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [{ title: "Sualları İdarə Et — İmtahanVer Admin" }];
 }
 
-export async function loader({ params, request }: Route.LoaderArgs) {
+export async function loader({ params, request }: { params: any; request: Request }) {
   const cookieHeader = request.headers.get("Cookie");
   const session = (await sessionCookie.parse(cookieHeader)) as AdminSession | null;
 
@@ -58,7 +56,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }
 }
 
-export async function action({ params, request }: Route.ActionArgs) {
+export async function action({ params, request }: { params: any; request: Request }) {
   const cookieHeader = request.headers.get("Cookie");
   const session = (await sessionCookie.parse(cookieHeader)) as AdminSession | null;
 

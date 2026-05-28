@@ -16,7 +16,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const questionId = params.questionId;
 
   const res = await fetch(
-    `http://backend:80/api/adminapi/miq-questions/${questionId}/options`,
+    `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options`,
     {
       headers: {
         "Accept": "application/json",
@@ -54,7 +54,7 @@ export async function action({ params, request }: Route.ActionArgs) {
     if (intent === "reorder") {
       const ids = JSON.parse(formData.get("ids") as string);
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-questions/${questionId}/options/reorder`,
+        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options/reorder`,
         {
           method: "PUT",
           headers: {
@@ -75,7 +75,7 @@ export async function action({ params, request }: Route.ActionArgs) {
       const isTrue = formData.get("is_true") === "true";
 
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-questions/${questionId}/options`,
+        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options`,
         {
           method: "POST",
           headers: {
@@ -98,7 +98,7 @@ export async function action({ params, request }: Route.ActionArgs) {
       const isTrue = formData.get("is_true") === "true";
 
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-questions/${questionId}/options/${id}`,
+        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options/${id}`,
         {
           method: "PUT",
           headers: {
@@ -119,7 +119,7 @@ export async function action({ params, request }: Route.ActionArgs) {
       const id = formData.get("id") as string;
 
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-questions/${questionId}/options/${id}`,
+        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -226,9 +226,7 @@ export default function MiqQuestionOptionsPage() {
   };
 
   // Build back URL
-  const backUrl = params.subjectId
-    ? `/miq-exampages/${params.id}/question-types/${params.qtId}/subjects/${params.subjectId}/questions`
-    : `/miq-exampages/${params.id}/question-types/${params.qtId}/questions`;
+  const backUrl = `/miq-exampages/${params.id}/question-types/${params.qtId}/questions`;
 
   return (
     <div className="space-y-6 relative">

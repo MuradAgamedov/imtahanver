@@ -67,11 +67,25 @@ Route::prefix('adminapi')->group(function () {
         Route::delete('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'destroy']);
         Route::put('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'reorder']);
 
-        // MIQ Question Options Endpoints
+        // MIQ Question Options Endpoints (subject-based questions)
         Route::get('miq-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'index']);
         Route::post('miq-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'store']);
         Route::put('miq-questions/{questionId}/options/reorder', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'reorder']);
         Route::put('miq-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'update']);
         Route::delete('miq-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'destroy']);
+
+        // MIQ Direct Questions (question-type level, no subject)
+        Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/questions', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionController::class, 'index']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/questions', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionController::class, 'store']);
+        Route::put('miq-exampages/{exampageId}/question-types/{questionTypeId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionController::class, 'reorder']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionController::class, 'update']);
+        Route::delete('miq-exampages/{exampageId}/question-types/{questionTypeId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionController::class, 'destroy']);
+
+        // MIQ Direct Question Options
+        Route::get('miq-direct-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'index']);
+        Route::post('miq-direct-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'store']);
+        Route::put('miq-direct-questions/{questionId}/options/reorder', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'reorder']);
+        Route::put('miq-direct-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'update']);
+        Route::delete('miq-direct-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'destroy']);
     });
 });

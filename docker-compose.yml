@@ -113,6 +113,12 @@ services:
     volumes:
       - backend_storage:/app/storage
     command: ["php", "artisan", "horizon"]
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   # Frontend Web App (React Router v7 SSR)
   frontend:
