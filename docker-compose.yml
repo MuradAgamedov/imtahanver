@@ -179,27 +179,7 @@ services:
     ports:
       - "8085:80"
 
-  # Caddy Reverse Proxy (HTTPS / SSL Entrypoint)
-  reverse-proxy:
-    image: caddy:2-alpine
-    container_name: imtahanver_proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - main
-      - frontend
-      - admin
-      - backend
-
 volumes:
   mysql_data:
   redis_data:
   backend_storage:
-  caddy_data:
-  caddy_config:
