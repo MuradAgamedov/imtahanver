@@ -1,22 +1,37 @@
 services:
-  # Database Service (PostgreSQL 17)
+  # Database Service (MySQL 8.0)
   db:
-    image: postgres:17-alpine
+    image: mysql:8.0
     container_name: imtahanver_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: imtahanver
-      POSTGRES_USER: imtahanver_user
-      POSTGRES_PASSWORD: imtahanver_password
+      MYSQL_DATABASE: imtahanver
+      MYSQL_USER: imtahanver_user
+      MYSQL_PASSWORD: imtahanver_password
+      MYSQL_ROOT_PASSWORD: imtahanver_root_password
     ports:
-      - "5432:5432"
+      - "3307:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U imtahanver_user -d imtahanver"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -pimtahanver_root_password"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # phpMyAdmin Web Client
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: imtahanver_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: imtahanver_root_password
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
 
   # Redis Cache Service
   redis:
@@ -49,10 +64,11 @@ services:
     environment:
       APP_ENV: local
       SERVER_NAME: ":80"
+      APP_URL: https://api.imtahanver.online
       APP_DEBUG: "true"
-      DB_CONNECTION: pgsql
+      DB_CONNECTION: mysql
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: 3306
       DB_DATABASE: imtahanver
       DB_USERNAME: imtahanver_user
       DB_PASSWORD: imtahanver_password
@@ -68,11 +84,12 @@ services:
       MAIL_PASSWORD: "~9nj91MnW"
       MAIL_ENCRYPTION: tls
       MAIL_FROM_ADDRESS: noreply@avicom.az
-      MAIL_FROM_NAME: "İmtahanVer"
+      MAIL_FROM_NAME: "Imtahanver"
       MAIL_TO_ADDRESS: noreply@avicom.az
     ports:
       - "8000:80"
     volumes:
+      - ./backend:/app
       - backend_storage:/app/storage
 
   # Laravel Queue Worker (Horizon)
@@ -90,9 +107,10 @@ services:
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
-      DB_CONNECTION: pgsql
+      APP_URL: https://api.imtahanver.online
+      DB_CONNECTION: mysql
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: 3306
       DB_DATABASE: imtahanver
       DB_USERNAME: imtahanver_user
       DB_PASSWORD: imtahanver_password
@@ -108,13 +126,14 @@ services:
       MAIL_PASSWORD: "~9nj91MnW"
       MAIL_ENCRYPTION: tls
       MAIL_FROM_ADDRESS: noreply@avicom.az
-      MAIL_FROM_NAME: "İmtahanVer"
+      MAIL_FROM_NAME: "Imtahanver"
       MAIL_TO_ADDRESS: noreply@avicom.az
     volumes:
+      - ./backend:/app
       - backend_storage:/app/storage
     command: ["php", "artisan", "horizon"]
     healthcheck:
-      test: ["CMD", "php", "artisan", "horizon:status"]
+      test: ["CMD-SHELL", "php artisan horizon:status | grep -q 'running'"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -133,6 +152,7 @@ services:
       PORT: 3000
       NODE_ENV: production
       API_URL: http://backend:80
+      STORAGE_URL: https://api.imtahanver.online
 
   # Admin Dashboard App (React Router v7 SSR)
   admin:
@@ -147,6 +167,7 @@ services:
       PORT: 3000
       NODE_ENV: production
       API_URL: http://backend:80
+      STORAGE_URL: https://api.imtahanver.online
 
   # Main Landing Page (Nginx Static)
   main:
@@ -158,7 +179,27 @@ services:
     ports:
       - "8085:80"
 
+  # Caddy Reverse Proxy (HTTPS / SSL Entrypoint)
+  reverse-proxy:
+    image: caddy:2-alpine
+    container_name: imtahanver_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - main
+      - frontend
+      - admin
+      - backend
+
 volumes:
-  postgres_data:
+  mysql_data:
   redis_data:
   backend_storage:
+  caddy_data:
+  caddy_config:

@@ -3,6 +3,11 @@ import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useS
 import type { Route } from "./+types/miq-questions-direct";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
+const isProd = typeof window !== "undefined"
+  ? window.location.hostname.endsWith("imtahanver.online")
+  : true;
+const STORAGE_BASE = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Sualları İdarə Et — İmtahanVer Admin" }];
 }
@@ -280,7 +285,7 @@ export default function MiqQuestionsDirectPage() {
                 )}
                 {q.image && (
                   <div className="relative inline-block rounded-xl overflow-hidden border border-gray-200 max-w-xs bg-slate-50">
-                    <img src={`http://localhost:8000${q.image}`} alt="Sual Şəkli" className="max-h-36 object-contain" />
+                    <img src={`${STORAGE_BASE}${q.image}`} alt="Sual Şəkli" className="max-h-36 object-contain" />
                   </div>
                 )}
               </div>
@@ -295,7 +300,7 @@ export default function MiqQuestionsDirectPage() {
                 </svg>
                 Cavablar
               </Link>
-              <button onClick={() => { setSelectedQuestion(q); setEditorText(q.text || ""); setImagePreview(q.image ? `http://localhost:8000${q.image}` : null); setEditImageRemoved(false); setShowEditModal(true); }}
+              <button onClick={() => { setSelectedQuestion(q); setEditorText(q.text || ""); setImagePreview(q.image ? `${STORAGE_BASE}${q.image}` : null); setEditImageRemoved(false); setShowEditModal(true); }}
                 className="rounded-lg p-2 text-gray-400 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

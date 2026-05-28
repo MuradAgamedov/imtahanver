@@ -14,6 +14,9 @@ class SendProfileOtpJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 5;
+    public $backoff = 5;
+
     protected string $email;
     protected string $firstName;
     protected string $otp;

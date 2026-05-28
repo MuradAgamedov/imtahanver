@@ -57,8 +57,6 @@ class AuthService implements AuthServiceInterface
         return [
             'success' => true,
             'message' => 'Qeydiyyat tamamlandı. Zəhmət olmasa emailinizə göndərilən OTP kodunu təsdiqləyin.',
-            // For testing and ease of use in this demo/local setup, we return the OTP in the response
-            'otp_demo' => $otp, 
             'email' => $user->email,
             'status_code' => 201
         ];
@@ -131,7 +129,6 @@ class AuthService implements AuthServiceInterface
                 'success' => false,
                 'requires_verification' => true,
                 'message' => 'Zəhmət olmasa əvvəlcə emailinizi təsdiqləyin.',
-                'otp_demo' => $otp,
                 'email' => $user->email,
                 'status_code' => 403
             ];

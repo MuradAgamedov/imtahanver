@@ -3,6 +3,11 @@ import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useS
 import type { Route } from "./+types/miq-question-options";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
+const isProd = typeof window !== "undefined"
+  ? window.location.hostname.endsWith("imtahanver.online")
+  : true;
+const STORAGE_BASE = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Cavab Variantları — İmtahanVer Admin" }];
 }
@@ -266,7 +271,7 @@ export default function MiqQuestionOptionsPage() {
             )}
             {question?.image && (
               <img
-                src={`http://localhost:8000${question.image}`}
+                src={`${STORAGE_BASE}${question.image}`}
                 alt="Sual şəkli"
                 className="mt-3 max-h-32 rounded-xl border border-gray-200 object-contain"
               />

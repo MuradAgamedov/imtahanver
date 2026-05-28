@@ -27,6 +27,13 @@ Route::prefix('front')->group(function () {
         Route::put('profile/email/confirm', [ProfileController::class, 'confirmEmailChange']);
         Route::post('profile/password/request', [ProfileController::class, 'requestPasswordChange']);
         Route::put('profile/password/confirm', [ProfileController::class, 'confirmPasswordChange']);
+
+        // Exam Session Routes
+        Route::get('exam-sessions', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'index']);
+        Route::post('exam-sessions', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'startOrResume']);
+        Route::post('exam-sessions/{sessionId}/answer', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'saveAnswer']);
+        Route::post('exam-sessions/{sessionId}/submit', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'submit']);
+        Route::get('exam-sessions/{sessionId}/results', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'getResults']);
     });
 });
 
@@ -92,5 +99,8 @@ Route::prefix('adminapi')->group(function () {
         Route::put('miq-direct-questions/{questionId}/options/reorder', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'reorder']);
         Route::put('miq-direct-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'update']);
         Route::delete('miq-direct-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'destroy']);
+
+        // Admin Exam Results Route
+        Route::get('exam-results', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'index']);
     });
 });

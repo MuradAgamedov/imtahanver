@@ -120,6 +120,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (!$this->app->runningUnitTests()) {
+            \Illuminate\Support\Facades\DB::prohibitDestructiveCommands();
+        }
     }
 }

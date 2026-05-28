@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit, useParams } from "react-router";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
+const isProd = typeof window !== "undefined"
+  ? window.location.hostname.endsWith("imtahanver.online")
+  : true;
+const STORAGE_BASE = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
 export function meta() {
   return [{ title: "Sualları İdarə Et — İmtahanVer Admin" }];
 }
@@ -402,7 +407,7 @@ export default function MiqQuestionsPage() {
                 {q.image && (
                   <div className="relative inline-block rounded-xl overflow-hidden border border-gray-200 max-w-xs bg-slate-50">
                     <img 
-                      src={`http://localhost:8000${q.image}`} 
+                      src={`${STORAGE_BASE}${q.image}`} 
                       alt="Sual Şəkli" 
                       className="max-h-36 object-contain"
                     />
@@ -432,7 +437,7 @@ export default function MiqQuestionsPage() {
                 onClick={() => {
                   setSelectedQuestion(q);
                   setEditorText(q.text || "");
-                  setImagePreview(q.image ? `http://localhost:8000${q.image}` : null);
+                  setImagePreview(q.image ? `${STORAGE_BASE}${q.image}` : null);
                   setEditImageRemoved(false);
                   setShowEditModal(true);
                 }}

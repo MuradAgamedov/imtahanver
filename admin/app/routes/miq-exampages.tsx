@@ -73,6 +73,22 @@ export async function action({ request }: Route.ActionArgs) {
       return { success: data.message || "Yeni imtahan vərəqi uğurla yaradıldı." };
     }
 
+    if (intent === "update") {
+      const id = formData.get("id") as string;
+      const title = formData.get("title") as string;
+      const exam_duration = formData.get("exam_duration") as string;
+
+      const res = await fetch(`http://backend:80/api/adminapi/miq-exampages/${id}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ title, exam_duration: Number(exam_duration) })
+      });
+
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Vərəq yenilənmədi." };
+      return { success: data.message || "Vərəq uğurla yeniləndi.", intent: "update" };
+    }
+
     if (intent === "delete") {
       const id = formData.get("id") as string;
 
@@ -100,7 +116,10 @@ export default function MiqExampagesPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedExampage, setSelectedExampage] = useState<any>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDuration, setEditDuration] = useState("");
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -111,6 +130,7 @@ export default function MiqExampagesPage() {
         setToastMessage(actionData.success);
         setToastType("success");
         setShowDeleteConfirm(false);
+        setShowEditModal(false);
         setSelectedExampage(null);
       } else if (actionData.error) {
         setToastMessage(actionData.error);
@@ -198,21 +218,45 @@ export default function MiqExampagesPage() {
                   ID: #{ep.id}
                 </span>
                 <h3 className="text-base font-bold text-gray-900">{ep.title}</h3>
-                <p className="text-xs text-gray-400 mt-1">Yaradılıb: {ep.created_at ? new Date(ep.created_at).toLocaleString("az-AZ") : "-"}</p>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-xs text-gray-400">Yaradılıb: {ep.created_at ? new Date(ep.created_at).toLocaleString("az-AZ") : "-"}</p>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {ep.exam_duration ?? 150} dəq
+                  </span>
+                </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setSelectedExampage(ep);
-                  setShowDeleteConfirm(true);
-                }}
-                title="Sil"
-                className="rounded-xl p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    setSelectedExampage(ep);
+                    setEditTitle(ep.title || "");
+                    setEditDuration(String(ep.exam_duration ?? 150));
+                    setShowEditModal(true);
+                  }}
+                  title="Düzəliş et"
+                  className="rounded-xl p-2 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedExampage(ep);
+                    setShowDeleteConfirm(true);
+                  }}
+                  title="Sil"
+                  className="rounded-xl p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="pt-2">
@@ -237,6 +281,59 @@ export default function MiqExampagesPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <p className="mt-3 text-sm text-gray-400 font-semibold">Heç bir imtahan vərəqi tapılmadı</p>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {showEditModal && selectedExampage && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-150 rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in duration-200">
+            <h3 className="text-base font-bold text-gray-900 mb-4">Vərəqi Düzəliş Et</h3>
+            <Form method="post" className="space-y-4">
+              <input type="hidden" name="intent" value="update" />
+              <input type="hidden" name="id" value={selectedExampage.id} />
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Başlıq</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">İmtahan Müddəti (dəqiqə)</label>
+                <input
+                  type="number"
+                  name="exam_duration"
+                  value={editDuration}
+                  onChange={(e) => setEditDuration(e.target.value)}
+                  min="1"
+                  max="600"
+                  required
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setSelectedExampage(null); }}
+                  className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all cursor-pointer"
+                >
+                  İmtina
+                </button>
+                <button
+                  type="submit"
+                  disabled={navigation.state === "submitting"}
+                  className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow transition-all cursor-pointer disabled:opacity-50"
+                >
+                  Yadda Saxla
+                </button>
+              </div>
+            </Form>
+          </div>
         </div>
       )}
 

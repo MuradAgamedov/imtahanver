@@ -122,7 +122,6 @@ class ProfileService implements ProfileServiceInterface
         return [
             'success' => true,
             'message' => 'Yeni emailinizə 6 rəqəmli təsdiqləmə kodu göndərildi.',
-            'otp_demo' => $otp,
             'status_code' => 200
         ];
     }
@@ -178,7 +177,6 @@ class ProfileService implements ProfileServiceInterface
         return [
             'success' => true,
             'message' => 'Cari email ünvanınıza təsdiqləmə kodu göndərildi.',
-            'otp_demo' => $otp,
             'status_code' => 200
         ];
     }
