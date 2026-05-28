@@ -23,9 +23,10 @@ class MiqFrontQuestionsController extends Controller
 
     public function directQuestions(int $exampageId, int $questionTypeId): JsonResponse
     {
-        $questions = MiqDirectQuestion::with(['options' => fn($q) => $q->orderBy('order')])
+        $questions = MiqQuestion::with(['options' => fn($q) => $q->orderBy('order')])
             ->where('miq_exampage_id', $exampageId)
             ->where('miq_question_type_id', $questionTypeId)
+            ->whereNull('miq_subject_id')
             ->orderBy('order')
             ->get();
 
