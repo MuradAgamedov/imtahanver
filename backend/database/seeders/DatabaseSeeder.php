@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserCategorySeeder::class,
             MiqSubjectSeeder::class,
+            MiqTarixQuestionsSeeder::class,
         ]);
     }
 }
