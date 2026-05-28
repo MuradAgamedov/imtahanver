@@ -36,6 +36,22 @@ class MiqExampageService implements MiqExampageServiceInterface
         ];
     }
 
+    public function updateExampage(int $id, array $data): array
+    {
+        $exampage = $this->exampageRepository->findById($id);
+        if (!$exampage) {
+            return ['success' => false, 'message' => 'İmtahan vərəqi tapılmadı.', 'status_code' => 404];
+        }
+
+        $fields = [];
+        if (isset($data['title'])) $fields['title'] = $data['title'];
+        if (isset($data['exam_duration'])) $fields['exam_duration'] = (int) $data['exam_duration'];
+
+        $updated = $this->exampageRepository->update($exampage, $fields);
+
+        return ['success' => true, 'message' => 'İmtahan vərəqi yeniləndi.', 'data' => $updated, 'status_code' => 200];
+    }
+
     public function deleteExampage(int $id): array
     {
         $exampage = $this->exampageRepository->findById($id);

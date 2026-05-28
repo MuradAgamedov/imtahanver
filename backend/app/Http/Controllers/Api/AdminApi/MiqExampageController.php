@@ -28,6 +28,12 @@ class MiqExampageController extends Controller
         return response()->json($result, $result['status_code']);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $result = $this->exampageService->updateExampage($id, $request->all());
+        return response()->json($result, $result['status_code']);
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $result = $this->exampageService->deleteExampage($id);

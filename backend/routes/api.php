@@ -57,6 +57,7 @@ Route::prefix('adminapi')->group(function () {
 
         Route::get('miq-exampages', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'index']);
         Route::post('miq-exampages', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'store']);
+        Route::put('miq-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'update']);
         Route::delete('miq-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'destroy']);
         Route::get('miq-exampages/{exampageId}/question-types', [\App\Http\Controllers\Api\AdminApi\MiqQuestionTypeController::class, 'show']);
 

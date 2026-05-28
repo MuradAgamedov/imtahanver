@@ -23,6 +23,12 @@ class MiqExampageRepository implements MiqExampageRepositoryInterface
         return MiqExampage::create($data);
     }
 
+    public function update(MiqExampage $exampage, array $data): MiqExampage
+    {
+        $exampage->update($data);
+        return $exampage->fresh();
+    }
+
     public function delete(MiqExampage $exampage): bool
     {
         return $exampage->delete();

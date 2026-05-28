@@ -9,7 +9,11 @@ class MiqExampage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title'];
+    protected $fillable = ['title', 'exam_duration'];
+
+    protected $casts = [
+        'exam_duration' => 'integer',
+    ];
 
     protected static function boot()
     {
