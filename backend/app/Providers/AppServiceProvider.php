@@ -55,6 +55,22 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Contracts\MiqSubjectServiceInterface::class,
             \App\Services\MiqSubjectService::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\MiqExampageRepositoryInterface::class,
+            \App\Repositories\Eloquent\MiqExampageRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MiqExampageServiceInterface::class,
+            \App\Services\MiqExampageService::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\MiqQuestionTypeRepositoryInterface::class,
+            \App\Repositories\Eloquent\MiqQuestionTypeRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MiqQuestionTypeServiceInterface::class,
+            \App\Services\MiqQuestionTypeService::class
+        );
     }
 
     /**

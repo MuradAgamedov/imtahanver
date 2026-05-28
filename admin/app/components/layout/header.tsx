@@ -6,6 +6,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/users": "İstifadəçilər",
   "/user-categories": "Kateqoriyalar",
   "/miq-subjects": "MİQ Fənləri",
+  "/miq-exampages": "MİQ Vərəqləri",
   "/exams": "İmtahanlar",
   "/questions": "Suallar",
   "/results": "Nəticələr",
