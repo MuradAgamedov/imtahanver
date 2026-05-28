@@ -1,0 +1,158 @@
+services:
+  # Database Service (PostgreSQL 17)
+  db:
+    image: postgres:17-alpine
+    container_name: imtahanver_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: imtahanver
+      POSTGRES_USER: imtahanver_user
+      POSTGRES_PASSWORD: imtahanver_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imtahanver_user -d imtahanver"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: imtahanver_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Laravel Backend (FrankenPHP)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: imtahanver_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: local
+      SERVER_NAME: ":80"
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: imtahanver
+      DB_USERNAME: imtahanver_user
+      DB_PASSWORD: imtahanver_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      MAIL_MAILER: smtp
+      MAIL_HOST: smtp.hostinger.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: noreply@avicom.az
+      MAIL_PASSWORD: "~9nj91MnW"
+      MAIL_ENCRYPTION: tls
+      MAIL_FROM_ADDRESS: noreply@avicom.az
+      MAIL_FROM_NAME: "İmtahanVer"
+      MAIL_TO_ADDRESS: noreply@avicom.az
+    ports:
+      - "8000:80"
+    volumes:
+      - backend_storage:/app/storage
+
+  # Laravel Queue Worker (Horizon)
+  horizon:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: imtahanver_horizon
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: imtahanver
+      DB_USERNAME: imtahanver_user
+      DB_PASSWORD: imtahanver_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      MAIL_MAILER: smtp
+      MAIL_HOST: smtp.hostinger.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: noreply@avicom.az
+      MAIL_PASSWORD: "~9nj91MnW"
+      MAIL_ENCRYPTION: tls
+      MAIL_FROM_ADDRESS: noreply@avicom.az
+      MAIL_FROM_NAME: "İmtahanVer"
+      MAIL_TO_ADDRESS: noreply@avicom.az
+    volumes:
+      - backend_storage:/app/storage
+    command: ["php", "artisan", "horizon"]
+
+  # Frontend Web App (React Router v7 SSR)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: imtahanver_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      API_URL: http://backend:80
+
+  # Admin Dashboard App (React Router v7 SSR)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: imtahanver_admin
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      API_URL: http://backend:80
+
+  # Main Landing Page (Nginx Static)
+  main:
+    build:
+      context: ./main
+      dockerfile: Dockerfile
+    container_name: imtahanver_main
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_storage:
