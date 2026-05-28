@@ -95,7 +95,23 @@ export default function MiqQuestionTypesPage() {
 
             <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
               <span>Növ Statusu: Aktiv</span>
-              <span className="text-indigo-600 font-semibold">Sistem tərəfindən idarə olunur</span>
+              {index === 0 ? (
+                <Link
+                  to={`/miq-exampages/${exampage?.id}/question-types/${qt.id}/subjects`}
+                  className="inline-flex items-center gap-1 bg-slate-900 text-white hover:bg-slate-800 rounded-lg px-3.5 py-1.5 font-bold transition-colors shadow-sm cursor-pointer"
+                >
+                  Fənləri İdarə Et
+                  <span>&rarr;</span>
+                </Link>
+              ) : (
+                <Link
+                  to={`/miq-exampages/${exampage?.id}/question-types/${qt.id}/questions`}
+                  className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-750 rounded-lg px-3.5 py-1.5 font-bold transition-colors shadow-sm cursor-pointer"
+                >
+                  Sualları İdarə Et
+                  <span>&rarr;</span>
+                </Link>
+              )}
             </div>
           </div>
         ))}

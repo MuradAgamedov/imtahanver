@@ -15,15 +15,37 @@ const ROUTE_TITLES: Record<string, string> = {
 
 interface HeaderProps {
   session?: AdminSession | null;
+  onMenuClick?: () => void;
 }
 
-export function Header({ session }: HeaderProps) {
+export function Header({ session, onMenuClick }: HeaderProps) {
   const { pathname } = useLocation();
-  const title = ROUTE_TITLES[pathname] ?? "Admin Panel";
+  let title = ROUTE_TITLES[pathname] ?? "Admin Panel";
+  if (pathname.includes("/question-types")) {
+    if (pathname.includes("/questions")) {
+      title = "Sualları İdarə Et";
+    } else if (pathname.includes("/subjects")) {
+      title = "Fənn Proqramı Fənləri";
+    } else {
+      title = "Sual Növləri";
+    }
+  }
 
   return (
-    <header className="fixed left-60 right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+    <header className="fixed left-0 lg:left-60 right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="lg:hidden p-2 text-slate-655 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+          aria-label="Menyu aç"
+        >
+          <svg className="h-5.5 w-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <h1 className="text-sm lg:text-lg font-bold text-gray-900 truncate max-w-[180px] sm:max-w-xs">{title}</h1>
+      </div>
 
       <div className="flex items-center gap-4">
         {/* Date */}

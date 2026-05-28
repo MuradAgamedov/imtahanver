@@ -55,5 +55,16 @@ Route::prefix('adminapi')->group(function () {
         Route::post('miq-exampages', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'store']);
         Route::delete('miq-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'destroy']);
         Route::get('miq-exampages/{exampageId}/question-types', [\App\Http\Controllers\Api\AdminApi\MiqQuestionTypeController::class, 'show']);
+
+        Route::get('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'index']);
+        Route::post('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'store']);
+        Route::delete('miq-exampages/{exampageId}/subjects/{subjectId}', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'destroy']);
+
+        // MIQ Questions Endpoints
+        Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'index']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'store']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'update']);
+        Route::delete('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'destroy']);
+        Route::put('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'reorder']);
     });
 });
