@@ -46,7 +46,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     limits: qData.limits ?? { 1: 22, 2: 5, 3: 3 },
     exampageId: id, groupId, subjectId,
     storageBase,
-    token: session.token,
   };
 }
 
@@ -129,21 +128,20 @@ export async function action({ request, params }: Route.ActionArgs) {
   return {};
 }
 
-function ImageUploader({ token, storageBase, current, onChange }: {
-  token: string; storageBase: string; current: string; onChange: (path: string) => void;
+function ImageUploader({ storageBase, current, onChange }: {
+  storageBase: string; current: string; onChange: (path: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const apiBase = storageBase.includes("imtahanver.online") ? "https://api.imtahanver.online" : "http://localhost:8000";
 
   const handleFile = async (file: File) => {
     setUploading(true);
     const fd = new FormData();
     fd.append("image", file);
     try {
-      const res = await fetch(`${apiBase}/api/adminapi/applicant-questions/upload-image`, {
+      // Upload through admin server to avoid CORS
+      const res = await fetch("/api/upload-applicant-image", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         body: fd,
       });
       const data = await res.json();
@@ -183,7 +181,7 @@ function ImageUploader({ token, storageBase, current, onChange }: {
 }
 
 export default function ApplicantQuestionsPage() {
-  const { exampage, group, subject, questions, counts, limits, exampageId, groupId, subjectId, storageBase, token } = useLoaderData<typeof loader>();
+  const { exampage, group, subject, questions, counts, limits, exampageId, groupId, subjectId, storageBase } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -466,7 +464,7 @@ export default function ApplicantQuestionsPage() {
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Sualın Mətni</label>
                     <RichTextEditor value={addTitle} onChange={setAddTitle} placeholder="Sual mətni..." />
                   </div>
-                  <ImageUploader token={token} storageBase={storageBase} current={addImage} onChange={setAddImage} />
+                  <ImageUploader storageBase={storageBase} current={addImage} onChange={setAddImage} />
                   <div className="flex gap-3 justify-end pt-2">
                     <button type="button" onClick={() => setShowAddModal(false)}
                       className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
@@ -496,7 +494,7 @@ export default function ApplicantQuestionsPage() {
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Sualın Mətni</label>
                 <RichTextEditor value={editTitle} onChange={setEditTitle} />
               </div>
-              <ImageUploader token={token} storageBase={storageBase} current={editImage} onChange={setEditImage} />
+              <ImageUploader storageBase={storageBase} current={editImage} onChange={setEditImage} />
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setEditingQ(null)}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>

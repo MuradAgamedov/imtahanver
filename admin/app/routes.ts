@@ -23,6 +23,7 @@ export default [
     route("applicant-exampages/:id/groups", "routes/applicant-exampage-groups.tsx"),
     route("applicant-exampages/:id/groups/:groupId/subjects", "routes/applicant-group-subjects.tsx"),
     route("applicant-exampages/:id/groups/:groupId/subjects/:subjectId/questions", "routes/applicant-questions.tsx"),
+  route("api/upload-applicant-image", "routes/api.upload-applicant-image.ts"),
     route("results", "routes/results.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),
