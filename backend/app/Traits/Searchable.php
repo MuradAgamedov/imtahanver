@@ -24,9 +24,22 @@ trait Searchable
     {
         try {
             $client = app(Client::class);
+            $index = $this->getTable();
+
+            // Auto-create index if it does not exist to enforce settings and mappings
+            if (!$client->indices()->exists(['index' => $index])->asBool()) {
+                $client->indices()->create([
+                    'index' => $index,
+                    'body'  => [
+                        'settings' => self::getSearchSettings(),
+                        'mappings' => static::getSearchMapping()
+                    ]
+                ]);
+            }
+
             $client->index([
-                'index' => $this->getTable(), // Məs: 'miq_subjects' və ya 'users'
-                'id'    => $this->getKey(),   // Model ID-si
+                'index' => $index,
+                'id'    => $this->getKey(),
                 'body'  => $this->toSearchArray(),
             ]);
         } catch (\Exception $e) {
@@ -52,4 +65,61 @@ trait Searchable
     {
         return $this->toArray();
     }
+
+    /**
+     * Get default settings for professional autocomplete and Azerbaijani language analyzer.
+     */
+    public static function getSearchSettings(): array
+    {
+        return [
+            'analysis' => [
+                'char_filter' => [
+                    'az_char_mapping' => [
+                        'type' => 'mapping',
+                        'mappings' => [
+                            'ə => e', 'Ə => e',
+                            'ı => i', 'I => i',
+                            'ö => o', 'Ö => o',
+                            'ü => u', 'Ü => u',
+                            'ş => s', 'Ş => s',
+                            'ç => c', 'Ç => c',
+                            'ğ => g', 'Ğ => g'
+                        ]
+                    ]
+                ],
+                'filter' => [
+                    'autocomplete_filter' => [
+                        'type' => 'edge_ngram',
+                        'min_gram' => 1,
+                        'max_gram' => 20
+                    ]
+                ],
+                'analyzer' => [
+                    'autocomplete_index' => [
+                        'type' => 'custom',
+                        'char_filter' => ['az_char_mapping'],
+                        'tokenizer' => 'standard',
+                        'filter' => ['lowercase', 'autocomplete_filter']
+                    ],
+                    'autocomplete_search' => [
+                        'type' => 'custom',
+                        'char_filter' => ['az_char_mapping'],
+                        'tokenizer' => 'standard',
+                        'filter' => ['lowercase']
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Get model-specific properties mapping. Override this in models.
+     */
+    public static function getSearchMapping(): array
+    {
+        return [
+            'properties' => []
+        ];
+    }
 }
+

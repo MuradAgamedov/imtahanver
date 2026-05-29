@@ -19,13 +19,48 @@ class MiqSubjectRepository implements MiqSubjectRepositoryInterface
             $client = app(\Elastic\Elasticsearch\Client::class);
 
             $response = $client->search([
-                'index' => 'miq_subjects', // index adı modelin cədvəl adı ilə eynidir
+                'index' => 'miq_subjects',
                 'body'  => [
                     'query' => [
-                        'multi_match' => [
-                            'query'     => $search,
-                            'fields'    => ['title', 'identify'],
-                            'fuzziness' => 'AUTO', // Hərf səhvlərini tapmaq üçün
+                        'bool' => [
+                            'should' => [
+                                // 1. Exact phrase/word match on main fields (High Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title^10', 'identify^8'],
+                                        'type' => 'phrase',
+                                    ]
+                                ],
+                                // 2. Exact match with fuzziness (Typo tolerance on main fields)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title^5', 'identify^4'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                    ]
+                                ],
+                                // 3. Autocomplete prefix match via edge_ngram (Prefix Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title.autocomplete^3', 'identify.autocomplete^2'],
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ],
+                                // 4. Fuzzy autocomplete prefix match (Fallback for prefix typos)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title.autocomplete^1', 'identify.autocomplete^1'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ]
+                            ],
+                            'minimum_should_match' => 1,
                         ]
                     ]
                 ]

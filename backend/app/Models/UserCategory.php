@@ -63,4 +63,40 @@ class UserCategory extends Model
             'identify' => $this->identify,
         ];
     }
+
+    public static function getSearchMapping(): array
+    {
+        return [
+            'properties' => [
+                'title' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ],
+                'identify' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
 }

@@ -57,10 +57,45 @@ class UserRepository implements UserRepositoryInterface
                 'index' => 'users',
                 'body'  => [
                     'query' => [
-                        'multi_match' => [
-                            'query'     => $search,
-                            'fields'    => ['first_name', 'last_name', 'email'],
-                            'fuzziness' => 'AUTO',
+                        'bool' => [
+                            'should' => [
+                                // 1. Exact phrase/word match on main fields (High Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name^10', 'last_name^10', 'email^8'],
+                                        'type' => 'phrase',
+                                    ]
+                                ],
+                                // 2. Exact match with fuzziness (Typo tolerance on main fields)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name^5', 'last_name^5', 'email^4'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                    ]
+                                ],
+                                // 3. Autocomplete prefix match via edge_ngram (Prefix Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name.autocomplete^3', 'last_name.autocomplete^3', 'email.autocomplete^2'],
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ],
+                                // 4. Fuzzy autocomplete prefix match (Fallback for prefix typos)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name.autocomplete^1', 'last_name.autocomplete^1', 'email.autocomplete^1'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ]
+                            ],
+                            'minimum_should_match' => 1,
                         ]
                     ]
                 ]
@@ -104,10 +139,45 @@ class UserRepository implements UserRepositoryInterface
                 'index' => 'users',
                 'body'  => [
                     'query' => [
-                        'multi_match' => [
-                            'query'     => $search,
-                            'fields'    => ['first_name', 'last_name', 'email'],
-                            'fuzziness' => 'AUTO',
+                        'bool' => [
+                            'should' => [
+                                // 1. Exact phrase/word match on main fields (High Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name^10', 'last_name^10', 'email^8'],
+                                        'type' => 'phrase',
+                                    ]
+                                ],
+                                // 2. Exact match with fuzziness (Typo tolerance on main fields)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name^5', 'last_name^5', 'email^4'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                    ]
+                                ],
+                                // 3. Autocomplete prefix match via edge_ngram (Prefix Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name.autocomplete^3', 'last_name.autocomplete^3', 'email.autocomplete^2'],
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ],
+                                // 4. Fuzzy autocomplete prefix match (Fallback for prefix typos)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['first_name.autocomplete^1', 'last_name.autocomplete^1', 'email.autocomplete^1'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ]
+                            ],
+                            'minimum_should_match' => 1,
                         ]
                     ]
                 ]

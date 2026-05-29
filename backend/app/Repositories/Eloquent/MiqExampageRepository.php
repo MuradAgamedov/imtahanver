@@ -21,10 +21,45 @@ class MiqExampageRepository implements MiqExampageRepositoryInterface
                 'index' => 'miq_exampages',
                 'body'  => [
                     'query' => [
-                        'multi_match' => [
-                            'query'     => $search,
-                            'fields'    => ['title'],
-                            'fuzziness' => 'AUTO',
+                        'bool' => [
+                            'should' => [
+                                // 1. Exact phrase/word match on main fields (High Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title^10'],
+                                        'type' => 'phrase',
+                                    ]
+                                ],
+                                // 2. Exact match with fuzziness (Typo tolerance on main fields)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title^5'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                    ]
+                                ],
+                                // 3. Autocomplete prefix match via edge_ngram (Prefix Boost)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title.autocomplete^3'],
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ],
+                                // 4. Fuzzy autocomplete prefix match (Fallback for prefix typos)
+                                [
+                                    'multi_match' => [
+                                        'query' => $search,
+                                        'fields' => ['title.autocomplete^1'],
+                                        'fuzziness' => 'AUTO',
+                                        'prefix_length' => 1,
+                                        'analyzer' => 'autocomplete_search',
+                                    ]
+                                ]
+                            ],
+                            'minimum_should_match' => 1,
                         ]
                     ]
                 ]

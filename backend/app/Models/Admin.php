@@ -30,4 +30,40 @@ class Admin extends Authenticatable
             'email' => $this->email,
         ];
     }
+
+    public static function getSearchMapping(): array
+    {
+        return [
+            'properties' => [
+                'name' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ],
+                'email' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
 }

@@ -46,4 +46,54 @@ class User extends Authenticatable
             'email' => $this->email,
         ];
     }
+
+    public static function getSearchMapping(): array
+    {
+        return [
+            'properties' => [
+                'first_name' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ],
+                'last_name' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ],
+                'email' => [
+                    'type' => 'text',
+                    'analyzer' => 'autocomplete_search',
+                    'fields' => [
+                        'autocomplete' => [
+                            'type' => 'text',
+                            'analyzer' => 'autocomplete_index',
+                            'search_analyzer' => 'autocomplete_search',
+                        ],
+                        'keyword' => [
+                            'type' => 'keyword',
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
 }
