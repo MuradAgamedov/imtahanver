@@ -49,3 +49,4 @@ class ElasticsearchReindexCommand extends Command
         $this->info('Elasticsearch reindexing completed successfully!');
     }
 }
+
