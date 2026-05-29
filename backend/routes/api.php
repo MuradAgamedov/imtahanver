@@ -107,6 +107,14 @@ Route::prefix('adminapi')->group(function () {
         Route::put('applicant-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'update']);
         Route::delete('applicant-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'destroy']);
 
+        // Applicant Groups
+        Route::get('applicant-groups', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'index']);
+        Route::post('applicant-groups', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'store']);
+        Route::put('applicant-groups/reorder', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'reorder']);
+        Route::put('applicant-groups/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'update']);
+        Route::delete('applicant-groups/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'destroy']);
+        Route::put('applicant-groups/{id}/subjects', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'syncSubjects']);
+
         // Admin Exam Results Route
         Route::get('exam-results', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'index']);
     });

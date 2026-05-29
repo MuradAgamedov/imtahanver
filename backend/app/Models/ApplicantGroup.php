@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use App\Traits\Searchable;
 
-class ApplicantSubject extends Model
+class ApplicantGroup extends Model
 {
     use HasFactory, Searchable;
 
@@ -21,18 +21,18 @@ class ApplicantSubject extends Model
     {
         parent::boot();
 
-        static::creating(function ($subject) {
-            if (empty($subject->identify)) {
-                $subject->identify = self::generateSlug($subject->title);
+        static::creating(function ($group) {
+            if (empty($group->identify)) {
+                $group->identify = self::generateSlug($group->title);
             }
-            if (is_null($subject->order)) {
-                $subject->order = self::max('order') + 1;
+            if (is_null($group->order)) {
+                $group->order = self::max('order') + 1;
             }
         });
 
-        static::updating(function ($subject) {
-            if (empty($subject->identify)) {
-                $subject->identify = self::generateSlug($subject->title);
+        static::updating(function ($group) {
+            if (empty($group->identify)) {
+                $group->identify = self::generateSlug($group->title);
             }
         });
     }
@@ -53,13 +53,13 @@ class ApplicantSubject extends Model
         return Str::slug($title);
     }
 
-    public function groups()
+    public function subjects()
     {
         return $this->belongsToMany(
-            ApplicantGroup::class,
+            ApplicantSubject::class,
             'applicant_group_subject',
-            'applicant_subject_id',
-            'applicant_group_id'
+            'applicant_group_id',
+            'applicant_subject_id'
         )->withTimestamps();
     }
 
