@@ -40,6 +40,23 @@ class ExamSessionController extends Controller
         $exampageId = $request->miq_exampage_id;
         $subjectId = $request->miq_subject_id;
 
+        // If there is already a completed session, return it — no re-taking allowed
+        $completedSession = ExamSession::where('user_id', $user->id)
+            ->where('miq_exampage_id', $exampageId)
+            ->where('miq_subject_id', $subjectId)
+            ->where('status', 'completed')
+            ->first();
+
+        if ($completedSession) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Bu imtahana artıq iştirak etmisiniz.',
+                'session' => $completedSession,
+                'remaining_seconds' => 0,
+                'answers' => $this->getFormattedAnswers($completedSession->id),
+            ]);
+        }
+
         // Check if there is an active session
         $session = ExamSession::where('user_id', $user->id)
             ->where('miq_exampage_id', $exampageId)
