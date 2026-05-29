@@ -24,5 +24,8 @@ jobs:
 
               git pull origin master
 
+              cd frontend && npm install && npm run build && cd ..
+              cd admin && npm install && npm run build && cd ..
+
               docker compose up -d --build
             "
