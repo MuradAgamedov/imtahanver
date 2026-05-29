@@ -268,6 +268,22 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                       Abituriyent Qrupları
                     </NavLink>
                   </li>
+                  <li>
+                    <NavLink
+                      to="/applicant-exampages"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Abituriyent Vərəqləri
+                    </NavLink>
+                  </li>
                 </ul>
               )}
             </li>

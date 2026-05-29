@@ -130,6 +130,14 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Contracts\ApplicantGroupServiceInterface::class,
             \App\Services\ApplicantGroupService::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\ApplicantExampageRepositoryInterface::class,
+            \App\Repositories\Eloquent\ApplicantExampageRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\ApplicantExampageServiceInterface::class,
+            \App\Services\ApplicantExampageService::class
+        );
 
         $this->app->singleton(\Elastic\Elasticsearch\Client::class, function ($app) {
             return \Elastic\Elasticsearch\ClientBuilder::create()

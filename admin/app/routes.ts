@@ -19,6 +19,7 @@ export default [
     route("questions", "routes/questions.tsx"),
     route("applicant-subjects", "routes/applicant-subjects.tsx"),
     route("applicant-groups", "routes/applicant-groups.tsx"),
+    route("applicant-exampages", "routes/applicant-exampages.tsx"),
     route("results", "routes/results.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),

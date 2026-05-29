@@ -33,6 +33,7 @@ class ElasticsearchReindexCommand extends Command
             \App\Models\MiqSubject::class,
             \App\Models\ApplicantSubject::class,
             \App\Models\ApplicantGroup::class,
+            \App\Models\ApplicantExampage::class,
             \App\Models\UserCategory::class,
             \App\Models\MiqExampage::class,
             \App\Models\User::class,
