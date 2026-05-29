@@ -39,14 +39,17 @@ function animateCounter(el, target) {
         ? Math.floor(current / 1000) + 'K+'
         : current;
     } else {
-      el.textContent = target === 98 ? current + '%' : current + '+';
+      if (target === 100) el.textContent = current + '%';
+      else if (target === 24) el.textContent = current + '/7';
+      else if (target === 1) el.textContent = '№' + current;
+      else el.textContent = current + '+';
     }
     if (progress < 1) requestAnimationFrame(step);
     else {
-      if (target === 1200000) el.textContent = '1.2M+';
-      else if (target === 50000) el.textContent = '50K+';
-      else if (target === 700) el.textContent = '700+';
-      else if (target === 98) el.textContent = '98%';
+      if (target === 100) el.textContent = '100%';
+      else if (target === 1000) el.textContent = '1000+';
+      else if (target === 24) el.textContent = '24/7';
+      else if (target === 1) el.textContent = '№1';
     }
   };
   requestAnimationFrame(step);
