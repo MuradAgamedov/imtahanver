@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { redirect, useLoaderData, Form, Link, useActionData, useNavigation } from "react-router";
+import { redirect, useLoaderData, Form, Link, useActionData, useNavigation, useLocation, useNavigate } from "react-router";
 import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
 import { sessionCookie, type UserSession } from "../lib/session";
@@ -238,8 +238,34 @@ export default function Home() {
 
   const actionData = useActionData() as any;
   const navigation = useNavigation();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"portal" | "exams" | "settings">("portal");
+  const getTabFromPath = (path: string): "portal" | "exams" | "settings" => {
+    if (path.includes("/exams")) return "exams";
+    if (path.includes("/settings")) return "settings";
+    return "portal";
+  };
+
+  const [activeTab, setActiveTab] = useState<"portal" | "exams" | "settings">(
+    getTabFromPath(location.pathname)
+  );
+
+  useEffect(() => {
+    setActiveTab(getTabFromPath(location.pathname));
+  }, [location.pathname]);
+
+  const handleTabChange = (tab: "portal" | "exams" | "settings") => {
+    setActiveTab(tab);
+    if (tab === "exams") {
+      navigate("/exams");
+    } else if (tab === "settings") {
+      navigate("/settings");
+    } else {
+      navigate("/");
+    }
+  };
+
   const [miqView, setMiqView] = useState<"cards" | "exampages" | "subjects">("cards");
   const [selectedExampage, setSelectedExampage] = useState<any | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -438,7 +464,7 @@ export default function Home() {
           {/* Navigation tabs */}
           <div className="flex gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl">
             <button
-              onClick={() => setActiveTab("portal")}
+              onClick={() => handleTabChange("portal")}
               className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                 activeTab === "portal"
                   ? "bg-white dark:bg-slate-950 shadow-sm text-indigo-600 dark:text-indigo-400"
@@ -448,7 +474,7 @@ export default function Home() {
               İmtahan Portalı
             </button>
             <button
-              onClick={() => setActiveTab("exams")}
+              onClick={() => handleTabChange("exams")}
               className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                 activeTab === "exams"
                   ? "bg-white dark:bg-slate-950 shadow-sm text-indigo-600 dark:text-indigo-400"
@@ -458,7 +484,7 @@ export default function Home() {
               İmtahanlar
             </button>
             <button
-              onClick={() => setActiveTab("settings")}
+              onClick={() => handleTabChange("settings")}
               className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                 activeTab === "settings"
                   ? "bg-white dark:bg-slate-950 shadow-sm text-indigo-600 dark:text-indigo-400"
