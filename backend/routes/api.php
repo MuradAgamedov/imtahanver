@@ -121,6 +121,9 @@ Route::prefix('adminapi')->group(function () {
         Route::post('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'update']);
         Route::delete('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'destroy']);
 
+        // Applicant Question Image Upload
+        Route::post('applicant-questions/upload-image', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'uploadImage']);
+
         // Applicant Question Options
         Route::get('applicant-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'indexOptions']);
         Route::post('applicant-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'storeOption']);

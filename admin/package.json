@@ -9,8 +9,10 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-react": "^11.1.2",
     "@react-router/node": "7.15.1",
     "@react-router/serve": "7.15.1",
+    "ckeditor5": "^48.1.1",
     "isbot": "^5.1.36",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

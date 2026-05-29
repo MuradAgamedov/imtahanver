@@ -139,6 +139,22 @@ class ApplicantQuestionController extends Controller
         return response()->json(['success' => true, 'message' => 'Sıralama yeniləndi.']);
     }
 
+    // ─── Image Upload ─────────────────────────────────────────────────────────
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|max:5120', // 5 MB
+        ]);
+
+        $path = $request->file('image')->store('applicant-questions', 'public');
+
+        return response()->json([
+            'success' => true,
+            'path'    => 'storage/' . $path,
+        ]);
+    }
+
     // ─── Options (type 1 only) ────────────────────────────────────────────────
 
     public function indexOptions(int $questionId): JsonResponse
