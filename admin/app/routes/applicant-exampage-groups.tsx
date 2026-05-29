@@ -15,18 +15,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const { id } = params;
   const headers = { Accept: "application/json", Authorization: `Bearer ${session.token}` };
 
-  const [epRes, grRes] = await Promise.all([
-    fetch(`http://backend:80/api/adminapi/applicant-exampages`, { headers }),
-    fetch(`http://backend:80/api/adminapi/applicant-exampages/${id}/groups`, { headers }),
-  ]);
-
-  const [epData, grData] = await Promise.all([epRes.json(), grRes.json()]);
+  const epRes = await fetch("http://backend:80/api/adminapi/applicant-exampages", { headers });
+  const epData = await epRes.json();
 
   const exampage = epData.success
     ? epData.data.find((e: any) => e.id === Number(id)) ?? null
     : null;
 
-  return { exampage, groups: grData.success ? grData.data.groups ?? grData.data : [] };
+  // groups are eagerly loaded with the exampage via with('groups')
+  return { exampage, groups: exampage?.groups ?? [] };
 }
 
 export default function ApplicantExampageGroupsPage() {
