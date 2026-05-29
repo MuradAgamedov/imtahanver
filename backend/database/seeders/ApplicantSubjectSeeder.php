@@ -23,6 +23,7 @@ class ApplicantSubjectSeeder extends Seeder
             'Ədəbiyyat',
             'Biologiya',
             'Xarici dil',
+            'Qabiliyyət imtahanı',
         ];
 
         foreach ($subjects as $index => $title) {

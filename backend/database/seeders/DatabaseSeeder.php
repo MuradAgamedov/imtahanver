@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserCategorySeeder::class,
             MiqSubjectSeeder::class,
+            ApplicantSubjectSeeder::class,
+            ApplicantGroupSeeder::class,
         ]);
 
         // 2. Seed MİQ Exam Page with ID = 2 (which is expected by other components/seeders)
