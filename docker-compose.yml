@@ -1,5 +1,4 @@
 services:
-  # Database Service (MySQL 8.0)
   db:
     image: mysql:8.0
     container_name: imtahanver_db
@@ -19,7 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # phpMyAdmin Web Client
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: imtahanver_phpmyadmin
@@ -31,9 +29,9 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
-  # Redis Cache Service
   redis:
     image: redis:7-alpine
     container_name: imtahanver_redis
@@ -49,7 +47,24 @@ services:
       timeout: 5s
       retries: 5
 
-  # Laravel Backend (FrankenPHP)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: imtahanver_elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -61,27 +76,34 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     environment:
       APP_ENV: local
       SERVER_NAME: ":80"
       APP_URL: https://api.imtahanver.online
       APP_DEBUG: "true"
+
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
       DB_DATABASE: imtahanver
       DB_USERNAME: imtahanver_user
       DB_PASSWORD: imtahanver_password
+
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_STORE: redis
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
+
+      ELASTICSEARCH_HOST: http://elasticsearch:9200
+
       MAIL_MAILER: smtp
       MAIL_HOST: smtp.hostinger.com
       MAIL_PORT: 587
       MAIL_USERNAME: noreply@avicom.az
-      MAIL_PASSWORD: "~9nj91MnW"
+      MAIL_PASSWORD: CHANGE_THIS_PASSWORD
       MAIL_ENCRYPTION: tls
       MAIL_FROM_ADDRESS: noreply@avicom.az
       MAIL_FROM_NAME: "Imtahanver"
@@ -93,7 +115,6 @@ services:
       - /app/vendor
       - backend_storage:/app/storage
 
-  # Laravel Queue Worker (Horizon)
   horizon:
     build:
       context: ./backend
@@ -105,26 +126,33 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_URL: https://api.imtahanver.online
+
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
       DB_DATABASE: imtahanver
       DB_USERNAME: imtahanver_user
       DB_PASSWORD: imtahanver_password
+
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_STORE: redis
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
+
+      ELASTICSEARCH_HOST: http://elasticsearch:9200
+
       MAIL_MAILER: smtp
       MAIL_HOST: smtp.hostinger.com
       MAIL_PORT: 587
       MAIL_USERNAME: noreply@avicom.az
-      MAIL_PASSWORD: "~9nj91MnW"
+      MAIL_PASSWORD: CHANGE_THIS_PASSWORD
       MAIL_ENCRYPTION: tls
       MAIL_FROM_ADDRESS: noreply@avicom.az
       MAIL_FROM_NAME: "Imtahanver"
@@ -141,7 +169,6 @@ services:
       retries: 3
       start_period: 20s
 
-  # Frontend Web App (React Router v7 SSR)
   frontend:
     build:
       context: ./frontend
@@ -156,7 +183,6 @@ services:
       API_URL: http://backend:80
       STORAGE_URL: https://api.imtahanver.online
 
-  # Admin Dashboard App (React Router v7 SSR)
   admin:
     build:
       context: ./admin
@@ -171,7 +197,6 @@ services:
       API_URL: http://backend:80
       STORAGE_URL: https://api.imtahanver.online
 
-  # Main Landing Page (Nginx Static)
   main:
     build:
       context: ./main
@@ -185,3 +210,4 @@ volumes:
   mysql_data:
   redis_data:
   backend_storage:
+  elasticsearch_data:
