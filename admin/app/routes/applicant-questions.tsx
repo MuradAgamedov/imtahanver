@@ -91,6 +91,16 @@ export async function action({ request, params }: Route.ActionArgs) {
       if (!res.ok) return { error: data.message || "Sual silinmədi." };
       return { success: "Sual silindi.", intent };
     }
+    if (intent === "reorder") {
+      const ids = JSON.parse(formData.get("ids") as string);
+      const res = await fetch(`${base}/reorder`, {
+        method: "PUT", headers,
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Sıralama yadda saxlanmadı." };
+      return { success: "Sıralama yeniləndi.", intent };
+    }
     if (intent === "add-option") {
       const qId = formData.get("question_id") as string;
       const res = await fetch(`http://backend:80/api/adminapi/applicant-questions/${qId}/options`, {
@@ -186,6 +196,53 @@ export default function ApplicantQuestionsPage() {
   const navigation = useNavigation();
   const submit = useSubmit();
 
+  // Local grouped state for drag-and-drop
+  const [localGrouped, setLocalGrouped] = useState<Record<number, any[]>>({
+    1: questions.filter((q: any) => q.question_type === 1),
+    2: questions.filter((q: any) => q.question_type === 2),
+    3: questions.filter((q: any) => q.question_type === 3),
+  });
+  const dragInfo = useRef<{ type: number; index: number } | null>(null);
+
+  useEffect(() => {
+    setLocalGrouped({
+      1: questions.filter((q: any) => q.question_type === 1),
+      2: questions.filter((q: any) => q.question_type === 2),
+      3: questions.filter((q: any) => q.question_type === 3),
+    });
+  }, [questions]);
+
+  const handleDragStart = (e: React.DragEvent, type: number, index: number) => {
+    dragInfo.current = { type, index };
+    e.dataTransfer.effectAllowed = "move";
+    e.currentTarget.classList.add("opacity-40");
+  };
+
+  const handleDragOver = (e: React.DragEvent, type: number, index: number) => {
+    e.preventDefault();
+    const currentDrag = dragInfo.current;
+    if (!currentDrag || currentDrag.type !== type || currentDrag.index === index) return;
+    
+    const list = [...localGrouped[type]];
+    const item = list[currentDrag.index];
+    list.splice(currentDrag.index, 1);
+    list.splice(index, 0, item);
+    
+    dragInfo.current = { type, index };
+    setLocalGrouped(prev => ({ ...prev, [type]: list }));
+  };
+
+  const handleDragEnd = (e: React.DragEvent, type: number) => {
+    e.currentTarget.classList.remove("opacity-40");
+    if (dragInfo.current && dragInfo.current.type === type) {
+      const fd = new FormData();
+      fd.append("intent", "reorder");
+      fd.append("ids", JSON.stringify(localGrouped[type].map((q: any) => q.id)));
+      submit(fd, { method: "post" });
+    }
+    dragInfo.current = null;
+  };
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [addStep, setAddStep] = useState<"type" | "form">("type");
   const [selectedType, setSelectedType] = useState(1);
@@ -222,11 +279,7 @@ export default function ApplicantQuestionsPage() {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
   }, [toast]);
 
-  const grouped: Record<number, any[]> = {
-    1: questions.filter((q: any) => q.question_type === 1),
-    2: questions.filter((q: any) => q.question_type === 2),
-    3: questions.filter((q: any) => q.question_type === 3),
-  };
+  const grouped = localGrouped;
 
   if (!exampage || !group || !subject) {
     return (
@@ -300,11 +353,21 @@ export default function ApplicantQuestionsPage() {
           ) : (
             <div className="space-y-3">
               {grouped[type].map((q: any, idx: number) => (
-                <div key={q.id} className={`rounded-2xl border bg-white shadow-sm overflow-hidden`}>
+                <div key={q.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, type, idx)}
+                  onDragOver={(e) => handleDragOver(e, type, idx)}
+                  onDragEnd={(e) => handleDragEnd(e, type)}
+                  className="rounded-2xl border bg-white shadow-sm overflow-hidden cursor-grab active:cursor-grabbing select-none group/card">
                   <div className={`flex items-start justify-between gap-3 p-4 border-l-4 ${
                     type === 1 ? "border-l-indigo-400" : type === 2 ? "border-l-emerald-400" : "border-l-amber-400"
                   }`}>
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                      <div className="text-gray-300 group-hover/card:text-indigo-500 transition-colors mt-0.5 shrink-0">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 8h16M4 16h16" />
+                        </svg>
+                      </div>
                       <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">{idx + 1}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-900 leading-relaxed [&_i]:italic [&_b]:font-bold [&_u]:underline"
