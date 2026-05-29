@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useLoaderData, redirect } from "react-router";
+import { Link, useLoaderData, redirect, useBlocker } from "react-router";
 import type { Route } from "./+types/exam";
 import { sessionCookie, type UserSession } from "../lib/session";
 
@@ -244,6 +244,25 @@ export default function Exam() {
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isExitSubmitting, setIsExitSubmitting] = useState(false);
+
+  // Block in-app navigation while exam is active
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      !completedSession &&
+      currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // Warn on browser tab/window close
+  useEffect(() => {
+    if (completedSession) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [completedSession]);
 
   // Countdown timer setup
   const { formatted: timerDisplay, isLow, isDone } = useCountdown(
@@ -753,6 +772,78 @@ export default function Exam() {
                 className="flex-1 py-2.5 px-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow cursor-pointer"
               >
                 {isSubmitting ? "Bitirilir..." : "Bəli, Bitir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exit warning modal — triggered by in-app navigation (back button, link) */}
+      {blocker.state === "blocked" && (
+        <div className="fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+            {/* Icon */}
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-5">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white leading-snug">
+              İmtahandan çıxmaq istəyirsiniz?
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
+              Seçdiyiniz cavablar əsasında imtahan <strong className="text-slate-700 dark:text-slate-300">avtomatik yekunlaşacaq</strong> və nəticələriniz dərhal hesablanacaq.
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+              Bu əməliyyatı geri qaytarmaq olmaz.
+            </p>
+
+            {/* Stats summary */}
+            <div className="mt-5 flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="flex-1 text-center">
+                <p className="text-xs text-slate-400 mb-1">Cavablandırılan</p>
+                <p className="text-lg font-extrabold text-indigo-600 dark:text-indigo-400">{answeredCount}</p>
+              </div>
+              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+              <div className="flex-1 text-center">
+                <p className="text-xs text-slate-400 mb-1">Ümumi sual</p>
+                <p className="text-lg font-extrabold text-slate-700 dark:text-slate-300">{totalQuestions}</p>
+              </div>
+              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+              <div className="flex-1 text-center">
+                <p className="text-xs text-slate-400 mb-1">Boş buraxılan</p>
+                <p className="text-lg font-extrabold text-slate-500 dark:text-slate-400">{totalQuestions - answeredCount}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => blocker.reset?.()}
+                disabled={isExitSubmitting}
+                className="flex-1 py-3 px-4 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-2xl transition-all cursor-pointer disabled:opacity-50"
+              >
+                İmtahana davam et
+              </button>
+              <button
+                onClick={async () => {
+                  setIsExitSubmitting(true);
+                  await finishExam();
+                  blocker.proceed?.();
+                }}
+                disabled={isExitSubmitting}
+                className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold rounded-2xl shadow-lg shadow-amber-100 dark:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isExitSubmitting ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Hesablanır...
+                  </>
+                ) : (
+                  "Yekunlaşdır və çıx"
+                )}
               </button>
             </div>
           </div>
