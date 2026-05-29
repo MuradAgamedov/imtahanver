@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, redirect, useLoaderData, useActionData, useNavigation, useSubmit } from "react-router";
+import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit } from "react-router";
 import type { Route } from "./+types/applicant-exampages";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
@@ -269,7 +269,16 @@ export default function ApplicantExampagesPage() {
               )}
             </div>
 
-            {/* Manage groups button */}
+            {/* Navigate to groups */}
+            <Link to={`/applicant-exampages/${ep.id}/groups`}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-sm">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 5l7 7-7 7" />
+              </svg>
+              Qrupları Gör
+            </Link>
+
+            {/* Manage groups assignment */}
             <button onClick={() => openGroupsModal(ep)}
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-gray-200 text-slate-700 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

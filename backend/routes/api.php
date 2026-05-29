@@ -114,6 +114,20 @@ Route::prefix('adminapi')->group(function () {
         Route::delete('applicant-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantExampageController::class, 'destroy']);
         Route::put('applicant-exampages/{id}/groups', [\App\Http\Controllers\Api\AdminApi\ApplicantExampageController::class, 'syncGroups']);
 
+        // Applicant Questions
+        Route::get('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'index']);
+        Route::post('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'store']);
+        Route::put('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'reorder']);
+        Route::post('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'update']);
+        Route::delete('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'destroy']);
+
+        // Applicant Question Options
+        Route::get('applicant-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'indexOptions']);
+        Route::post('applicant-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'storeOption']);
+        Route::put('applicant-questions/{questionId}/options/reorder', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'reorderOptions']);
+        Route::put('applicant-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'updateOption']);
+        Route::delete('applicant-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'destroyOption']);
+
         // Applicant Groups
         Route::get('applicant-groups', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'index']);
         Route::post('applicant-groups', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'store']);
