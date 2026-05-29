@@ -25,7 +25,7 @@ class ApplicantExampageService implements ApplicantExampageServiceInterface
 
     public function createExampage(array $data): array
     {
-        $exampage = $this->exampageRepository->create($data);
+        $exampage = $this->exampageRepository->create(['title' => '']);
 
         return [
             'success'     => true,

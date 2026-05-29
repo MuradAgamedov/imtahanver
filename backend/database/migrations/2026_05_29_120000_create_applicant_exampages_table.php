@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('applicant_exampages', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
+            $table->string('title')->default('');
             $table->unsignedSmallInteger('exam_duration')->default(150);
             $table->timestamps();
         });
