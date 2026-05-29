@@ -8,9 +8,16 @@ use Illuminate\Database\Eloquent\Collection;
 
 class MiqSubjectRepository implements MiqSubjectRepositoryInterface
 {
-    public function all(): Collection
+    public function all(?string $search = null): Collection
     {
-        return MiqSubject::orderBy('order', 'asc')->get();
+        $query = MiqSubject::orderBy('order', 'asc');
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('identify', 'like', '%' . $search . '%');
+            });
+        }
+        return $query->get();
     }
 
     public function findById(int $id): ?MiqSubject

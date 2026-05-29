@@ -16,8 +16,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
+  const url = new URL(request.url);
+  const search = url.searchParams.get("search") || "";
+
   try {
-    const res = await fetch("http://backend:80/api/adminapi/miq-subjects", {
+    const backendUrl = search
+      ? `http://backend:80/api/adminapi/miq-subjects?search=${encodeURIComponent(search)}`
+      : "http://backend:80/api/adminapi/miq-subjects";
+
+    const res = await fetch(backendUrl, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${session.token}`
@@ -35,10 +42,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     const data = await res.json();
     const subjects = data.success ? data.data : [];
 
-    return { subjects, session };
+    return { subjects, session, search };
   } catch (err) {
     console.error("Miq subjects loader error:", err);
-    return { subjects: [], session };
+    return { subjects: [], session, search };
   }
 }
 
@@ -128,13 +135,13 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function MiqSubjectsPage() {
-  const { subjects, session } = useLoaderData<typeof loader>();
+  const { subjects, session, search } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
   const submit = useSubmit();
 
   const [localSubjects, setLocalSubjects] = useState<any[]>(subjects);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(search);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -148,6 +155,27 @@ export default function MiqSubjectsPage() {
   useEffect(() => {
     setLocalSubjects(subjects);
   }, [subjects]);
+
+  // Keep search query input in sync with URL changes
+  useEffect(() => {
+    setSearchQuery(search);
+  }, [search]);
+
+  // Debounced search submit
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== search) {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchQuery) {
+          searchParams.set("search", searchQuery);
+        } else {
+          searchParams.delete("search");
+        }
+        submit(searchParams, { replace: true });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, search, submit]);
 
   useEffect(() => {
     if (actionData) {
@@ -208,10 +236,7 @@ export default function MiqSubjectsPage() {
     submit(fd, { method: "post" });
   };
 
-  const filteredSubjects = localSubjects.filter((s: any) => {
-    const matchesSearch = (s.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || (s.identify || "").toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  const filteredSubjects = localSubjects;
 
   return (
     <div className="space-y-6 relative">

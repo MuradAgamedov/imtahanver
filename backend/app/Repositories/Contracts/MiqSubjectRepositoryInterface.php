@@ -7,7 +7,7 @@ use App\Models\MiqSubject;
 
 interface MiqSubjectRepositoryInterface
 {
-    public function all(): Collection;
+    public function all(?string $search = null): Collection;
     public function findById(int $id): ?MiqSubject;
     public function findByIdentify(string $identify): ?MiqSubject;
     public function create(array $data): MiqSubject;

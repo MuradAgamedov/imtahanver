@@ -14,9 +14,9 @@ class MiqSubjectService implements MiqSubjectServiceInterface
         $this->subjectRepository = $subjectRepository;
     }
 
-    public function listSubjects(): array
+    public function listSubjects(?string $search = null): array
     {
-        $subjects = $this->subjectRepository->all();
+        $subjects = $this->subjectRepository->all($search);
         return [
             'success' => true,
             'data' => $subjects,

@@ -17,9 +17,10 @@ class MiqSubjectController extends Controller
         $this->subjectService = $subjectService;
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $result = $this->subjectService->listSubjects();
+        $search = $request->query('search');
+        $result = $this->subjectService->listSubjects($search);
         return response()->json($result, $result['status_code']);
     }
 
