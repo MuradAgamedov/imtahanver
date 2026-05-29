@@ -12,30 +12,11 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // Fetch MIQ exampages + their subjects (public, no auth needed)
-  let miqExampages: any[] = [];
-  try {
-    const epRes = await fetch('http://backend:80/api/front/miq-exampages');
-    const epData = await epRes.json();
-    if (epData.success) {
-      miqExampages = await Promise.all(
-        epData.data.map(async (ep: any) => {
-          const subRes = await fetch(`http://backend:80/api/front/miq-exampages/${ep.id}/subjects`);
-          const subData = await subRes.json();
-          const subjects = subData.success ? subData.data.map((d: any) => d.subject) : [];
-          return { ...ep, subjects };
-        })
-      );
-    }
-  } catch (err) {
-    console.error('MIQ exampages fetch error:', err);
-  }
-
   const cookieHeader = request.headers.get("Cookie");
   const session = (await sessionCookie.parse(cookieHeader)) as UserSession | null;
 
   if (!session || !session.token) {
-    return { session: null, userProfile: null, categories: [], miqExampages, examSessions: [] };
+    return { session: null, userProfile: null, categories: [], examSessions: [] };
   }
 
   try {
@@ -73,10 +54,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     const sessionsData = await sessionsResponse.json();
     const examSessions = sessionsData.success ? sessionsData.data : [];
 
-    return { session, userProfile, categories, miqExampages, examSessions };
+    return { session, userProfile, categories, examSessions };
   } catch (err) {
     console.error('Home loader fetch error:', err);
-    return { session, userProfile: session.user, categories: [], miqExampages, examSessions: [] };
+    return { session, userProfile: session.user, categories: [], examSessions: [] };
   }
 }
 
@@ -228,7 +209,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Home() {
-  const { session, userProfile, categories, miqExampages, examSessions } = useLoaderData<typeof loader>();
+  const { session, userProfile, categories, examSessions } = useLoaderData<typeof loader>();
   const completedSessions = examSessions ? examSessions.filter((s: any) => s.status === 'completed') : [];
   const completedCount = completedSessions.length;
   const activeCount = examSessions ? examSessions.filter((s: any) => s.status === 'active').length : 0;
@@ -256,25 +237,16 @@ export default function Home() {
   }, [location.pathname]);
 
   const handleTabChange = (tab: "portal" | "exams" | "settings") => {
-    setActiveTab(tab);
     if (tab === "exams") {
       navigate("/exams");
     } else if (tab === "settings") {
       navigate("/settings");
     } else {
+      setActiveTab("portal");
       navigate("/");
     }
   };
 
-  // Map exampageId → existing session for badge display on cards
-  const sessionByExampage: Record<number, any> = examSessions
-    ? (examSessions as any[]).reduce((acc: Record<number, any>, s: any) => {
-        if (!acc[s.miq_exampage_id]) acc[s.miq_exampage_id] = s;
-        return acc;
-      }, {})
-    : {};
-
-  const [miqView, setMiqView] = useState<"cards" | "exampages">("cards");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -532,255 +504,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-8">
         
-        {activeTab === "exams" ? (
-          <div className="animate-in fade-in slide-in-from-bottom-5 duration-300">
-
-            {/* ── VIEW 1: exam type cards ── */}
-            {miqView === "cards" && (
-              <>
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">İmtahanlar</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">İmtahan növünü seçin.</p>
-                </div>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    {
-                      key: "miq",
-                      title: "MİQ İmtahanı",
-                      desc: "Müəllimlərin İşə Qəbulu imtahanı. Fənn proqramları, tədris metodikası və pedaqogika üzrə sınaqlar.",
-                      icon: (
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 14l9-5-9-5-9 5 9 5z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 3.866-4.03 7-9 7s-9-3.134-9-7a12.09 12.09 0 012.84-2.422L12 14z" />
-                        </svg>
-                      ),
-                      color: "from-indigo-500 to-violet-600",
-                      lightBg: "bg-indigo-50 dark:bg-indigo-950/30",
-                      textColor: "text-indigo-600 dark:text-indigo-400",
-                      badge: "Müəllim",
-                      badgeBg: "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300",
-                      clickable: true,
-                    },
-                    {
-                      key: "abituryent",
-                      title: "Abituriyent İmtahanı",
-                      desc: "Ali məktəblərə qəbul üçün DİM standartlarına uyğun hazırlıq sınaqları.",
-                      icon: (
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      ),
-                      color: "from-emerald-500 to-teal-600",
-                      lightBg: "bg-emerald-50 dark:bg-emerald-950/30",
-                      textColor: "text-emerald-600 dark:text-emerald-400",
-                      badge: "DİM",
-                      badgeBg: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
-                      clickable: false,
-                    },
-                    {
-                      key: "magistr",
-                      title: "Magistr İmtahanı",
-                      desc: "Magistraturaya qəbul imtahanına hazırlıq. Məntiq, ixtisas fənni və xarici dil sınaqları.",
-                      icon: (
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
-                      ),
-                      color: "from-amber-500 to-orange-600",
-                      lightBg: "bg-amber-50 dark:bg-amber-950/30",
-                      textColor: "text-amber-600 dark:text-amber-400",
-                      badge: "Magistr",
-                      badgeBg: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
-                      clickable: false,
-                    },
-                    {
-                      key: "buraxilis",
-                      title: "Buraxılış İmtahanı",
-                      desc: "11-ci sinif şagirdləri üçün dövlət buraxılış imtahanına hazırlıq sınaqları.",
-                      icon: (
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                      ),
-                      color: "from-rose-500 to-pink-600",
-                      lightBg: "bg-rose-50 dark:bg-rose-950/30",
-                      textColor: "text-rose-600 dark:text-rose-400",
-                      badge: "11-ci sinif",
-                      badgeBg: "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300",
-                      clickable: false,
-                    },
-                  ].map((exam) => (
-                    <div
-                      key={exam.key}
-                      onClick={() => exam.clickable && setMiqView("exampages")}
-                      className={`group relative flex flex-col rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden shadow-sm transition-all duration-300 ${exam.clickable ? "hover:shadow-xl cursor-pointer" : "opacity-60"}`}
-                    >
-                      <div className={`h-1.5 w-full bg-gradient-to-r ${exam.color}`} />
-                      <div className="p-6 flex flex-col flex-1">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${exam.lightBg} ${exam.textColor}`}>
-                            {exam.icon}
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${exam.badgeBg}`}>
-                              {exam.badge}
-                            </span>
-                            {!exam.clickable && (
-                              <span className="text-xs text-slate-400 dark:text-slate-600 font-medium">Tezliklə</span>
-                            )}
-                          </div>
-                        </div>
-                        <h4 className={`text-base font-bold text-slate-900 dark:text-white transition-colors ${exam.clickable ? "group-hover:text-indigo-600 dark:group-hover:text-indigo-400" : ""}`}>
-                          {exam.title}
-                        </h4>
-                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed flex-1">
-                          {exam.desc}
-                        </p>
-                        {exam.clickable ? (
-                          <button className={`mt-5 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r ${exam.color} opacity-90 group-hover:opacity-100 shadow-sm hover:shadow-md transition-all cursor-pointer`}>
-                            Seç &rarr;
-                          </button>
-                        ) : (
-                          <div className="mt-5 w-full py-2.5 rounded-xl text-sm font-semibold text-center text-slate-400 bg-slate-100 dark:bg-slate-800 dark:text-slate-600">
-                            Tezliklə
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* ── VIEW 2: exampage list ── */}
-            {miqView === "exampages" && (
-              <>
-                <div className="flex items-center gap-4 mb-8">
-                  <button
-                    onClick={() => setMiqView("cards")}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Geri
-                  </button>
-                  <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">MİQ İmtahanı — Vərəq Seçimi</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">İmtahan vərəqini seçin</p>
-                  </div>
-                </div>
-
-                {miqExampages.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 dark:text-slate-600">
-                    <p className="text-sm">Vərəq tapılmadı.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {miqExampages.map((ep: any) => {
-                      const existingSession = sessionByExampage[ep.id];
-                      const isParticipated = !!existingSession;
-                      const href = isParticipated
-                        ? `/exam/${existingSession.miq_exampage_id}/${existingSession.miq_subject_id}?session_id=${existingSession.id}`
-                        : `/miq-exampages/${ep.id}/subjects`;
-
-                      return (
-                        <Link
-                          key={ep.id}
-                          to={href}
-                          className={`group flex flex-col rounded-2xl border bg-white dark:bg-slate-950 p-6 shadow-sm transition-all duration-300 ${
-                            isParticipated
-                              ? "border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg"
-                              : "border-slate-100 dark:border-slate-800 hover:shadow-xl hover:border-indigo-200 dark:hover:border-indigo-800"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-4">
-                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                              isParticipated
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-                                : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
-                            }`}>
-                              {isParticipated ? (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              )}
-                            </div>
-                            {isParticipated ? (
-                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                existingSession.status === "completed"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"
-                                  : "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 animate-pulse"
-                              }`}>
-                                {existingSession.status === "completed" ? "Tamamlanıb" : "Davam edir"}
-                              </span>
-                            ) : (
-                              <svg className="w-5 h-5 text-slate-300 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                              </svg>
-                            )}
-                          </div>
-
-                          <h4 className={`text-base font-bold text-slate-900 dark:text-white transition-colors ${
-                            isParticipated
-                              ? "group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
-                              : "group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
-                          }`}>
-                            {ep.title}
-                          </h4>
-
-                          {isParticipated ? (
-                            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                              Fənn: <span className="font-semibold text-slate-700 dark:text-slate-300">{existingSession.subject?.title ?? "—"}</span>
-                              {existingSession.status === "completed" && (
-                                <> · Bal: <span className="font-bold text-emerald-600 dark:text-emerald-400">{existingSession.score}</span></>
-                              )}
-                            </p>
-                          ) : (
-                            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                              {ep.subjects.length} fənn mövcuddur
-                            </p>
-                          )}
-
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            {isParticipated ? (
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                existingSession.status === "completed"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                                  : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400"
-                              }`}>
-                                {existingSession.status === "completed" ? "Nəticəyə bax →" : "Davam et →"}
-                              </span>
-                            ) : (
-                              <>
-                                {ep.subjects.slice(0, 4).map((s: any) => (
-                                  <span key={s.id} className="rounded-full bg-indigo-50 dark:bg-indigo-950/30 px-2.5 py-0.5 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                                    {s.title}
-                                  </span>
-                                ))}
-                                {ep.subjects.length > 4 && (
-                                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                    +{ep.subjects.length - 4}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-
-          </div>
-        ) : activeTab === "portal" ? (
+        {activeTab === "portal" ? (
           <div>
             {/* Welcome Banner */}
             <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-800 p-8 text-white shadow-xl shadow-indigo-100 dark:shadow-none mb-8 animate-in fade-in duration-300">
