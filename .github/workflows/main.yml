@@ -27,5 +27,6 @@ jobs:
               cd frontend && npm install && npm run build && cd ..
               cd admin && npm install && npm run build && cd ..
 
-              docker compose up -d --build
+              docker compose build --no-cache
+              docker compose up -d
             "
