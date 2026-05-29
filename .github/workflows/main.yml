@@ -1,32 +1,25 @@
 name: Deploy
-
 on:
   push:
     branches:
       - master
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: SSH key setup
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
-
       - name: Deploy to VPS
         run: |
           ssh -p ${{ secrets.SSH_PORT }} \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
               cd /root/imtahanver
-
+              git checkout -- backend/composer.json backend/composer.lock
               git pull origin master
-
               cd frontend && npm install && npm run build && cd ..
               cd admin && npm install && npm run build && cd ..
-
-              docker compose build --no-cache
-              docker compose up -d
+              docker compose up -d --build
             "
