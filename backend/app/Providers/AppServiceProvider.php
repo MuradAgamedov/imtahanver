@@ -114,6 +114,15 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\MiqDirectQuestionOptionService::class
         );
 
+        $this->app->bind(
+            \App\Repositories\Contracts\ApplicantSubjectRepositoryInterface::class,
+            \App\Repositories\Eloquent\ApplicantSubjectRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\ApplicantSubjectServiceInterface::class,
+            \App\Services\ApplicantSubjectService::class
+        );
+
         $this->app->singleton(\Elastic\Elasticsearch\Client::class, function ($app) {
             return \Elastic\Elasticsearch\ClientBuilder::create()
                 ->setHosts([env('ELASTICSEARCH_HOST', 'http://elasticsearch:9200')])

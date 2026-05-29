@@ -17,6 +17,7 @@ export default [
     route("miq-exampages/:id/question-types/:qtId/subjects/:subjectId/questions/:questionId/options", "routes/miq-question-options-subject.tsx"),
     route("exams", "routes/exams.tsx"),
     route("questions", "routes/questions.tsx"),
+    route("applicant-subjects", "routes/applicant-subjects.tsx"),
     route("results", "routes/results.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),

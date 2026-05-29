@@ -100,6 +100,13 @@ Route::prefix('adminapi')->group(function () {
         Route::put('miq-direct-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'update']);
         Route::delete('miq-direct-questions/{questionId}/options/{id}', [\App\Http\Controllers\Api\AdminApi\MiqDirectQuestionOptionController::class, 'destroy']);
 
+        // Applicant Subjects
+        Route::get('applicant-subjects', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'index']);
+        Route::post('applicant-subjects', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'store']);
+        Route::put('applicant-subjects/reorder', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'reorder']);
+        Route::put('applicant-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'update']);
+        Route::delete('applicant-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantSubjectController::class, 'destroy']);
+
         // Admin Exam Results Route
         Route::get('exam-results', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'index']);
     });

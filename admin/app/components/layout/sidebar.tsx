@@ -76,9 +76,11 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const adminName = session?.admin?.name || "Admin";
   const initials = adminName.split(" ").map(n => n[0]).join("").toUpperCase();
 
-  // Open MIQ sub-menu if path matches miq routes
   const isMiqPath = location.pathname.startsWith("/miq");
   const [isMiqOpen, setIsMiqOpen] = useState(isMiqPath);
+
+  const isApplicantPath = location.pathname.startsWith("/applicant");
+  const [isApplicantOpen, setIsApplicantOpen] = useState(isApplicantPath);
 
   return (
     <>
@@ -202,7 +204,58 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               </ul>
             )}
           </li>
-        </ul>
+
+            {/* Abituriyent Collapsible Dropdown */}
+            <li>
+              <button
+                onClick={() => setIsApplicantOpen(!isApplicantOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer text-slate-400 hover:bg-slate-800 hover:text-white",
+                  isApplicantPath && "text-white bg-slate-800/40"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                  <span>Abituriyent</span>
+                </div>
+                <svg
+                  className={cn("h-4 w-4 transform transition-transform duration-200", isApplicantOpen && "rotate-90")}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {isApplicantOpen && (
+                <ul className="mt-1 pl-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                  <li>
+                    <NavLink
+                      to="/applicant-subjects"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Abituriyent Fənləri
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
+          </ul>
       </nav>
 
       {/* User Info & Logout */}
