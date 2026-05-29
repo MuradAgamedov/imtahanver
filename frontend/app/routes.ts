@@ -7,5 +7,6 @@ export default [
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
   route("api/exam-questions", "routes/api.exam-questions.ts"),
+  route("miq-exampages/:exampageId/subjects", "routes/exam-subjects.tsx"),
   route("exam/:exampageId/:subjectId", "routes/exam.tsx"),
 ] satisfies RouteConfig;
