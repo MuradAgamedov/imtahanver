@@ -17,9 +17,9 @@ class AdminUserService implements AdminUserServiceInterface
 
     // ─── Standard User CRUD ──────────────────────────────────────────────────────
 
-    public function listUsers(): array
+    public function listUsers(?string $search = null): array
     {
-        $users = $this->userRepository->allNonAdmins();
+        $users = $this->userRepository->allNonAdmins($search);
         return [
             'success' => true,
             'data' => $users,
@@ -125,9 +125,9 @@ class AdminUserService implements AdminUserServiceInterface
 
     // ─── Admin User CRUD ─────────────────────────────────────────────────────────
 
-    public function listAdmins(): array
+    public function listAdmins(?string $search = null): array
     {
-        $admins = $this->userRepository->allAdmins();
+        $admins = $this->userRepository->allAdmins($search);
         return [
             'success' => true,
             'data' => $admins,

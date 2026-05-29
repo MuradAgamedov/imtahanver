@@ -8,9 +8,48 @@ use Illuminate\Database\Eloquent\Collection;
 
 class UserCategoryRepository implements UserCategoryRepositoryInterface
 {
-    public function all(): Collection
+    public function all(?string $search = null): Collection
     {
-        return UserCategory::orderBy('id', 'asc')->get();
+        if (empty($search)) {
+            return UserCategory::orderBy('id', 'asc')->get();
+        }
+
+        try {
+            $client = app(\Elastic\Elasticsearch\Client::class);
+
+            $response = $client->search([
+                'index' => 'user_categories',
+                'body'  => [
+                    'query' => [
+                        'multi_match' => [
+                            'query'     => $search,
+                            'fields'    => ['title', 'identify'],
+                            'fuzziness' => 'AUTO',
+                        ]
+                    ]
+                ]
+            ]);
+
+            $ids = collect($response['hits']['hits'])->pluck('_id')->toArray();
+
+            if (empty($ids)) {
+                return new Collection();
+            }
+
+            return UserCategory::whereIn('id', $ids)
+                ->orderByRaw("FIELD(id, " . implode(',', $ids) . ")")
+                ->get();
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Elasticsearch user_categories search error: " . $e->getMessage());
+
+            return UserCategory::orderBy('id', 'asc')
+                ->where(function($q) use ($search) {
+                    $q->where('title', 'like', '%' . $search . '%')
+                      ->orWhere('identify', 'like', '%' . $search . '%');
+                })
+                ->get();
+        }
     }
 
     public function findByIdentify(string $identify): ?UserCategory

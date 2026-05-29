@@ -18,9 +18,9 @@ interface UserRepositoryInterface
 
     public function all(): \Illuminate\Database\Eloquent\Collection;
 
-    public function allNonAdmins(): \Illuminate\Database\Eloquent\Collection;
+    public function allNonAdmins(?string $search = null): \Illuminate\Database\Eloquent\Collection;
 
-    public function allAdmins(): \Illuminate\Database\Eloquent\Collection;
+    public function allAdmins(?string $search = null): \Illuminate\Database\Eloquent\Collection;
 
     public function delete(User $user): bool;
 }

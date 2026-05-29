@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
+use App\Traits\Searchable;
+
 class UserCategory extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $fillable = ['title', 'identify'];
 
@@ -52,5 +54,13 @@ class UserCategory extends Model
     public function users()
     {
         return $this->hasMany(User::class, 'user_category_identify', 'identify');
+    }
+
+    public function toSearchArray(): array
+    {
+        return [
+            'title' => $this->title,
+            'identify' => $this->identify,
+        ];
     }
 }

@@ -14,9 +14,9 @@ class UserCategoryService implements UserCategoryServiceInterface
         $this->categoryRepository = $categoryRepository;
     }
 
-    public function listCategories(): array
+    public function listCategories(?string $search = null): array
     {
-        $categories = $this->categoryRepository->all();
+        $categories = $this->categoryRepository->all($search);
         return [
             'success' => true,
             'data' => $categories,

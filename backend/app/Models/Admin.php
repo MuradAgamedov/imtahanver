@@ -8,16 +8,26 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 
+use App\Traits\Searchable;
+
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password'])]
 class Admin extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Searchable;
 
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
+        ];
+    }
+
+    public function toSearchArray(): array
+    {
+        return [
+            'name' => $this->name,
+            'email' => $this->email,
         ];
     }
 }

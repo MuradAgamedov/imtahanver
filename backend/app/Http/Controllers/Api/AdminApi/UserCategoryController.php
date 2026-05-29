@@ -17,9 +17,9 @@ class UserCategoryController extends Controller
         $this->categoryService = $categoryService;
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $result = $this->categoryService->listCategories();
+        $result = $this->categoryService->listCategories($request->query('search'));
         return response()->json($result, $result['status_code']);
     }
 

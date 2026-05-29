@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, redirect, useLoaderData, useActionData, useNavigation } from "react-router";
+import { Form, redirect, useLoaderData, useActionData, useNavigation, useSubmit } from "react-router";
 import type { Route } from "./+types/user-categories";
 import { cn } from "../lib/utils";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -16,8 +16,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
+  const url = new URL(request.url);
+  const search = url.searchParams.get("search") || "";
+
   try {
-    const res = await fetch("http://backend:80/api/adminapi/user-categories", {
+    const backendUrl = search
+      ? `http://backend:80/api/adminapi/user-categories?search=${encodeURIComponent(search)}`
+      : "http://backend:80/api/adminapi/user-categories";
+
+    const res = await fetch(backendUrl, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${session.token}`
@@ -35,10 +42,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     const data = await res.json();
     const categories = data.success ? data.data : [];
 
-    return { categories, session };
+    return { categories, session, search };
   } catch (err) {
     console.error("Categories loader error:", err);
-    return { categories: [], session };
+    return { categories: [], session, search };
   }
 }
 
@@ -113,11 +120,12 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function UserCategoriesPage() {
-  const { categories } = useLoaderData<typeof loader>();
+  const { categories, search } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
+  const submit = useSubmit();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(search);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -149,10 +157,26 @@ export default function UserCategoriesPage() {
     }
   }, [toastMessage]);
 
-  const filteredCategories = categories.filter((c: any) => {
-    const matchesSearch = (c.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || (c.identify || "").toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  // Keep search query input in sync with URL changes
+  useEffect(() => {
+    setSearchQuery(search);
+  }, [search]);
+
+  // Debounced search submit
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== search) {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchQuery) {
+          searchParams.set("search", searchQuery);
+        } else {
+          searchParams.delete("search");
+        }
+        submit(searchParams, { replace: true });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, search, submit]);
 
   return (
     <div className="space-y-6 relative">
@@ -207,7 +231,7 @@ export default function UserCategoriesPage() {
 
       {/* Count Summary */}
       <p className="text-xs font-medium text-gray-450 uppercase tracking-wider">
-        Tapılan kateqoriya sayı: <strong className="text-gray-900">{filteredCategories.length}</strong>
+        Tapılan kateqoriya sayı: <strong className="text-gray-900">{categories.length}</strong>
       </p>
 
       {/* Table */}
@@ -223,7 +247,7 @@ export default function UserCategoriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredCategories.map((cat: any) => (
+              {categories.map((cat: any) => (
                 <tr key={cat.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-6 py-4 font-semibold text-gray-900">{cat.title}</td>
                   <td className="px-6 py-4">
@@ -267,7 +291,7 @@ export default function UserCategoriesPage() {
             </tbody>
           </table>
         </div>
-        {filteredCategories.length === 0 && (
+        {categories.length === 0 && (
           <div className="py-16 text-center">
             <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

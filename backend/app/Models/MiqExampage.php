@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\Searchable;
+
 class MiqExampage extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $fillable = ['title', 'exam_duration'];
 
@@ -25,5 +27,12 @@ class MiqExampage extends Model
                 $exampage->save();
             }
         });
+    }
+
+    public function toSearchArray(): array
+    {
+        return [
+            'title' => $this->title,
+        ];
     }
 }

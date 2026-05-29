@@ -14,9 +14,9 @@ class MiqExampageService implements MiqExampageServiceInterface
         $this->exampageRepository = $exampageRepository;
     }
 
-    public function listExampages(): array
+    public function listExampages(?string $search = null): array
     {
-        $exampages = $this->exampageRepository->all();
+        $exampages = $this->exampageRepository->all($search);
         return [
             'success' => true,
             'data' => $exampages,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, redirect, useLoaderData, useActionData, useNavigation, Link } from "react-router";
+import { Form, redirect, useLoaderData, useActionData, useNavigation, Link, useSubmit } from "react-router";
 import type { Route } from "./+types/miq-exampages";
 import { cn } from "../lib/utils";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -16,8 +16,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
+  const url = new URL(request.url);
+  const search = url.searchParams.get("search") || "";
+
   try {
-    const res = await fetch("http://backend:80/api/adminapi/miq-exampages", {
+    const backendUrl = search
+      ? `http://backend:80/api/adminapi/miq-exampages?search=${encodeURIComponent(search)}`
+      : "http://backend:80/api/adminapi/miq-exampages";
+
+    const res = await fetch(backendUrl, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${session.token}`
@@ -35,10 +42,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     const data = await res.json();
     const exampages = data.success ? data.data : [];
 
-    return { exampages, session };
+    return { exampages, session, search };
   } catch (err) {
     console.error("Miq exampages loader error:", err);
-    return { exampages: [], session };
+    return { exampages: [], session, search };
   }
 }
 
@@ -110,11 +117,12 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function MiqExampagesPage() {
-  const { exampages } = useLoaderData<typeof loader>();
+  const { exampages, search } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
+  const submit = useSubmit();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(search);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedExampage, setSelectedExampage] = useState<any>(null);
@@ -146,10 +154,26 @@ export default function MiqExampagesPage() {
     }
   }, [toastMessage]);
 
-  const filteredExampages = exampages.filter((ep: any) => {
-    const matchesSearch = (ep.title || "").toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  // Keep search query input in sync with URL changes
+  useEffect(() => {
+    setSearchQuery(search);
+  }, [search]);
+
+  // Debounced search submit
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== search) {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchQuery) {
+          searchParams.set("search", searchQuery);
+        } else {
+          searchParams.delete("search");
+        }
+        submit(searchParams, { replace: true });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, search, submit]);
 
   return (
     <div className="space-y-6 relative">
@@ -205,12 +229,12 @@ export default function MiqExampagesPage() {
 
       {/* Count Summary */}
       <p className="text-xs font-medium text-gray-450 uppercase tracking-wider">
-        Tapılan vərəq sayı: <strong className="text-gray-900">{filteredExampages.length}</strong>
+        Tapılan vərəq sayı: <strong className="text-gray-900">{exampages.length}</strong>
       </p>
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredExampages.map((ep: any) => (
+        {exampages.map((ep: any) => (
           <div key={ep.id} className="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4">
             <div className="flex justify-between items-start">
               <div>
@@ -275,7 +299,7 @@ export default function MiqExampagesPage() {
         ))}
       </div>
 
-      {filteredExampages.length === 0 && (
+      {exampages.length === 0 && (
         <div className="py-20 text-center bg-white border border-gray-150 rounded-2xl">
           <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

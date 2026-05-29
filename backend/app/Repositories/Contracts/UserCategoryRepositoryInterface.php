@@ -7,7 +7,7 @@ use App\Models\UserCategory;
 
 interface UserCategoryRepositoryInterface
 {
-    public function all(): Collection;
+    public function all(?string $search = null): Collection;
     
     public function findByIdentify(string $identify): ?UserCategory;
 

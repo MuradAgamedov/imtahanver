@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, redirect, useLoaderData, useActionData, useNavigation } from "react-router";
+import { Form, redirect, useLoaderData, useActionData, useNavigation, useSubmit } from "react-router";
 import type { Route } from "./+types/users";
 import { cn } from "../lib/utils";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -16,9 +16,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
+  const url = new URL(request.url);
+  const search = url.searchParams.get("search") || "";
+
   try {
     // 1. Fetch Users
-    const usersRes = await fetch("http://backend:80/api/adminapi/users", {
+    const usersBackendUrl = search
+      ? `http://backend:80/api/adminapi/users?search=${encodeURIComponent(search)}`
+      : "http://backend:80/api/adminapi/users";
+
+    const usersRes = await fetch(usersBackendUrl, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${session.token}`
@@ -41,10 +48,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     const categoriesData = await categoriesRes.json();
     const categories = categoriesData.success ? categoriesData.data : [];
 
-    return { users, categories, session };
+    return { users, categories, session, search };
   } catch (err) {
     console.error("Users loader error:", err);
-    return { users: [], categories: [], session };
+    return { users: [], categories: [], session, search };
   }
 }
 
@@ -128,12 +135,13 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function UsersPage() {
-  const { users, categories } = useLoaderData<typeof loader>();
+  const { users, categories, search } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
+  const submit = useSubmit();
 
   // Search & Filter
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(search);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
 
   // Modals state
@@ -172,12 +180,31 @@ export default function UsersPage() {
     }
   }, [toastMessage]);
 
-  // Filter users
+  // Keep search query input in sync with URL changes
+  useEffect(() => {
+    setSearchQuery(search);
+  }, [search]);
+
+  // Debounced search submit
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== search) {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchQuery) {
+          searchParams.set("search", searchQuery);
+        } else {
+          searchParams.delete("search");
+        }
+        submit(searchParams, { replace: true });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, search, submit]);
+
+  // Filter users (search query matching is done server-side)
   const filteredUsers = users.filter((u: any) => {
-    const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchQuery.toLowerCase()) || (u.email || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategoryFilter === "all" || u.user_category_identify === selectedCategoryFilter;
-    return matchesSearch && matchesCategory;
+    return matchesCategory;
   });
 
   return (

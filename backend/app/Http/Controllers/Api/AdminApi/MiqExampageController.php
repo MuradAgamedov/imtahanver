@@ -16,9 +16,9 @@ class MiqExampageController extends Controller
         $this->exampageService = $exampageService;
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $result = $this->exampageService->listExampages();
+        $result = $this->exampageService->listExampages($request->query('search'));
         return response()->json($result, $result['status_code']);
     }
 
