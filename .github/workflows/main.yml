@@ -1,4 +1,4 @@
-name: Deploy Test
+name: Deploy
 
 on:
   push:
@@ -15,12 +15,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Test SSH connection
+      - name: Deploy to VPS
         run: |
           ssh -p ${{ secrets.SSH_PORT }} \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-              whoami
-              hostname
-              pwd
+              cd /root/imtahanver
+
+              git pull origin master
+
+              docker compose up -d --build
             "
