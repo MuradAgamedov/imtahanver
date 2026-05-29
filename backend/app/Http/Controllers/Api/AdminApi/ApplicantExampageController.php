@@ -39,4 +39,19 @@ class ApplicantExampageController extends Controller
         $result = $this->exampageService->deleteExampage($id);
         return response()->json($result, $result['status_code']);
     }
+
+    public function syncGroups(Request $request, int $id): JsonResponse
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'group_ids'   => 'required|array',
+            'group_ids.*' => 'integer|exists:applicant_groups,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $result = $this->exampageService->syncGroups($id, $request->get('group_ids'));
+        return response()->json($result, $result['status_code']);
+    }
 }

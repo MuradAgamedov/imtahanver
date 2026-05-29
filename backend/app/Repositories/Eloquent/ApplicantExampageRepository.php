@@ -11,7 +11,7 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
     public function all(?string $search = null): Collection
     {
         if (empty($search)) {
-            return ApplicantExampage::orderBy('id', 'desc')->get();
+            return ApplicantExampage::with('groups')->orderBy('id', 'desc')->get();
         }
 
         try {
@@ -67,7 +67,8 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
                 return new Collection();
             }
 
-            return ApplicantExampage::whereIn('id', $ids)
+            return ApplicantExampage::with('groups')
+                ->whereIn('id', $ids)
                 ->orderByRaw('FIELD(id, ' . implode(',', $ids) . ')')
                 ->get();
 
@@ -82,7 +83,7 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
 
     public function findById(int $id): ?ApplicantExampage
     {
-        return ApplicantExampage::find($id);
+        return ApplicantExampage::with('groups')->find($id);
     }
 
     public function create(array $data): ApplicantExampage
@@ -99,5 +100,10 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
     public function delete(ApplicantExampage $exampage): bool
     {
         return $exampage->delete();
+    }
+
+    public function syncGroups(ApplicantExampage $exampage, array $groupIds): void
+    {
+        $exampage->groups()->sync($groupIds);
     }
 }

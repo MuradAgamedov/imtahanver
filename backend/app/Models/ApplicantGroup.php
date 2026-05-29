@@ -63,6 +63,16 @@ class ApplicantGroup extends Model
         )->withTimestamps();
     }
 
+    public function exampages()
+    {
+        return $this->belongsToMany(
+            ApplicantExampage::class,
+            'applicant_exampage_group',
+            'applicant_group_id',
+            'applicant_exampage_id'
+        )->withTimestamps();
+    }
+
     public function toSearchArray(): array
     {
         return [

@@ -12,4 +12,5 @@ interface ApplicantExampageRepositoryInterface
     public function create(array $data): ApplicantExampage;
     public function update(ApplicantExampage $exampage, array $data): ApplicantExampage;
     public function delete(ApplicantExampage $exampage): bool;
+    public function syncGroups(ApplicantExampage $exampage, array $groupIds): void;
 }

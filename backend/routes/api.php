@@ -112,6 +112,7 @@ Route::prefix('adminapi')->group(function () {
         Route::post('applicant-exampages', [\App\Http\Controllers\Api\AdminApi\ApplicantExampageController::class, 'store']);
         Route::put('applicant-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantExampageController::class, 'update']);
         Route::delete('applicant-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantExampageController::class, 'destroy']);
+        Route::put('applicant-exampages/{id}/groups', [\App\Http\Controllers\Api\AdminApi\ApplicantExampageController::class, 'syncGroups']);
 
         // Applicant Groups
         Route::get('applicant-groups', [\App\Http\Controllers\Api\AdminApi\ApplicantGroupController::class, 'index']);

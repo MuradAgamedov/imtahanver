@@ -67,4 +67,21 @@ class ApplicantExampageService implements ApplicantExampageServiceInterface
 
         return ['success' => true, 'message' => 'İmtahan vərəqi silindi.', 'status_code' => 200];
     }
+
+    public function syncGroups(int $id, array $groupIds): array
+    {
+        $exampage = $this->exampageRepository->findById($id);
+        if (!$exampage) {
+            return ['success' => false, 'message' => 'İmtahan vərəqi tapılmadı.', 'status_code' => 404];
+        }
+
+        $this->exampageRepository->syncGroups($exampage, $groupIds);
+
+        return [
+            'success'     => true,
+            'message'     => 'Qruplar uğurla yeniləndi.',
+            'data'        => $exampage->fresh()->load('groups'),
+            'status_code' => 200,
+        ];
+    }
 }

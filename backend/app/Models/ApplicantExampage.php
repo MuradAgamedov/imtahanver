@@ -28,6 +28,16 @@ class ApplicantExampage extends Model
         });
     }
 
+    public function groups()
+    {
+        return $this->belongsToMany(
+            ApplicantGroup::class,
+            'applicant_exampage_group',
+            'applicant_exampage_id',
+            'applicant_group_id'
+        )->withTimestamps();
+    }
+
     public function toSearchArray(): array
     {
         return [
