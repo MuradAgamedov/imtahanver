@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Traits\Searchable;
 
 class MiqSubject extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $fillable = ['title', 'identify', 'order'];
 
@@ -54,5 +55,14 @@ class MiqSubject extends Model
         
         $title = str_replace(array_keys($replace), array_values($replace), $title);
         return Str::slug($title);
+    }
+
+
+    public function toSearchArray(): array
+    {
+        return [
+            "title" => $this->title,
+            "identify" => $this->identify,
+        ];
     }
 }

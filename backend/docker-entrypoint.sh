@@ -7,6 +7,12 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
+# Run composer install if vendor/elastic is missing
+if [ ! -d vendor/elastic ]; then
+    echo "Installing Composer dependencies (found missing elasticsearch client)..."
+    composer install --no-interaction --prefer-dist
+fi
+
 # Run key generate if APP_KEY is empty
 if ! grep -q "APP_KEY=base64" .env; then
     echo "Generating application key..."
