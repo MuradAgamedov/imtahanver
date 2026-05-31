@@ -4,16 +4,16 @@ services:
     container_name: imtahanver_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: imtahanver
-      MYSQL_USER: imtahanver_user
-      MYSQL_PASSWORD: imtahanver_password
-      MYSQL_ROOT_PASSWORD: imtahanver_root_password
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -pimtahanver_root_password"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,7 +25,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: imtahanver_root_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "8081:80"
     depends_on:
@@ -79,17 +79,17 @@ services:
       elasticsearch:
         condition: service_healthy
     environment:
-      APP_ENV: local
+      APP_ENV: ${APP_ENV}
       SERVER_NAME: ":80"
-      APP_URL: https://api.imtahanver.online
-      APP_DEBUG: "true"
+      APP_URL: ${APP_URL}
+      APP_DEBUG: ${APP_DEBUG}
 
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
-      DB_DATABASE: imtahanver
-      DB_USERNAME: imtahanver_user
-      DB_PASSWORD: imtahanver_password
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -100,14 +100,14 @@ services:
       ELASTICSEARCH_HOST: http://elasticsearch:9200
 
       MAIL_MAILER: smtp
-      MAIL_HOST: smtp.hostinger.com
-      MAIL_PORT: 587
-      MAIL_USERNAME: noreply@avicom.az
-      MAIL_PASSWORD: CHANGE_THIS_PASSWORD
-      MAIL_ENCRYPTION: tls
-      MAIL_FROM_ADDRESS: noreply@avicom.az
-      MAIL_FROM_NAME: "Imtahanver"
-      MAIL_TO_ADDRESS: noreply@avicom.az
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      MAIL_TO_ADDRESS: ${MAIL_TO_ADDRESS}
     ports:
       - "8000:80"
     volumes:
@@ -129,16 +129,16 @@ services:
       elasticsearch:
         condition: service_healthy
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_URL: https://api.imtahanver.online
+      APP_ENV: ${APP_ENV}
+      APP_DEBUG: ${APP_DEBUG}
+      APP_URL: ${APP_URL}
 
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
-      DB_DATABASE: imtahanver
-      DB_USERNAME: imtahanver_user
-      DB_PASSWORD: imtahanver_password
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -149,14 +149,14 @@ services:
       ELASTICSEARCH_HOST: http://elasticsearch:9200
 
       MAIL_MAILER: smtp
-      MAIL_HOST: smtp.hostinger.com
-      MAIL_PORT: 587
-      MAIL_USERNAME: noreply@avicom.az
-      MAIL_PASSWORD: CHANGE_THIS_PASSWORD
-      MAIL_ENCRYPTION: tls
-      MAIL_FROM_ADDRESS: noreply@avicom.az
-      MAIL_FROM_NAME: "Imtahanver"
-      MAIL_TO_ADDRESS: noreply@avicom.az
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      MAIL_TO_ADDRESS: ${MAIL_TO_ADDRESS}
     volumes:
       - ./backend:/app
       - /app/vendor
@@ -181,7 +181,7 @@ services:
       PORT: 3000
       NODE_ENV: production
       API_URL: http://backend:80
-      STORAGE_URL: https://api.imtahanver.online
+      STORAGE_URL: ${STORAGE_URL}
 
   admin:
     build:
@@ -195,7 +195,7 @@ services:
       PORT: 3000
       NODE_ENV: production
       API_URL: http://backend:80
-      STORAGE_URL: https://api.imtahanver.online
+      STORAGE_URL: ${STORAGE_URL}
 
   main:
     build:
