@@ -11,4 +11,8 @@ interface AuthServiceInterface
     public function verifyOtp(string $email, string $otp): array;
     
     public function login(string $email, string $password): array;
+
+    public function forgotPassword(string $email): array;
+
+    public function resetPassword(string $email, string $otp, string $newPassword): array;
 }

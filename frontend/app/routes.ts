@@ -5,6 +5,7 @@ export default [
   route("settings", "routes/home.tsx", { id: "home-settings" }),
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
+  route("forgot-password", "routes/forgot-password.tsx"),
   route("exams", "routes/exams.tsx"),
   route("miq-exampages", "routes/miq-exampages.tsx"),
   route("miq-exampages/:exampageId/subjects", "routes/exam-subjects.tsx"),

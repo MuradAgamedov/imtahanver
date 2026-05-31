@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Front\ForgotPasswordController;
 use App\Http\Controllers\Api\Front\LoginController;
 use App\Http\Controllers\Api\Front\RegisterController;
 use App\Http\Controllers\Api\Front\ProfileController;
@@ -11,6 +12,8 @@ Route::prefix('front')->group(function () {
     Route::post('register', [RegisterController::class, 'register']);
     Route::post('verify-otp', [RegisterController::class, 'verifyOtp']);
     Route::post('login', [LoginController::class, 'login']);
+    Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetOtp']);
+    Route::post('reset-password', [ForgotPasswordController::class, 'resetPassword']);
     Route::get('user-categories', [ProfileController::class, 'getCategories']);
     Route::get('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'index']);
     Route::get('miq-exampages', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'index']);

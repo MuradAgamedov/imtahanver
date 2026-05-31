@@ -151,6 +151,64 @@ class AuthService implements AuthServiceInterface
         ];
     }
 
+    public function forgotPassword(string $email): array
+    {
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!$user || !$user->email_verified_at) {
+            // Return success even if user not found to prevent email enumeration
+            return [
+                'success' => true,
+                'message' => 'Əgər bu email mövcuddursa, şifrə sıfırlama kodu göndərildi.',
+                'status_code' => 200
+            ];
+        }
+
+        $otp = (string) rand(100000, 999999);
+        $cacheKey = "password_reset:{$email}";
+        $this->otpRepository->store($cacheKey, $otp, 600);
+
+        \App\Jobs\SendOtpEmailJob::dispatch($user->email, $user->first_name, $otp);
+        Log::info("Password reset OTP for {$email}: {$otp}");
+
+        return [
+            'success' => true,
+            'message' => 'Əgər bu email mövcuddursa, şifrə sıfırlama kodu göndərildi.',
+            'status_code' => 200
+        ];
+    }
+
+    public function resetPassword(string $email, string $otp, string $newPassword): array
+    {
+        $cacheKey = "password_reset:{$email}";
+        $storedOtp = $this->otpRepository->get($cacheKey);
+
+        if (!$storedOtp || $storedOtp !== $otp) {
+            return [
+                'success' => false,
+                'message' => 'OTP kod yanlışdır və ya vaxtı bitib.',
+                'status_code' => 400
+            ];
+        }
+
+        $user = $this->userRepository->findByEmail($email);
+        if (!$user) {
+            return ['success' => false, 'message' => 'İstifadəçi tapılmadı.', 'status_code' => 404];
+        }
+
+        $this->userRepository->update($user, [
+            'password' => \Illuminate\Support\Facades\Hash::make($newPassword)
+        ]);
+
+        $this->otpRepository->delete($cacheKey);
+
+        return [
+            'success' => true,
+            'message' => 'Şifrəniz uğurla yeniləndi.',
+            'status_code' => 200
+        ];
+    }
+
     private function generateToken(User $user): string
     {
         $header = json_encode(['alg' => 'HS256', 'typ' => 'JWT']);
