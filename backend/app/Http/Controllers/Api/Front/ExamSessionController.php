@@ -42,7 +42,7 @@ class ExamSessionController extends Controller
             'miq_subject_id' => 'required_without:applicant_exampage_id|exists:miq_subjects,id',
             'applicant_exampage_id' => 'required_without:miq_exampage_id|exists:applicant_exampages,id',
             'applicant_group_id' => 'required_with:applicant_exampage_id|exists:applicant_groups,id',
-            'applicant_subject_id' => 'required_with:applicant_exampage_id|exists:applicant_subjects,id',
+            'applicant_subject_id' => 'nullable|exists:applicant_subjects,id',
         ]);
 
         $user = $request->user();
@@ -53,11 +53,10 @@ class ExamSessionController extends Controller
             $groupId = $request->applicant_group_id;
             $subjectId = $request->applicant_subject_id;
 
-            // One attempt per exampage + group + subject combo
+            // One attempt per exampage + group combo
             $completedSession = ExamSession::where('user_id', $user->id)
                 ->where('applicant_exampage_id', $exampageId)
                 ->where('applicant_group_id', $groupId)
-                ->where('applicant_subject_id', $subjectId)
                 ->where('status', 'completed')
                 ->first();
         } else {
@@ -86,7 +85,6 @@ class ExamSessionController extends Controller
             $session = ExamSession::where('user_id', $user->id)
                 ->where('applicant_exampage_id', $exampageId)
                 ->where('applicant_group_id', $groupId)
-                ->where('applicant_subject_id', $subjectId)
                 ->where('status', 'active')
                 ->first();
         } else {
@@ -130,7 +128,7 @@ class ExamSessionController extends Controller
                 'user_id' => $user->id,
                 'applicant_exampage_id' => $exampageId,
                 'applicant_group_id' => $groupId,
-                'applicant_subject_id' => $subjectId,
+                'applicant_subject_id' => $subjectId ?: null,
                 'status' => 'active',
                 'started_at' => now(),
                 'duration_minutes' => $exampage->exam_duration ?? 90,

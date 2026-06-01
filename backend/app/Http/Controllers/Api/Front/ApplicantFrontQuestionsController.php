@@ -62,4 +62,23 @@ class ApplicantFrontQuestionsController extends Controller
             'data' => $questions
         ]);
     }
+
+    public function groupQuestions(int $exampageId, int $groupId): JsonResponse
+    {
+        $questions = ApplicantQuestion::with([
+            'options' => fn($q) => $q->orderBy('order'),
+            'subject'
+        ])
+            ->where('applicant_exampage_id', $exampageId)
+            ->where('applicant_group_id', $groupId)
+            ->orderBy('applicant_subject_id')
+            ->orderBy('question_type')
+            ->orderBy('order')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $questions
+        ]);
+    }
 }

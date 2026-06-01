@@ -19,14 +19,14 @@ function withImageUrl(questions: any[]): any[] {
 }
 
 export function meta({ data }: Route.MetaArgs) {
-  const subject = (data as any)?.subject;
+  const group = (data as any)?.group;
   return [
-    { title: subject ? `${subject.title} — Abituriyent İmtahanı` : "İmtahan — İmtahanVer" },
+    { title: group ? `${group.title} — Abituriyent İmtahanı` : "İmtahan — İmtahanVer" },
   ];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const { exampageId, groupId, subjectId } = params;
+  const { exampageId, groupId } = params;
 
   const cookieHeader = request.headers.get("Cookie");
   const session = (await sessionCookie.parse(cookieHeader)) as UserSession | null;
@@ -36,17 +36,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   try {
-    const [exampagesRes, groupsRes, subjectsRes, questionsRes] = await Promise.all([
+    const [exampagesRes, groupsRes, questionsRes] = await Promise.all([
       fetch(`${API_BASE}/api/front/applicant-exampages`),
       fetch(`${API_BASE}/api/front/applicant-exampages/${exampageId}/groups`),
-      fetch(`${API_BASE}/api/front/applicant-exampages/${exampageId}/groups/${groupId}/subjects`),
-      fetch(`${API_BASE}/api/front/applicant-exampages/${exampageId}/groups/${groupId}/subjects/${subjectId}/questions`),
+      fetch(`${API_BASE}/api/front/applicant-exampages/${exampageId}/groups/${groupId}/questions`),
     ]);
 
-    const [exampagesData, groupsData, subjectsData, questionsData] = await Promise.all([
+    const [exampagesData, groupsData, questionsData] = await Promise.all([
       exampagesRes.json(),
       groupsRes.json(),
-      subjectsRes.json(),
       questionsRes.json(),
     ]);
 
@@ -56,10 +54,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
     const group = groupsData.success
       ? groupsData.data.find((g: any) => g.id === Number(groupId)) ?? null
-      : null;
-
-    const subject = subjectsData.success
-      ? subjectsData.data.find((s: any) => s.id === Number(subjectId)) ?? null
       : null;
 
     const url = new URL(request.url);
@@ -95,7 +89,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         body: JSON.stringify({
           applicant_exampage_id: Number(exampageId),
           applicant_group_id: Number(groupId),
-          applicant_subject_id: Number(subjectId),
+          applicant_subject_id: null,
         }),
       });
       const sessionData = await sessionRes.json();
@@ -112,7 +106,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     return {
       exampage,
       group,
-      subject,
       questions: questionsData.success ? withImageUrl(questionsData.data) : [],
       examSession: examSessionData,
       remainingSeconds,
@@ -120,14 +113,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       token: session.token,
       exampageId,
       groupId,
-      subjectId,
     };
   } catch (err) {
     console.error("Applicant exam loader error:", err);
     return {
       exampage: null,
       group: null,
-      subject: null,
       questions: [],
       examSession: null,
       remainingSeconds: 0,
@@ -135,7 +126,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       token: session.token,
       exampageId,
       groupId,
-      subjectId,
     };
   }
 }
@@ -173,7 +163,6 @@ export default function ApplicantExam() {
   const {
     exampage,
     group,
-    subject,
     questions,
     examSession,
     remainingSeconds,
@@ -181,7 +170,6 @@ export default function ApplicantExam() {
     token,
     exampageId,
     groupId,
-    subjectId,
   } = useLoaderData<typeof loader>();
 
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, any>>(initialAnswers || {});
@@ -369,7 +357,7 @@ export default function ApplicantExam() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  if (!exampage || !group || !subject || !sessionState) {
+  if (!exampage || !group || !sessionState) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center p-8 bg-white dark:bg-slate-950 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
@@ -398,15 +386,15 @@ export default function ApplicantExam() {
         <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-100 dark:border-slate-800">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link
-              to={`/applicant-exampages/${exampageId}/groups/${groupId}/subjects`}
+              to={`/applicant-exampages/${exampageId}/groups`}
               className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
               </svg>
-              Fənlərə Qayıt
+              Qruplara Qayıt
             </Link>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-550 bg-slate-100 dark:bg-slate-850 px-3 py-1 rounded-full">
               Sınaq Bitib
             </span>
           </div>
@@ -422,10 +410,10 @@ export default function ApplicantExam() {
                 ABİTURİYENT İMTAHANI
               </span>
               <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                {subject.title}
+                {group.title}
               </h2>
               <p className="text-xs text-slate-400 dark:text-slate-550 mt-1">
-                {exampage.title} · {group.title}
+                {exampage.title}
               </p>
 
               <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-slate-100 dark:border-slate-900 py-6">
@@ -620,7 +608,7 @@ export default function ApplicantExam() {
               ABİTURİYENT İMTAHANI
             </span>
             <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-none">
-              {subject.title} · <span className="text-xs font-medium text-slate-400">{group.title}</span>
+              {group.title} · <span className="text-xs font-medium text-slate-400">{exampage.title}</span>
             </h1>
           </div>
 

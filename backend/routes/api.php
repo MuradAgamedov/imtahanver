@@ -24,6 +24,7 @@ Route::prefix('front')->group(function () {
     Route::get('applicant-exampages/{id}/groups', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'groups']);
     Route::get('applicant-exampages/{id}/groups/{groupId}/subjects', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'subjects']);
     Route::get('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'subjectQuestions']);
+    Route::get('applicant-exampages/{exampageId}/groups/{groupId}/questions', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'groupQuestions']);
 
 
     // Authenticated routes

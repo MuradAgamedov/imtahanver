@@ -92,7 +92,7 @@ export default function ApplicantExampageGroupsPage() {
             {groups.map((group) => (
               <Link
                 key={group.id}
-                to={`/applicant-exampages/${exampageId}/groups/${group.id}/subjects`}
+                to={`/exam/applicant/${exampageId}/${group.id}`}
                 className="group relative flex flex-col rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 shadow-sm hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300"
               >
                 <div className="flex items-center justify-between mb-4">
