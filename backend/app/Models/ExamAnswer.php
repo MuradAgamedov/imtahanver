@@ -13,6 +13,9 @@ class ExamAnswer extends Model
         'exam_session_id',
         'miq_question_id',
         'miq_question_option_id',
+        'applicant_question_id',
+        'applicant_question_option_id',
+        'written_answer',
         'is_correct',
         'points',
         'question_type_identify',
@@ -37,4 +40,15 @@ class ExamAnswer extends Model
     {
         return $this->belongsTo(MiqQuestionOption::class, 'miq_question_option_id');
     }
+
+    public function applicantQuestion()
+    {
+        return $this->belongsTo(ApplicantQuestion::class, 'applicant_question_id');
+    }
+
+    public function applicantOption()
+    {
+        return $this->belongsTo(ApplicantQuestionOption::class, 'applicant_question_option_id');
+    }
 }
+

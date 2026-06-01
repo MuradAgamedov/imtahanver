@@ -34,7 +34,7 @@ const EXAM_TYPES = [
   },
   {
     key: "abituryent",
-    href: null,
+    href: "/applicant-exampages",
     title: "Abituriyent İmtahanı",
     desc: "Ali məktəblərə qəbul üçün DİM standartlarına uyğun hazırlıq sınaqları.",
     icon: (
@@ -47,7 +47,8 @@ const EXAM_TYPES = [
     textColor: "text-emerald-600 dark:text-emerald-400",
     badge: "DİM",
     badgeBg: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
-    active: false,
+    active: true,
+
   },
   {
     key: "magistr",

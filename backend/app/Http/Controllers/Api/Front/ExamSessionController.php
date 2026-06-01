@@ -9,6 +9,11 @@ use App\Models\MiqExampage;
 use App\Models\MiqQuestion;
 use App\Models\MiqQuestionOption;
 use App\Models\MiqSubject;
+use App\Models\ApplicantExampage;
+use App\Models\ApplicantGroup;
+use App\Models\ApplicantSubject;
+use App\Models\ApplicantQuestion;
+use App\Models\ApplicantQuestionOption;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,7 +23,7 @@ class ExamSessionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $sessions = ExamSession::with(['exampage', 'subject'])
+        $sessions = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -32,19 +37,38 @@ class ExamSessionController extends Controller
     public function startOrResume(Request $request): JsonResponse
     {
         $request->validate([
-            'miq_exampage_id' => 'required|exists:miq_exampages,id',
-            'miq_subject_id' => 'required|exists:miq_subjects,id',
+            'miq_exampage_id' => 'required_without:applicant_exampage_id|exists:miq_exampages,id',
+            'miq_subject_id' => 'required_without:applicant_exampage_id|exists:miq_subjects,id',
+            'applicant_exampage_id' => 'required_without:miq_exampage_id|exists:applicant_exampages,id',
+            'applicant_group_id' => 'required_with:applicant_exampage_id|exists:applicant_groups,id',
+            'applicant_subject_id' => 'required_with:applicant_exampage_id|exists:applicant_subjects,id',
         ]);
 
         $user = $request->user();
-        $exampageId = $request->miq_exampage_id;
-        $subjectId = $request->miq_subject_id;
+        $isApplicant = $request->has('applicant_exampage_id');
 
-        // Check per exampage only (not per subject) — one attempt per vərəq regardless of subject
-        $completedSession = ExamSession::where('user_id', $user->id)
-            ->where('miq_exampage_id', $exampageId)
-            ->where('status', 'completed')
-            ->first();
+        if ($isApplicant) {
+            $exampageId = $request->applicant_exampage_id;
+            $groupId = $request->applicant_group_id;
+            $subjectId = $request->applicant_subject_id;
+
+            // One attempt per exampage + group + subject combo
+            $completedSession = ExamSession::where('user_id', $user->id)
+                ->where('applicant_exampage_id', $exampageId)
+                ->where('applicant_group_id', $groupId)
+                ->where('applicant_subject_id', $subjectId)
+                ->where('status', 'completed')
+                ->first();
+        } else {
+            $exampageId = $request->miq_exampage_id;
+            $subjectId = $request->miq_subject_id;
+
+            // Check per exampage only (not per subject) for MIQ
+            $completedSession = ExamSession::where('user_id', $user->id)
+                ->where('miq_exampage_id', $exampageId)
+                ->where('status', 'completed')
+                ->first();
+        }
 
         if ($completedSession) {
             return response()->json([
@@ -56,19 +80,25 @@ class ExamSessionController extends Controller
             ]);
         }
 
-        // Resume any active session for this exampage (regardless of subject)
-        $session = ExamSession::where('user_id', $user->id)
-            ->where('miq_exampage_id', $exampageId)
-            ->where('status', 'active')
-            ->first();
+        // Resume active session
+        if ($isApplicant) {
+            $session = ExamSession::where('user_id', $user->id)
+                ->where('applicant_exampage_id', $exampageId)
+                ->where('applicant_group_id', $groupId)
+                ->where('applicant_subject_id', $subjectId)
+                ->where('status', 'active')
+                ->first();
+        } else {
+            $session = ExamSession::where('user_id', $user->id)
+                ->where('miq_exampage_id', $exampageId)
+                ->where('status', 'active')
+                ->first();
+        }
 
         if ($session) {
             // Check if time is expired
             $startedAt = Carbon::parse($session->started_at);
             $durationSeconds = $session->duration_minutes * 60;
-            $elapsedSeconds = now()->diffInSeconds($startedAt, false); // negative means startedAt is in past, wait, diffInSeconds absolute by default
-            
-            // To get elapsed seconds correctly:
             $elapsedSeconds = now()->timestamp - $startedAt->timestamp;
 
             if ($elapsedSeconds >= $durationSeconds) {
@@ -92,19 +122,31 @@ class ExamSessionController extends Controller
             ]);
         }
 
-        // Retrieve exampage to get duration
-        $exampage = MiqExampage::find($exampageId);
-
         // Start new session
-        $session = ExamSession::create([
-            'user_id' => $user->id,
-            'miq_exampage_id' => $exampageId,
-            'miq_subject_id' => $subjectId,
-            'status' => 'active',
-            'started_at' => now(),
-            'duration_minutes' => $exampage->exam_duration ?? 90,
-            'score' => 0,
-        ]);
+        if ($isApplicant) {
+            $exampage = ApplicantExampage::find($exampageId);
+            $session = ExamSession::create([
+                'user_id' => $user->id,
+                'applicant_exampage_id' => $exampageId,
+                'applicant_group_id' => $groupId,
+                'applicant_subject_id' => $subjectId,
+                'status' => 'active',
+                'started_at' => now(),
+                'duration_minutes' => $exampage->exam_duration ?? 90,
+                'score' => 0,
+            ]);
+        } else {
+            $exampage = MiqExampage::find($exampageId);
+            $session = ExamSession::create([
+                'user_id' => $user->id,
+                'miq_exampage_id' => $exampageId,
+                'miq_subject_id' => $subjectId,
+                'status' => 'active',
+                'started_at' => now(),
+                'duration_minutes' => $exampage->exam_duration ?? 90,
+                'score' => 0,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -118,8 +160,11 @@ class ExamSessionController extends Controller
     public function saveAnswer(Request $request, int $sessionId): JsonResponse
     {
         $request->validate([
-            'miq_question_id' => 'required|exists:miq_questions,id',
+            'miq_question_id' => 'nullable|required_without:applicant_question_id|exists:miq_questions,id',
             'miq_question_option_id' => 'nullable|exists:miq_question_options,id',
+            'applicant_question_id' => 'nullable|required_without:miq_question_id|exists:applicant_questions,id',
+            'applicant_question_option_id' => 'nullable|exists:applicant_question_options,id',
+            'written_answer' => 'nullable|string',
         ]);
 
         $user = $request->user();
@@ -128,7 +173,7 @@ class ExamSessionController extends Controller
             ->first();
 
         if (!$session) {
-            return response()->json(['success' => false, 'message' => 'İsessiya tapılmadı.'], 404);
+            return response()->json(['success' => false, 'message' => 'Sessiya tapılmadı.'], 404);
         }
 
         if ($session->status !== 'active') {
@@ -149,63 +194,123 @@ class ExamSessionController extends Controller
             ], 400);
         }
 
-        $questionId = $request->miq_question_id;
-        $optionId = $request->miq_question_option_id;
+        $isApplicant = !is_null($session->applicant_exampage_id);
 
-        $question = MiqQuestion::with('questionType')->find($questionId);
-        $typeIdentify = $question->questionType->identify; // fenn-proqramlari or tedris-metodikasi-ve-telim-strategiyasi
+        if ($isApplicant) {
+            $questionId = $request->applicant_question_id;
+            $optionId = $request->applicant_question_option_id;
+            $writtenAnswer = $request->written_answer;
 
-        if (is_null($optionId)) {
-            // Delete answer if option is cleared (unanswered)
-            ExamAnswer::where('exam_session_id', $session->id)
-                ->where('miq_question_id', $questionId)
-                ->delete();
+            $question = ApplicantQuestion::findOrFail($questionId);
+
+            if (is_null($optionId) && is_null($writtenAnswer)) {
+                ExamAnswer::where('exam_session_id', $session->id)
+                    ->where('applicant_question_id', $questionId)
+                    ->delete();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cavab təmizləndi.',
+                ]);
+            }
+
+            $isCorrect = false;
+            $points = 0;
+
+            if ($question->question_type == 1) {
+                // Closed question
+                if ($optionId) {
+                    $option = ApplicantQuestionOption::where('id', $optionId)
+                        ->where('applicant_question_id', $questionId)
+                        ->first();
+                    if ($option) {
+                        $isCorrect = $option->is_true;
+                        $points = $isCorrect ? 4.0 : -1.0;
+                    }
+                }
+            } else {
+                // Codeable or written open question
+                $correctOption = ApplicantQuestionOption::where('applicant_question_id', $questionId)
+                    ->where('is_true', true)
+                    ->first();
+                if ($correctOption && !is_null($writtenAnswer)) {
+                    $userAns = trim(mb_strtolower($writtenAnswer));
+                    $correctAns = trim(mb_strtolower($correctOption->text));
+                    $isCorrect = ($userAns === $correctAns);
+                }
+                $points = $isCorrect ? 4.0 : 0.0;
+            }
+
+            ExamAnswer::updateOrCreate(
+                [
+                    'exam_session_id' => $session->id,
+                    'applicant_question_id' => $questionId,
+                ],
+                [
+                    'applicant_question_option_id' => $optionId,
+                    'written_answer' => $writtenAnswer,
+                    'is_correct' => $isCorrect,
+                    'points' => $points,
+                ]
+            );
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cavab təmizləndi.',
+                'message' => 'Cavab yadda saxlanıldı.',
+            ]);
+        } else {
+            // MIQ
+            $questionId = $request->miq_question_id;
+            $optionId = $request->miq_question_option_id;
+
+            $question = MiqQuestion::with('questionType')->find($questionId);
+            $typeIdentify = $question->questionType->identify;
+
+            if (is_null($optionId)) {
+                ExamAnswer::where('exam_session_id', $session->id)
+                    ->where('miq_question_id', $questionId)
+                    ->delete();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cavab təmizləndi.',
+                ]);
+            }
+
+            $option = MiqQuestionOption::where('id', $optionId)
+                ->where('miq_question_id', $questionId)
+                ->first();
+
+            if (!$option) {
+                return response()->json(['success' => false, 'message' => 'Sual üçün yanlış variant seçilib.'], 400);
+            }
+
+            $isCorrect = $option->is_true;
+            $points = 0;
+            if ($typeIdentify === 'fenn-proqramlari') {
+                $points = $isCorrect ? 2.0 : -0.5;
+            } else {
+                $points = $isCorrect ? 1.0 : -0.25;
+            }
+
+            ExamAnswer::updateOrCreate(
+                [
+                    'exam_session_id' => $session->id,
+                    'miq_question_id' => $questionId,
+                ],
+                [
+                    'miq_question_option_id' => $optionId,
+                    'is_correct' => $isCorrect,
+                    'points' => $points,
+                    'question_type_identify' => $typeIdentify,
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cavab yadda saxlanıldı.',
             ]);
         }
-
-        // Find the selected option and check if it's correct
-        $option = MiqQuestionOption::where('id', $optionId)
-            ->where('miq_question_id', $questionId)
-            ->first();
-
-        if (!$option) {
-            return response()->json(['success' => false, 'message' => 'Sual üçün yanlış variant seçilib.'], 400);
-        }
-
-        $isCorrect = $option->is_true;
-
-        // Calculate points based on question type and correctness
-        // Specialty: Correct = +2, Incorrect = -0.5
-        // Pedagogy: Correct = +1, Incorrect = -0.25
-        $points = 0;
-        if ($typeIdentify === 'fenn-proqramlari') {
-            $points = $isCorrect ? 2.0 : -0.5;
-        } else {
-            // Pedagogy
-            $points = $isCorrect ? 1.0 : -0.25;
-        }
-
-        ExamAnswer::updateOrCreate(
-            [
-                'exam_session_id' => $session->id,
-                'miq_question_id' => $questionId,
-            ],
-            [
-                'miq_question_option_id' => $optionId,
-                'is_correct' => $isCorrect,
-                'points' => $points,
-                'question_type_identify' => $typeIdentify,
-            ]
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cavab yadda saxlanıldı.',
-        ]);
     }
 
     public function submit(Request $request, int $sessionId): JsonResponse
@@ -241,7 +346,7 @@ class ExamSessionController extends Controller
     public function getResults(Request $request, int $sessionId): JsonResponse
     {
         $user = $request->user();
-        $session = ExamSession::with(['exampage', 'subject'])
+        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
             ->where('id', $sessionId)
             ->where('user_id', $user->id)
             ->first();
@@ -259,67 +364,104 @@ class ExamSessionController extends Controller
 
     private function calculateAndSubmit(ExamSession $session): ExamSession
     {
-        // Get all answers for this session where user selected an option
-        $answers = ExamAnswer::where('exam_session_id', $session->id)
-            ->whereNotNull('miq_question_option_id')
-            ->get();
+        $isApplicant = !is_null($session->applicant_exampage_id);
 
-        $correctSpecialty = 0;
-        $incorrectSpecialty = 0;
-        $correctPedagogy = 0;
-        $incorrectPedagogy = 0;
+        if ($isApplicant) {
+            $answers = ExamAnswer::where('exam_session_id', $session->id)->get();
 
-        $rawScore = 0;
+            $totalScore = 0;
+            foreach ($answers as $ans) {
+                $totalScore += (float) $ans->points;
+            }
 
-        foreach ($answers as $ans) {
-            if ($ans->question_type_identify === 'fenn-proqramlari') {
-                if ($ans->is_correct) {
-                    $correctSpecialty++;
-                    $rawScore += 2.0;
+            $finalScore = max(0.0, min(120.0, $totalScore));
+
+            $session->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'score' => $finalScore,
+            ]);
+
+            return $session;
+        } else {
+            // MIQ
+            $answers = ExamAnswer::where('exam_session_id', $session->id)
+                ->whereNotNull('miq_question_option_id')
+                ->get();
+
+            $correctSpecialty = 0;
+            $incorrectSpecialty = 0;
+            $correctPedagogy = 0;
+            $incorrectPedagogy = 0;
+            $rawScore = 0;
+
+            foreach ($answers as $ans) {
+                if ($ans->question_type_identify === 'fenn-proqramlari') {
+                    if ($ans->is_correct) {
+                        $correctSpecialty++;
+                        $rawScore += 2.0;
+                    } else {
+                        $incorrectSpecialty++;
+                        $rawScore -= 0.5;
+                    }
                 } else {
-                    $incorrectSpecialty++;
-                    $rawScore -= 0.5;
-                }
-            } else {
-                // Pedagogy
-                if ($ans->is_correct) {
-                    $correctPedagogy++;
-                    $rawScore += 1.0;
-                } else {
-                    $incorrectPedagogy++;
-                    $rawScore -= 0.25;
+                    if ($ans->is_correct) {
+                        $correctPedagogy++;
+                        $rawScore += 1.0;
+                    } else {
+                        $incorrectPedagogy++;
+                        $rawScore -= 0.25;
+                    }
                 }
             }
+
+            $finalScore = max(0.0, min(100.0, $rawScore));
+
+            $session->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'score' => $finalScore,
+                'correct_specialty_count' => $correctSpecialty,
+                'incorrect_specialty_count' => $incorrectSpecialty,
+                'correct_pedagogy_count' => $correctPedagogy,
+                'incorrect_pedagogy_count' => $incorrectPedagogy,
+            ]);
+
+            return $session;
         }
-
-        // Clamp score between 0 and 100
-        $finalScore = max(0.0, min(100.0, $rawScore));
-
-        $session->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-            'score' => $finalScore,
-            'correct_specialty_count' => $correctSpecialty,
-            'incorrect_specialty_count' => $incorrectSpecialty,
-            'correct_pedagogy_count' => $correctPedagogy,
-            'incorrect_pedagogy_count' => $incorrectPedagogy,
-        ]);
-
-        return $session;
     }
 
     private function getFormattedAnswers(int $sessionId): array
     {
-        $answers = ExamAnswer::where('exam_session_id', $sessionId)
-            ->whereNotNull('miq_question_option_id')
-            ->get();
+        $session = ExamSession::find($sessionId);
+        if (!$session) return [];
 
-        $formatted = [];
-        foreach ($answers as $ans) {
-            $prefix = ($ans->question_type_identify === 'fenn-proqramlari') ? 'fenn' : 'tedris';
-            $formatted["{$prefix}_{$ans->miq_question_id}"] = (int) $ans->miq_question_option_id;
+        $isApplicant = !is_null($session->applicant_exampage_id);
+
+        if ($isApplicant) {
+            $answers = ExamAnswer::where('exam_session_id', $sessionId)->get();
+            $formatted = [];
+            foreach ($answers as $ans) {
+                if (!is_null($ans->applicant_question_option_id)) {
+                    $formatted["option_{$ans->applicant_question_id}"] = (int) $ans->applicant_question_option_id;
+                }
+                if (!is_null($ans->written_answer)) {
+                    $formatted["text_{$ans->applicant_question_id}"] = $ans->written_answer;
+                }
+            }
+            return $formatted;
+        } else {
+            $answers = ExamAnswer::where('exam_session_id', $sessionId)
+                ->whereNotNull('miq_question_option_id')
+                ->get();
+
+            $formatted = [];
+            foreach ($answers as $ans) {
+                $prefix = ($ans->question_type_identify === 'fenn-proqramlari') ? 'fenn' : 'tedris';
+                $formatted["{$prefix}_{$ans->miq_question_id}"] = (int) $ans->miq_question_option_id;
+            }
+
+            return $formatted;
         }
-
-        return $formatted;
     }
 }

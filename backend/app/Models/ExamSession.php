@@ -13,6 +13,9 @@ class ExamSession extends Model
         'user_id',
         'miq_exampage_id',
         'miq_subject_id',
+        'applicant_exampage_id',
+        'applicant_group_id',
+        'applicant_subject_id',
         'status',
         'started_at',
         'completed_at',
@@ -56,6 +59,10 @@ class ExamSession extends Model
         if ($this->status !== 'completed') {
             return false;
         }
+        if (!is_null($this->applicant_exampage_id)) {
+            // For applicant/abituriyent, there is no pass limit specified in core, let's return true on completion
+            return true;
+        }
         return $this->specialty_score >= 34.0 && $this->pedagogy_score >= 6.0 && $this->score >= 40.0;
     }
 
@@ -74,8 +81,24 @@ class ExamSession extends Model
         return $this->belongsTo(MiqSubject::class, 'miq_subject_id');
     }
 
+    public function applicantExampage()
+    {
+        return $this->belongsTo(ApplicantExampage::class, 'applicant_exampage_id');
+    }
+
+    public function applicantGroup()
+    {
+        return $this->belongsTo(ApplicantGroup::class, 'applicant_group_id');
+    }
+
+    public function applicantSubject()
+    {
+        return $this->belongsTo(ApplicantSubject::class, 'applicant_subject_id');
+    }
+
     public function answers()
     {
         return $this->hasMany(ExamAnswer::class, 'exam_session_id');
     }
 }
+

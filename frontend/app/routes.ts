@@ -10,5 +10,10 @@ export default [
   route("miq-exampages", "routes/miq-exampages.tsx"),
   route("miq-exampages/:exampageId/subjects", "routes/exam-subjects.tsx"),
   route("exam/:exampageId/:subjectId", "routes/exam.tsx"),
+  route("applicant-exampages", "routes/applicant-exampages.tsx"),
+  route("applicant-exampages/:exampageId/groups", "routes/applicant-exampage-groups.tsx"),
+  route("applicant-exampages/:exampageId/groups/:groupId/subjects", "routes/applicant-group-subjects.tsx"),
+  route("exam/applicant/:exampageId/:groupId/:subjectId", "routes/applicant-exam.tsx"),
   route("api/exam-questions", "routes/api.exam-questions.ts"),
+
 ] satisfies RouteConfig;

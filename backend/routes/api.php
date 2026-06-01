@@ -20,6 +20,11 @@ Route::prefix('front')->group(function () {
     Route::get('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'index']);
     Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\MiqFrontQuestionsController::class, 'subjectQuestions']);
     Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/direct-questions', [\App\Http\Controllers\Api\Front\MiqFrontQuestionsController::class, 'directQuestions']);
+    Route::get('applicant-exampages', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'exampages']);
+    Route::get('applicant-exampages/{id}/groups', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'groups']);
+    Route::get('applicant-exampages/{id}/groups/{groupId}/subjects', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'subjects']);
+    Route::get('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\ApplicantFrontQuestionsController::class, 'subjectQuestions']);
+
 
     // Authenticated routes
     Route::middleware(JwtAuthMiddleware::class)->group(function () {
