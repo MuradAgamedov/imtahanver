@@ -14,6 +14,7 @@ use App\Models\ApplicantGroup;
 use App\Models\ApplicantSubject;
 use App\Models\ApplicantQuestion;
 use App\Models\ApplicantQuestionOption;
+use App\Models\ApplicantWrittenAnswer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -203,56 +204,53 @@ class ExamSessionController extends Controller
 
             $question = ApplicantQuestion::findOrFail($questionId);
 
-            if (is_null($optionId) && is_null($writtenAnswer)) {
-                ExamAnswer::where('exam_session_id', $session->id)
-                    ->where('applicant_question_id', $questionId)
-                    ->delete();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Cavab təmizləndi.',
-                ]);
-            }
-
-            $isCorrect = false;
-            $points = 0;
-
             if ($question->question_type == 1) {
-                // Closed question
-                if ($optionId) {
-                    $option = ApplicantQuestionOption::where('id', $optionId)
+                // Closed question (type 1)
+                if (is_null($optionId)) {
+                    ExamAnswer::where('exam_session_id', $session->id)
                         ->where('applicant_question_id', $questionId)
-                        ->first();
-                    if ($option) {
-                        $isCorrect = $option->is_true;
-                        $points = $isCorrect ? 4.0 : -1.0;
-                    }
-                }
-            } else {
-                // Codeable or written open question
-                $correctOption = ApplicantQuestionOption::where('applicant_question_id', $questionId)
-                    ->where('is_true', true)
-                    ->first();
-                if ($correctOption && !is_null($writtenAnswer)) {
-                    $userAns = trim(mb_strtolower($writtenAnswer));
-                    $correctAns = trim(mb_strtolower($correctOption->text));
-                    $isCorrect = ($userAns === $correctAns);
-                }
-                $points = $isCorrect ? 4.0 : 0.0;
-            }
+                        ->delete();
 
-            ExamAnswer::updateOrCreate(
-                [
-                    'exam_session_id' => $session->id,
-                    'applicant_question_id' => $questionId,
-                ],
-                [
-                    'applicant_question_option_id' => $optionId,
-                    'written_answer' => $writtenAnswer,
-                    'is_correct' => $isCorrect,
-                    'points' => $points,
-                ]
-            );
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Cavab təmizləndi.',
+                    ]);
+                }
+
+                ExamAnswer::updateOrCreate(
+                    [
+                        'exam_session_id' => $session->id,
+                        'applicant_question_id' => $questionId,
+                    ],
+                    [
+                        'applicant_question_option_id' => $optionId,
+                        'is_correct' => null,
+                        'points' => 0.0,
+                    ]
+                );
+            } else {
+                // Open / Codeable / Written question (type 2 & 3)
+                if (is_null($writtenAnswer) || $writtenAnswer === '') {
+                    ApplicantWrittenAnswer::where('exam_session_id', $session->id)
+                        ->where('applicant_question_id', $questionId)
+                        ->delete();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Cavab təmizləndi.',
+                    ]);
+                }
+
+                ApplicantWrittenAnswer::updateOrCreate(
+                    [
+                        'exam_session_id' => $session->id,
+                        'applicant_question_id' => $questionId,
+                    ],
+                    [
+                        'written_answer' => $writtenAnswer,
+                    ]
+                );
+            }
 
             return response()->json([
                 'success' => true,
@@ -367,19 +365,10 @@ class ExamSessionController extends Controller
         $isApplicant = !is_null($session->applicant_exampage_id);
 
         if ($isApplicant) {
-            $answers = ExamAnswer::where('exam_session_id', $session->id)->get();
-
-            $totalScore = 0;
-            foreach ($answers as $ans) {
-                $totalScore += (float) $ans->points;
-            }
-
-            $finalScore = max(0.0, min(120.0, $totalScore));
-
             $session->update([
                 'status' => 'completed',
                 'completed_at' => now(),
-                'score' => $finalScore,
+                'score' => 0.0,
             ]);
 
             return $session;
@@ -439,15 +428,17 @@ class ExamSessionController extends Controller
         $isApplicant = !is_null($session->applicant_exampage_id);
 
         if ($isApplicant) {
-            $answers = ExamAnswer::where('exam_session_id', $sessionId)->get();
+            $closedAnswers = ExamAnswer::where('exam_session_id', $sessionId)
+                ->whereNotNull('applicant_question_option_id')
+                ->get();
+            $openAnswers = ApplicantWrittenAnswer::where('exam_session_id', $sessionId)->get();
+
             $formatted = [];
-            foreach ($answers as $ans) {
-                if (!is_null($ans->applicant_question_option_id)) {
-                    $formatted["option_{$ans->applicant_question_id}"] = (int) $ans->applicant_question_option_id;
-                }
-                if (!is_null($ans->written_answer)) {
-                    $formatted["text_{$ans->applicant_question_id}"] = $ans->written_answer;
-                }
+            foreach ($closedAnswers as $ans) {
+                $formatted["option_{$ans->applicant_question_id}"] = (int) $ans->applicant_question_option_id;
+            }
+            foreach ($openAnswers as $ans) {
+                $formatted["text_{$ans->applicant_question_id}"] = $ans->written_answer;
             }
             return $formatted;
         } else {

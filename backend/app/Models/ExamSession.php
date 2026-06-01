@@ -100,5 +100,10 @@ class ExamSession extends Model
     {
         return $this->hasMany(ExamAnswer::class, 'exam_session_id');
     }
+
+    public function applicantWrittenAnswers()
+    {
+        return $this->hasMany(ApplicantWrittenAnswer::class, 'exam_session_id');
+    }
 }
 

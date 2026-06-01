@@ -384,7 +384,6 @@ export default function ApplicantExam() {
 
   // ─── RENDER RESULTS PAGE ────────────────────────────────────────────────────
   if (completedSession) {
-    const totalScore = completedSession.score || 0;
     const answeredCount = questions.filter((q) => {
       if (q.question_type === 1) {
         return !!selectedAnswers[`option_${q.id}`];
@@ -420,46 +419,33 @@ export default function ApplicantExam() {
 
             <div className="text-center relative z-10">
               <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-3">
-                ABİTURİYENT SINAQ NƏTİCƏSİ
+                ABİTURİYENT İMTAHANI
               </span>
               <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
                 {subject.title}
               </h2>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              <p className="text-xs text-slate-400 dark:text-slate-550 mt-1">
                 {exampage.title} · {group.title}
               </p>
 
-              <div className="mt-8 flex justify-center">
-                <div className="relative flex items-center justify-center h-44 w-44 rounded-full border-4 border-emerald-50 dark:border-emerald-950/50 bg-gradient-to-tr from-emerald-50/10 to-teal-50/10 shadow-inner">
-                  <div className="text-center">
-                    <span className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                      {totalScore}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block mt-0.5">
-                      120 Bal Şkalasından
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-slate-100 dark:border-slate-900 py-6">
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block">Sual sayı</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-550 block">Sual sayı</span>
                   <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{questions.length}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block">Cavablandırılan</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-550 block">Cavablandırılan</span>
                   <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{answeredCount}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block">Boş buraxılan</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-550 block">Boş buraxılan</span>
                   <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{unansweredCount}</span>
                 </div>
               </div>
 
               <div className="mt-12 text-left">
                 <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
-                  Sualların Təhlili
+                  Suallara verilmiş cavablar
                 </h4>
 
                 <div className="space-y-6">
@@ -467,40 +453,16 @@ export default function ApplicantExam() {
                     const isClosed = q.question_type === 1;
                     const userSelectedOptionId = selectedAnswers[`option_${q.id}`];
                     const userTextAns = selectedAnswers[`text_${q.id}`];
-                    
-                    const correctOption = q.options.find((o: any) => o.is_true);
-                    
                     const isAnswered = isClosed ? !!userSelectedOptionId : !!userTextAns;
-                    
-                    let isUserCorrect = false;
-                    if (isClosed) {
-                      isUserCorrect = isAnswered && userSelectedOptionId === correctOption?.id;
-                    } else {
-                      if (correctOption && userTextAns) {
-                        isUserCorrect = userTextAns.trim().toLowerCase() === correctOption.text.trim().toLowerCase();
-                      }
-                    }
 
                     return (
                       <div
                         key={q.id}
-                        className={`rounded-2xl border bg-white dark:bg-slate-950 p-6 shadow-sm ${
-                          !isAnswered
-                            ? "border-slate-100 dark:border-slate-800"
-                            : isUserCorrect
-                            ? "border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/5"
-                            : "border-red-100 dark:border-red-900/40 bg-red-50/5"
-                        }`}
+                        className="rounded-2xl border bg-white dark:bg-slate-950 p-6 shadow-sm border-slate-100 dark:border-slate-800"
                       >
                         <div className="flex items-start justify-between gap-4 mb-4">
                           <div className="flex gap-3">
-                            <span className={`flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
-                              !isAnswered
-                                ? "bg-slate-100 dark:bg-slate-900 text-slate-650"
-                                : isUserCorrect
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950"
-                                : "bg-red-100 text-red-700 dark:bg-red-955"
-                            }`}>
+                            <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-650">
                               {idx + 1}
                             </span>
                             <div
@@ -510,13 +472,9 @@ export default function ApplicantExam() {
                           </div>
 
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            !isAnswered
-                              ? "bg-slate-100 text-slate-500"
-                              : isUserCorrect
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950"
-                              : "bg-red-100 text-red-800 dark:bg-red-955"
+                            isAnswered ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40" : "bg-slate-100 text-slate-500"
                           }`}>
-                            {!isAnswered ? "Boş" : isUserCorrect ? "Doğru" : "Yanlış"}
+                            {isAnswered ? "Cavablandırılıb" : "Boş"}
                           </span>
                         </div>
 
@@ -530,19 +488,14 @@ export default function ApplicantExam() {
                           <div className="space-y-2">
                             {q.options.map((opt: any, oIdx: number) => {
                               const isSelected = userSelectedOptionId === opt.id;
-                              const isTrue = !!opt.is_true;
-
-                              let styles = "border-slate-100 dark:border-slate-800 bg-slate-50/20";
-                              if (isTrue) {
-                                styles = "border-emerald-500 bg-emerald-50/40 text-emerald-900 dark:text-emerald-300 font-semibold";
-                              } else if (isSelected) {
-                                styles = "border-red-500 bg-red-50/40 text-red-900 dark:text-red-300 font-semibold";
-                              }
+                              let styles = isSelected
+                                ? "border-emerald-500 bg-emerald-50/20 text-emerald-800 dark:text-emerald-300 font-semibold"
+                                : "border-slate-100 dark:border-slate-800 bg-slate-50/10";
 
                               return (
                                 <div key={opt.id} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-xs ${styles}`}>
                                   <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
-                                    isTrue ? "bg-emerald-500 text-white border-emerald-500" : isSelected ? "bg-red-500 text-white border-red-500" : "border-slate-300"
+                                    isSelected ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-300 text-slate-500"
                                   }`}>
                                     {OPTION_LABELS[oIdx] ?? oIdx + 1}
                                   </span>
@@ -555,13 +508,9 @@ export default function ApplicantExam() {
                           <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl space-y-2 text-xs">
                             <p>
                               <span className="text-slate-400 block mb-0.5">Sizin cavabınız:</span>
-                              <strong className={isUserCorrect ? "text-emerald-600 text-sm font-bold" : "text-red-500 text-sm font-bold"}>
+                              <strong className={isAnswered ? "text-emerald-600 text-sm font-bold" : "text-slate-500 text-sm font-semibold"}>
                                 {userTextAns || "—"}
                               </strong>
-                            </p>
-                            <p>
-                              <span className="text-slate-400 block mb-0.5">Düzgün cavab:</span>
-                              <strong className="text-emerald-650 text-sm font-bold">{correctOption?.text ?? "—"}</strong>
                             </p>
                           </div>
                         )}
