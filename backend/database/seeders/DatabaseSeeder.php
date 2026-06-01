@@ -65,10 +65,11 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 5. Seed actual Tarix Questions
+        // 5. Seed actual Tarix Questions and Applicant Demo Questions
         $this->call([
             MiqTarixQuestionsSeeder::class,
-            AdminSeeder::class
+            AdminSeeder::class,
+            ApplicantDemoSeeder::class,
         ]);
     }
 }
