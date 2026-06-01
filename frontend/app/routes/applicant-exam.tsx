@@ -180,7 +180,6 @@ export default function ApplicantExam() {
   );
 
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
-  const [writtenInput, setWrittenInput] = useState("");
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -207,16 +206,6 @@ export default function ApplicantExam() {
       handleTimeExpired();
     }
   );
-
-  const activeQuestion = questions[activeQuestionIndex];
-
-  // Keep writtenInput synced with active question state
-  useEffect(() => {
-    if (activeQuestion) {
-      const savedText = selectedAnswers[`text_${activeQuestion.id}`] || "";
-      setWrittenInput(savedText);
-    }
-  }, [activeQuestionIndex, activeQuestion]);
 
   const handleSelectClosed = async (questionId: number, optionId: number) => {
     if (completedSession) return;
@@ -296,8 +285,6 @@ export default function ApplicantExam() {
       delete copy[`text_${questionId}`];
       return copy;
     });
-
-    if (type !== 1) setWrittenInput("");
 
     try {
       const res = await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/answer`, {
@@ -661,7 +648,13 @@ export default function ApplicantExam() {
                 return (
                   <button
                     key={q.id}
-                    onClick={() => setActiveQuestionIndex(idx)}
+                    onClick={() => {
+                      setActiveQuestionIndex(idx);
+                      const el = document.getElementById(`question-card-${q.id}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }
+                    }}
                     className={`flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-bold transition-all cursor-pointer ${styles}`}
                   >
                     {idx + 1}
@@ -672,7 +665,7 @@ export default function ApplicantExam() {
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-900 text-[10px] space-y-2 text-slate-400">
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 block"></span>
-                <span>Cari sual</span>
+                <span>Seçilmiş sual</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 block"></span>
@@ -686,123 +679,125 @@ export default function ApplicantExam() {
           </div>
         </div>
 
-        {/* Center: Question detail */}
-        <div className="flex-1 space-y-6">
-          {activeQuestion && (
-            <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-sm font-bold">
-                  {activeQuestionIndex + 1}
-                </span>
-                <span className="text-xs font-semibold text-slate-400">
-                  {activeQuestion.question_type === 1 ? "Qapalı sual" : activeQuestion.question_type === 2 ? "Kodlaşdırıla bilən açıq sual" : "Yazılı açıq sual"}
-                </span>
-              </div>
-
-              {/* Title / Question text */}
+        {/* Center: Scrollable questions list */}
+        <div className="flex-1 space-y-8">
+          {questions.map((q: any, idx: number) => {
+            const userTextAns = selectedAnswers[`text_${q.id}`] || "";
+            return (
               <div
-                className="text-base font-medium text-slate-900 dark:text-white leading-relaxed mb-6 whitespace-pre-line"
-                dangerouslySetInnerHTML={{ __html: activeQuestion.title ?? "" }}
-              />
-
-              {/* Question Image if exists */}
-              {activeQuestion.image_url && (
-                <div className="mb-6 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-850">
-                  <img src={activeQuestion.image_url} alt="" className="w-full max-h-80 object-contain bg-slate-50 dark:bg-slate-900" />
+                key={q.id}
+                id={`question-card-${q.id}`}
+                className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-sm font-bold">
+                    {idx + 1}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {q.question_type === 1 ? "Qapalı sual" : q.question_type === 2 ? "Kodlaşdırıla bilən açıq sual" : "Yazılı açıq sual"}
+                  </span>
                 </div>
-              )}
 
-              {/* Answers Input Area */}
-              <div className="border-t border-slate-100 dark:border-slate-850 pt-6">
-                {activeQuestion.question_type === 1 ? (
-                  // Closed Options (A, B, C, D, E)
-                  <div className="space-y-3">
-                    {activeQuestion.options.map((opt: any, oIdx: number) => {
-                      const isSelected = selectedAnswers[`option_${activeQuestion.id}`] === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          onClick={() => handleSelectClosed(activeQuestion.id, opt.id)}
-                          className={`w-full flex items-start gap-3 px-5 py-4 rounded-2xl border text-left text-sm transition-all cursor-pointer ${
-                            isSelected
-                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-200 font-semibold"
-                              : "border-slate-100 dark:border-slate-850 hover:bg-slate-50/50 text-slate-700 dark:text-slate-300"
-                          }`}
-                        >
-                          <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${
-                            isSelected ? "bg-emerald-550 border-emerald-550 text-white" : "border-slate-300 text-slate-500"
-                          }`}>
-                            {OPTION_LABELS[oIdx] ?? oIdx + 1}
-                          </span>
-                          <div dangerouslySetInnerHTML={{ __html: opt.text }} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : activeQuestion.question_type === 2 ? (
-                  // Codeable open question (text input)
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 block mb-2">
-                      Riyazi/Hərfi cavabı daxil edin:
-                    </label>
-                    <input
-                      type="text"
-                      value={writtenInput}
-                      onChange={(e) => setWrittenInput(e.target.value)}
-                      onBlur={() => handleSaveOpen(activeQuestion.id, writtenInput)}
-                      placeholder="Məs. 12,5"
-                      className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold"
-                    />
-                  </div>
-                ) : (
-                  // Written open question (textarea)
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 block mb-2">
-                      Açıq yazılı cavabınızı daxil edin:
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={writtenInput}
-                      onChange={(e) => setWrittenInput(e.target.value)}
-                      onBlur={() => handleSaveOpen(activeQuestion.id, writtenInput)}
-                      placeholder="Buraya qeyd edin..."
-                      className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm"
-                    />
+                {/* Title / Question text */}
+                <div
+                  className="text-base font-medium text-slate-900 dark:text-white leading-relaxed mb-6 whitespace-pre-line"
+                  dangerouslySetInnerHTML={{ __html: q.title ?? "" }}
+                />
+
+                {/* Question Image if exists */}
+                {q.image_url && (
+                  <div className="mb-6 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-850">
+                    <img src={q.image_url} alt="" className="w-full max-h-80 object-contain bg-slate-50 dark:bg-slate-900" />
                   </div>
                 )}
-              </div>
 
-              {/* Bottom Card Navigation */}
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-850 flex justify-between items-center">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleClearAnswer(activeQuestion.id, activeQuestion.question_type)}
-                    className="py-2.5 px-4 text-xs font-bold text-slate-500 hover:text-red-500 transition-colors cursor-pointer border border-transparent hover:border-red-250 rounded-xl"
-                  >
-                    Cavabı Sil
-                  </button>
+                {/* Answers Input Area */}
+                <div className="border-t border-slate-100 dark:border-slate-850 pt-6">
+                  {q.question_type === 1 ? (
+                    // Closed Options (A, B, C, D, E)
+                    <div className="space-y-3">
+                      {q.options.map((opt: any, oIdx: number) => {
+                        const isSelected = selectedAnswers[`option_${q.id}`] === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => handleSelectClosed(q.id, opt.id)}
+                            className={`w-full flex items-start gap-3 px-5 py-4 rounded-2xl border text-left text-sm transition-all cursor-pointer ${
+                              isSelected
+                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-200 font-semibold"
+                                : "border-slate-100 dark:border-slate-850 hover:bg-slate-50/50 text-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${
+                              isSelected ? "bg-emerald-550 border-emerald-550 text-white" : "border-slate-300 text-slate-500"
+                            }`}>
+                              {OPTION_LABELS[oIdx] ?? oIdx + 1}
+                            </span>
+                            <div dangerouslySetInnerHTML={{ __html: opt.text }} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : q.question_type === 2 ? (
+                    // Codeable open question (textarea instead of input text)
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 block mb-2">
+                        Riyazi/Hərfi cavabı daxil edin:
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={userTextAns}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          setSelectedAnswers((prev) => ({
+                            ...prev,
+                            [`text_${q.id}`]: newVal,
+                          }));
+                        }}
+                        onBlur={(e) => handleSaveOpen(q.id, e.target.value)}
+                        placeholder="Məs. 12,5"
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold"
+                      />
+                    </div>
+                  ) : (
+                    // Written open question (textarea)
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 block mb-2">
+                        Açıq yazılı cavabınızı daxil edin:
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={userTextAns}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          setSelectedAnswers((prev) => ({
+                            ...prev,
+                            [`text_${q.id}`]: newVal,
+                          }));
+                        }}
+                        onBlur={(e) => handleSaveOpen(q.id, e.target.value)}
+                        placeholder="Buraya qeyd edin..."
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    disabled={activeQuestionIndex === 0}
-                    onClick={() => setActiveQuestionIndex((prev) => prev - 1)}
-                    className="py-2.5 px-4 border border-slate-100 dark:border-slate-850 hover:bg-slate-50 disabled:opacity-40 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
-                  >
-                    ← Geri
-                  </button>
-                  <button
-                    disabled={activeQuestionIndex === questions.length - 1}
-                    onClick={() => setActiveQuestionIndex((prev) => prev + 1)}
-                    className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer"
-                  >
-                    Növbəti →
-                  </button>
+                {/* Bottom Card Navigation */}
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-850 flex justify-between items-center">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleClearAnswer(q.id, q.question_type)}
+                      className="py-2.5 px-4 text-xs font-bold text-slate-500 hover:text-red-500 transition-colors cursor-pointer border border-transparent hover:border-red-250 rounded-xl"
+                    >
+                      Cavabı Sil
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-            </div>
-          )}
+              </div>
+            );
+          })}
         </div>
 
       </main>
