@@ -179,7 +179,6 @@ export default function ApplicantExam() {
     examSession?.status === "completed" ? examSession : null
   );
 
-  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -621,66 +620,7 @@ export default function ApplicantExam() {
       </header>
 
       {/* Main content grid */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 mt-6 flex flex-col md:flex-row gap-6">
-        
-        {/* Left: Questions Navigator list */}
-        <div className="w-full md:w-64 flex-shrink-0">
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 sticky top-24">
-            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider mb-3">
-              Suallar xəritəsi
-            </h4>
-            <div className="grid grid-cols-5 gap-2 max-h-[350px] overflow-y-auto pr-1">
-              {questions.map((q: any, idx: number) => {
-                const isSaved = q.question_type === 1 
-                  ? !!selectedAnswers[`option_${q.id}`]
-                  : !!selectedAnswers[`text_${q.id}`];
-                const isActive = idx === activeQuestionIndex;
-
-                let styles = "";
-                if (isActive) {
-                  styles = "bg-emerald-600 text-white ring-2 ring-emerald-500/30";
-                } else if (isSaved) {
-                  styles = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-semibold";
-                } else {
-                  styles = "border-slate-150 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-650";
-                }
-
-                return (
-                  <button
-                    key={q.id}
-                    onClick={() => {
-                      setActiveQuestionIndex(idx);
-                      const el = document.getElementById(`question-card-${q.id}`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }
-                    }}
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-bold transition-all cursor-pointer ${styles}`}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-900 text-[10px] space-y-2 text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 block"></span>
-                <span>Seçilmiş sual</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 block"></span>
-                <span>Cavablandırılıb</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full border border-slate-300 block"></span>
-                <span>Boş buraxılıb</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Center: Scrollable questions list */}
-        <div className="flex-1 space-y-8">
+      <main className="mx-auto max-w-4xl px-4 sm:px-6 mt-8 space-y-10">
           {questions.map((q: any, idx: number) => {
             const userTextAns = selectedAnswers[`text_${q.id}`] || "";
             return (
@@ -798,8 +738,6 @@ export default function ApplicantExam() {
               </div>
             );
           })}
-        </div>
-
       </main>
     </div>
   );
