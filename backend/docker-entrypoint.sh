@@ -28,7 +28,8 @@ if (file_exists('.env')) {
         \$line = trim(\$line);
         if (\$line && strpos(\$line, '=') !== false && strpos(\$line, '#') !== 0) {
             list(\$key, \$value) = explode('=', \$line, 2);
-            \$value = trim(\$value, '\"'\'' ');
+            \$value = trim(trim(\$value), '\"');
+            \$value = trim(\$value, \"'\");
             \$env[trim(\$key)] = \$value;
         }
     }
