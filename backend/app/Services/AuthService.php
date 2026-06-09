@@ -155,12 +155,19 @@ class AuthService implements AuthServiceInterface
     {
         $user = $this->userRepository->findByEmail($email);
 
-        if (!$user || !$user->email_verified_at) {
-            // Return success even if user not found to prevent email enumeration
+        if (!$user) {
             return [
-                'success' => true,
-                'message' => 'Əgər bu email mövcuddursa, şifrə sıfırlama kodu göndərildi.',
-                'status_code' => 200
+                'success' => false,
+                'message' => 'Bu email ünvanı ilə istifadəçi tapılmadı.',
+                'status_code' => 404
+            ];
+        }
+
+        if (!$user->email_verified_at) {
+            return [
+                'success' => false,
+                'message' => 'Bu email ünvanı hələ təsdiqlənməyib.',
+                'status_code' => 400
             ];
         }
 
@@ -173,7 +180,7 @@ class AuthService implements AuthServiceInterface
 
         return [
             'success' => true,
-            'message' => 'Əgər bu email mövcuddursa, şifrə sıfırlama kodu göndərildi.',
+            'message' => 'Şifrə sıfırlama kodu emailinizə göndərildi.',
             'status_code' => 200
         ];
     }
