@@ -98,16 +98,6 @@ services:
       QUEUE_CONNECTION: redis
 
       ELASTICSEARCH_HOST: http://elasticsearch:9200
-
-      MAIL_MAILER: smtp
-      MAIL_HOST: ${MAIL_HOST}
-      MAIL_PORT: ${MAIL_PORT}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
-      MAIL_TO_ADDRESS: ${MAIL_TO_ADDRESS}
     ports:
       - "8000:80"
     volumes:
@@ -147,16 +137,6 @@ services:
       QUEUE_CONNECTION: redis
 
       ELASTICSEARCH_HOST: http://elasticsearch:9200
-
-      MAIL_MAILER: smtp
-      MAIL_HOST: ${MAIL_HOST}
-      MAIL_PORT: ${MAIL_PORT}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
-      MAIL_TO_ADDRESS: ${MAIL_TO_ADDRESS}
     volumes:
       - ./backend:/app
       - /app/vendor
