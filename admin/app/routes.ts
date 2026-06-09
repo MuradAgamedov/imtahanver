@@ -25,6 +25,7 @@ export default [
     route("applicant-exampages/:id/groups/:groupId/subjects/:subjectId/questions", "routes/applicant-questions.tsx"),
   route("api/upload-applicant-image", "routes/api.upload-applicant-image.ts"),
     route("results", "routes/results.tsx"),
+    route("results/:id/grade", "routes/grade-applicant.tsx"),
     route("settings", "routes/settings.tsx"),
   ]),
 ] satisfies RouteConfig;

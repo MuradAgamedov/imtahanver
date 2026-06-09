@@ -363,11 +363,10 @@ class ExamSessionController extends Controller
         $isApplicant = !is_null($session->applicant_exampage_id);
 
         if ($isApplicant) {
-            $session->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-                'score' => 0.0,
-            ]);
+            $session->status = 'completed';
+            $session->completed_at = now();
+            $session->score = $session->calculateApplicantScore();
+            $session->save();
 
             return $session;
         } else {

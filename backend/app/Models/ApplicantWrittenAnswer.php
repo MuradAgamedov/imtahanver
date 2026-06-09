@@ -15,6 +15,13 @@ class ApplicantWrittenAnswer extends Model
         'exam_session_id',
         'applicant_question_id',
         'written_answer',
+        'is_correct',
+        'points',
+    ];
+
+    protected $casts = [
+        'is_correct' => 'boolean',
+        'points' => 'float',
     ];
 
     public function session()

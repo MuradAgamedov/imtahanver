@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, redirect, useLoaderData, useNavigation } from "react-router";
+import { Form, redirect, useLoaderData, useNavigation, Link } from "react-router";
 import type { Route } from "./+types/results";
 import { sessionCookie, type AdminSession } from "../lib/session";
 import { cn } from "../lib/utils";
@@ -139,12 +139,13 @@ export default function ResultsPage() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">İstifadəçi</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">İmtahan Vərəqi & Fənn</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">İmtahan Vərəqi & Fənn/Qrup</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Tarix</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Status</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">İxtisas (D/S)</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Metodika (D/S)</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Fənn / Blok Balı</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Yoxlama statusu</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450 text-right">Toplanmış Bal</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450 text-right">Əməliyyat</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -162,10 +163,17 @@ export default function ResultsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-gray-800">{sess.exampage?.title}</p>
-                        <p className="text-xs text-indigo-600 font-semibold mt-0.5">{sess.subject?.title}</p>
-                      </div>
+                      {sess.applicant_exampage_id ? (
+                        <div>
+                          <p className="font-medium text-gray-800">{sess.applicant_exampage?.title}</p>
+                          <p className="text-xs text-emerald-600 font-semibold mt-0.5">Qrup: {sess.applicant_group?.title}</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-medium text-gray-800">{sess.exampage?.title}</p>
+                          <p className="text-xs text-indigo-600 font-semibold mt-0.5">{sess.subject?.title}</p>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs text-gray-500">
@@ -185,7 +193,7 @@ export default function ResultsPage() {
                         >
                           {sess.status === "completed" ? "Yekunlaşıb" : "Aktiv"}
                         </span>
-                        {sess.status === "completed" && (
+                        {sess.status === "completed" && !sess.applicant_exampage_id && (
                           <span
                             className={cn(
                               "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border",
@@ -201,35 +209,80 @@ export default function ResultsPage() {
                     </td>
                     <td className="px-6 py-4 font-semibold text-gray-700">
                       {sess.status === "completed" ? (
-                        <div className="text-xs">
-                          <span className="text-emerald-600">{sess.correct_specialty_count} D</span>
-                          <span className="text-gray-300 mx-1">/</span>
-                          <span className="text-red-500">{sess.incorrect_specialty_count} S</span>
-                          <div className="text-[10px] text-gray-400 font-medium mt-0.5">Bal: {sess.specialty_score}</div>
-                        </div>
+                        sess.applicant_exampage_id ? (
+                          <div className="text-xs space-y-1">
+                            {sess.applicant_breakdown?.map((b: any) => (
+                              <div key={b.subject_id} className="flex justify-between gap-4 text-[10px] text-gray-500">
+                                <span>{b.subject_title}:</span>
+                                <span className="font-bold text-gray-800">{b.subject_score} bal</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs">
+                            <span className="text-emerald-600">{sess.correct_specialty_count} D</span>
+                            <span className="text-gray-300 mx-1">/</span>
+                            <span className="text-red-500">{sess.incorrect_specialty_count} S</span>
+                            <div className="text-[10px] text-gray-400 font-medium mt-0.5">Bal: {sess.specialty_score}</div>
+                          </div>
+                        )
                       ) : (
                         <span className="text-gray-400 font-normal">-</span>
                       )}
                     </td>
                     <td className="px-6 py-4 font-semibold text-gray-700">
                       {sess.status === "completed" ? (
-                        <div className="text-xs">
-                          <span className="text-emerald-600">{sess.correct_pedagogy_count} D</span>
-                          <span className="text-gray-300 mx-1">/</span>
-                          <span className="text-red-500">{sess.incorrect_pedagogy_count} S</span>
-                          <div className="text-[10px] text-gray-400 font-medium mt-0.5">Bal: {sess.pedagogy_score}</div>
-                        </div>
+                        sess.applicant_exampage_id ? (
+                          (() => {
+                            const ungraded = sess.applicant_breakdown?.reduce((acc: number, curr: any) => acc + (curr.written_ungraded || 0), 0) || 0;
+                            return ungraded > 0 ? (
+                              <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-150">
+                                Yoxla ({ungraded} sual)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700 border border-teal-150">
+                                Tam yoxlanılıb
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          <div className="text-xs">
+                            <span className="text-emerald-600">{sess.correct_pedagogy_count} D</span>
+                            <span className="text-gray-300 mx-1">/</span>
+                            <span className="text-red-500">{sess.incorrect_pedagogy_count} S</span>
+                            <div className="text-[10px] text-gray-400 font-medium mt-0.5">Bal: {sess.pedagogy_score}</div>
+                          </div>
+                        )
                       ) : (
                         <span className="text-gray-400 font-normal">-</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {sess.status === "completed" ? (
-                        <span className="inline-flex items-center rounded-xl bg-indigo-50 px-3 py-1.5 text-sm font-extrabold text-indigo-600 border border-indigo-100">
-                          {sess.score} / 100
+                        <span className={cn(
+                          "inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-extrabold border",
+                          sess.applicant_exampage_id
+                            ? "bg-emerald-50 text-emerald-650 border-emerald-100"
+                            : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                        )}>
+                          {sess.score} / {sess.applicant_exampage_id ? 400 : 100}
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400 font-medium">Davam edir</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {sess.applicant_exampage_id && sess.status === "completed" ? (
+                        <Link
+                          to={`/results/${sess.id}/grade`}
+                          className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 text-xs font-bold shadow-sm transition-all cursor-pointer"
+                        >
+                          Yoxla
+                        </Link>
+                      ) : sess.applicant_exampage_id ? (
+                        <span className="text-xs text-gray-400">Davam edir</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">MİQ (Avtomatik)</span>
                       )}
                     </td>
                   </tr>

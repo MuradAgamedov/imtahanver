@@ -628,7 +628,67 @@ export default function Home() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-900">
                         {examSessions.map((sess: any) => {
+                          const isApplicant = sess.applicant_exampage_id !== null;
                           const date = new Date(sess.completed_at || sess.started_at);
+                          
+                          if (sess.applicant_exampage_id) {
+                            const ungraded = sess.applicant_breakdown?.reduce((acc: number, curr: any) => acc + (curr.written_ungraded || 0), 0) || 0;
+                            const isCompleted = sess.status === "completed";
+
+                            return (
+                              <tr key={sess.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div>
+                                    <p className="font-semibold text-slate-800 dark:text-slate-200">{sess.applicant_exampage?.title}</p>
+                                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Qrup: {sess.applicant_group?.title}</p>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-xs text-slate-500">{date.toLocaleString("az-AZ")}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                    isCompleted
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/40"
+                                      : "bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40 animate-pulse"
+                                  }`}>
+                                    {isCompleted ? "Yekunlaşıb" : "Aktiv"}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  {isCompleted ? (
+                                    ungraded > 0 ? (
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold dark:bg-amber-950/20 dark:text-amber-400">
+                                        Yoxlanılır ({ungraded} sual)
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-150 px-2.5 py-0.5 text-xs font-bold dark:bg-teal-950/20 dark:text-teal-400">
+                                        Yoxlanılıb
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-slate-400">-</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-right font-extrabold text-slate-800 dark:text-slate-200">
+                                  {isCompleted ? `${sess.score} / 400` : "-"}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <Link
+                                    to={`/exam/applicant/${sess.applicant_exampage_id}/${sess.applicant_group_id}?session_id=${sess.id}`}
+                                    className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                                      isCompleted
+                                        ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/60"
+                                        : "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950/60"
+                                    }`}
+                                  >
+                                    {isCompleted ? "Nəticəyə bax" : "Davam et"}
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          }
+
                           const specialtyPoints = sess.correct_specialty_count * 2 - sess.incorrect_specialty_count * 0.5;
                           const pedagogyPoints = sess.correct_pedagogy_count * 1 - sess.incorrect_pedagogy_count * 0.25;
                           const totalPoints = parseFloat(sess.score);
