@@ -12,6 +12,7 @@ Artisan::command('mail:test {email}', function ($email) {
     try {
         \Illuminate\Support\Facades\Mail::raw('Bu bir test mailidir. İmtahanVer SMTP ayarlarının düzgün işlədiyini yoxlamaq üçün göndərilmişdir.', function ($message) use ($email) {
             $message->to($email)
+                ->from(config('mail.from.address'), config('mail.from.name'))
                 ->subject('İmtahanVer SMTP Test Maili');
         });
         $this->info("Test email sent successfully!");
