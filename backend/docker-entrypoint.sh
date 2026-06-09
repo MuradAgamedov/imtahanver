@@ -22,12 +22,24 @@ fi
 # Wait for DB to be ready
 echo "Waiting for database connection..."
 php -r "
-\$host = getenv('DB_HOST') ?: '127.0.0.1';
-\$port = getenv('DB_PORT') ?: '5432';
-\$db   = getenv('DB_DATABASE') ?: 'forge';
-\$user = getenv('DB_USERNAME') ?: 'forge';
-\$pass = getenv('DB_PASSWORD') ?: '';
-\$conn = getenv('DB_CONNECTION') ?: 'pgsql';
+\$env = [];
+if (file_exists('.env')) {
+    foreach (file('.env') as \$line) {
+        \$line = trim(\$line);
+        if (\$line && strpos(\$line, '=') !== false && strpos(\$line, '#') !== 0) {
+            list(\$key, \$value) = explode('=', \$line, 2);
+            \$value = trim(\$value, '\"'\'' ');
+            \$env[trim(\$key)] = \$value;
+        }
+    }
+}
+
+\$host = \$env['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1';
+\$port = \$env['DB_PORT'] ?? getenv('DB_PORT') ?: '3306';
+\$db   = \$env['DB_DATABASE'] ?? getenv('DB_DATABASE') ?: 'forge';
+\$user = \$env['DB_USERNAME'] ?? getenv('DB_USERNAME') ?: 'forge';
+\$pass = \$env['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: '';
+\$conn = \$env['DB_CONNECTION'] ?? getenv('DB_CONNECTION') ?: 'mysql';
 
 \$max_attempts = 30;
 \$attempts = 0;
@@ -43,7 +55,7 @@ while (\$attempts < \$max_attempts) {
         echo \"Connected to database successfully\n\";
         exit(0);
     } catch (PDOException \$e) {
-        echo \"Database connection failed, retrying... \" . \$e->getMessage() . \"\n\";
+        echo \"Database connection failed, retrying... (\$conn:host=\$host;port=\$port;dbname=\$db) \" . \$e->getMessage() . \"\n\";
         sleep(2);
         \$attempts++;
     }
