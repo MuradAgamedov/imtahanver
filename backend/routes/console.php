@@ -10,9 +10,12 @@ Artisan::command('inspire', function () {
 Artisan::command('mail:test {email}', function ($email) {
     $this->info("Sending test email to {$email}...");
     try {
-        \Illuminate\Support\Facades\Mail::raw('Bu bir test mailidir. İmtahanVer SMTP ayarlarının düzgün işlədiyini yoxlamaq üçün göndərilmişdir.', function ($message) use ($email) {
+        $fromAddress = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS', 'noreply@avicom.az');
+        $fromName = config('mail.from.name') ?: env('MAIL_FROM_NAME', 'Imtahanver');
+        
+        \Illuminate\Support\Facades\Mail::raw('Bu bir test mailidir. İmtahanVer SMTP ayarlarının düzgün işlədiyini yoxlamaq üçün göndərilmişdir.', function ($message) use ($email, $fromAddress, $fromName) {
             $message->to($email)
-                ->from(config('mail.from.address'), config('mail.from.name'))
+                ->from($fromAddress, $fromName)
                 ->subject('İmtahanVer SMTP Test Maili');
         });
         $this->info("Test email sent successfully!");
