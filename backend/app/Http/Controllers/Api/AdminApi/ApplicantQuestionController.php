@@ -41,7 +41,7 @@ class ApplicantQuestionController extends Controller
     {
         $request->validate([
             'question_type' => 'required|integer|in:1,2,3',
-            'title'         => 'required|string',
+            'title'         => 'nullable|string',
         ]);
 
         $type = (int) $request->question_type;
@@ -95,7 +95,7 @@ class ApplicantQuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Sual tapılmadı.'], 404);
         }
 
-        $request->validate(['title' => 'required|string']);
+        $request->validate(['title' => 'nullable|string']);
 
         $question->update([
             'title' => $request->title,

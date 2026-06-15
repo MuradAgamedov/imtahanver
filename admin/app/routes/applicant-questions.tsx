@@ -531,7 +531,7 @@ export default function ApplicantQuestionsPage() {
                   <div className="flex gap-3 justify-end pt-2">
                     <button type="button" onClick={() => setShowAddModal(false)}
                       className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
-                    <button type="button" disabled={!addTitle.trim() || navigation.state === "submitting"}
+                    <button type="button" disabled={navigation.state === "submitting"}
                       onClick={() => { const fd = new FormData(); fd.append("intent","create-question"); fd.append("question_type",String(selectedType)); fd.append("title",addTitle); fd.append("image",addImage); submit(fd,{method:"post"}); }}
                       className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">
                       {navigation.state === "submitting" ? "Əlavə edilir..." : "Əlavə Et"}
@@ -561,7 +561,7 @@ export default function ApplicantQuestionsPage() {
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setEditingQ(null)}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
-                <button disabled={!editTitle.trim() || navigation.state === "submitting"}
+                <button disabled={navigation.state === "submitting"}
                   onClick={() => { const fd = new FormData(); fd.append("intent","update-question"); fd.append("question_id",String(editingQ.id)); fd.append("title",editTitle); fd.append("image",editImage); submit(fd,{method:"post"}); }}
                   className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">Yadda Saxla</button>
               </div>
