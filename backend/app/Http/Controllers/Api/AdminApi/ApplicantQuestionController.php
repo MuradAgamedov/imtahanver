@@ -178,8 +178,9 @@ class ApplicantQuestionController extends Controller
         }
 
         $request->validate([
-            'text'    => 'required|string',
+            'text'    => 'nullable|string',
             'is_true' => 'boolean',
+            'image'   => 'nullable|string',
         ]);
 
         $maxOrder = ApplicantQuestionOption::where('applicant_question_id', $questionId)->max('order') ?? -1;
@@ -192,6 +193,7 @@ class ApplicantQuestionController extends Controller
             'applicant_question_id' => $questionId,
             'text'                  => $request->text,
             'is_true'               => $request->boolean('is_true'),
+            'image'                 => $request->image,
             'order'                 => $maxOrder + 1,
         ]);
 
@@ -208,7 +210,10 @@ class ApplicantQuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Cavab tapılmadı.'], 404);
         }
 
-        $request->validate(['text' => 'required|string']);
+        $request->validate([
+            'text'  => 'nullable|string',
+            'image' => 'nullable|string',
+        ]);
 
         if ($request->boolean('is_true')) {
             ApplicantQuestionOption::where('applicant_question_id', $questionId)->update(['is_true' => false]);
@@ -217,6 +222,7 @@ class ApplicantQuestionController extends Controller
         $option->update([
             'text'    => $request->text,
             'is_true' => $request->boolean('is_true'),
+            'image'   => $request->image,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Cavab yeniləndi.', 'data' => $option->fresh()]);

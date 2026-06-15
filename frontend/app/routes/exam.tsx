@@ -179,10 +179,21 @@ function QuestionCard({
               >
                 {OPTION_LABELS[i] ?? i + 1}
               </span>
-              <span
-                className="leading-relaxed [&_i]:italic [&_b]:font-bold [&_u]:underline"
-                dangerouslySetInnerHTML={{ __html: opt.text ?? "" }}
-              />
+              <div className="flex-1">
+                {opt.text && (
+                  <span
+                    className="leading-relaxed [&_i]:italic [&_b]:font-bold [&_u]:underline block"
+                    dangerouslySetInnerHTML={{ __html: opt.text }}
+                  />
+                )}
+                {opt.image && (
+                  <img
+                    src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
+                    alt="Variant şəkli"
+                    className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                  />
+                )}
+              </div>
             </button>
           );
         })}
@@ -689,7 +700,7 @@ export default function Exam() {
                                 key={opt.id}
                                 className={`w-full flex items-start justify-between gap-3 px-4 py-3 rounded-xl border text-sm transition-all ${optionStyles}`}
                               >
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-3 flex-1">
                                   <span
                                     className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${
                                       isTrue
@@ -701,10 +712,21 @@ export default function Exam() {
                                   >
                                     {OPTION_LABELS[oIdx] ?? oIdx + 1}
                                   </span>
-                                  <span
-                                    className="leading-relaxed [&_i]:italic [&_b]:font-bold [&_u]:underline"
-                                    dangerouslySetInnerHTML={{ __html: opt.text ?? "" }}
-                                  />
+                                  <div className="flex-1">
+                                    {opt.text && (
+                                      <span
+                                        className="leading-relaxed [&_i]:italic [&_b]:font-bold [&_u]:underline block"
+                                        dangerouslySetInnerHTML={{ __html: opt.text }}
+                                      />
+                                    )}
+                                    {opt.image && (
+                                      <img
+                                        src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
+                                        alt="Variant şəkli"
+                                        className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                                      />
+                                    )}
+                                  </div>
                                 </div>
 
                                 {badgeLabel && (

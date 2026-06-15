@@ -105,7 +105,11 @@ export async function action({ request, params }: Route.ActionArgs) {
       const qId = formData.get("question_id") as string;
       const res = await fetch(`http://backend:80/api/adminapi/applicant-questions/${qId}/options`, {
         method: "POST", headers,
-        body: JSON.stringify({ text: formData.get("text"), is_true: formData.get("is_true") === "true" }),
+        body: JSON.stringify({
+          text: formData.get("text"),
+          is_true: formData.get("is_true") === "true",
+          image: formData.get("image") || null
+        }),
       });
       const data = await res.json();
       if (!res.ok) return { error: data.message || "Cavab əlavə edilmədi." };
@@ -116,7 +120,11 @@ export async function action({ request, params }: Route.ActionArgs) {
       const oId = formData.get("option_id") as string;
       const res = await fetch(`http://backend:80/api/adminapi/applicant-questions/${qId}/options/${oId}`, {
         method: "PUT", headers,
-        body: JSON.stringify({ text: formData.get("text"), is_true: formData.get("is_true") === "true" }),
+        body: JSON.stringify({
+          text: formData.get("text"),
+          is_true: formData.get("is_true") === "true",
+          image: formData.get("image") || null
+        }),
       });
       const data = await res.json();
       if (!res.ok) return { error: data.message || "Cavab yenilənmədi." };
@@ -258,9 +266,11 @@ export default function ApplicantQuestionsPage() {
   const [addingOptionFor, setAddingOptionFor] = useState<number | null>(null);
   const [newOptText, setNewOptText] = useState("");
   const [newOptTrue, setNewOptTrue] = useState(false);
+  const [newOptImage, setNewOptImage] = useState("");
   const [editingOpt, setEditingOpt] = useState<any>(null);
   const [editOptText, setEditOptText] = useState("");
   const [editOptTrue, setEditOptTrue] = useState(false);
+  const [editOptImage, setEditOptImage] = useState("");
 
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
@@ -269,7 +279,7 @@ export default function ApplicantQuestionsPage() {
       setToast({ msg: actionData.success, type: "success" });
       setShowAddModal(false); setAddStep("type"); setAddTitle(""); setAddImage("");
       setEditingQ(null); setDeletingQ(null);
-      setAddingOptionFor(null); setNewOptText(""); setEditingOpt(null);
+      setAddingOptionFor(null); setNewOptText(""); setNewOptImage(""); setEditingOpt(null); setEditOptImage("");
     } else if (actionData?.error) {
       setToast({ msg: actionData.error, type: "error" });
     }
@@ -415,23 +425,29 @@ export default function ApplicantQuestionsPage() {
                               <div className="flex-1 space-y-2">
                                 <textarea value={editOptText} onChange={(e) => setEditOptText(e.target.value)} rows={2}
                                   className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none resize-none" />
+                                <ImageUploader storageBase={storageBase} current={editOptImage} onChange={setEditOptImage} />
                                 <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                                   <input type="checkbox" checked={editOptTrue} onChange={(e) => setEditOptTrue(e.target.checked)} className="accent-emerald-500" />
                                   Düzgün cavab
                                 </label>
                                 <div className="flex gap-2">
-                                  <button onClick={() => { const fd = new FormData(); fd.append("intent","update-option"); fd.append("question_id",String(q.id)); fd.append("option_id",String(opt.id)); fd.append("text",editOptText); fd.append("is_true",String(editOptTrue)); submit(fd,{method:"post"}); }}
+                                  <button onClick={() => { const fd = new FormData(); fd.append("intent","update-option"); fd.append("question_id",String(q.id)); fd.append("option_id",String(opt.id)); fd.append("text",editOptText); fd.append("is_true",String(editOptTrue)); fd.append("image",editOptImage); submit(fd,{method:"post"}); }}
                                     className="text-xs px-3 py-1 bg-indigo-600 text-white rounded-lg cursor-pointer">Saxla</button>
                                   <button onClick={() => setEditingOpt(null)} className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-lg cursor-pointer">İmtina</button>
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-sm leading-relaxed [&_i]:italic [&_b]:font-bold" dangerouslySetInnerHTML={{ __html: opt.text }} />
+                              <div className="flex-1">
+                                {opt.text && <span className="text-sm leading-relaxed [&_i]:italic [&_b]:font-bold" dangerouslySetInnerHTML={{ __html: opt.text }} />}
+                                {opt.image && (
+                                  <img src={`${storageBase}/${opt.image.replace(/^\/+/, "")}`} alt="Cavab variantı şəkli" className="mt-1 max-h-24 rounded-lg border border-gray-150 object-contain bg-gray-50" />
+                                )}
+                              </div>
                             )}
                           </div>
                           {editingOpt?.id !== opt.id && (
                             <div className="flex gap-1 flex-shrink-0">
-                              <button onClick={() => { setEditingOpt(opt); setEditOptText(opt.text); setEditOptTrue(opt.is_true); }}
+                              <button onClick={() => { setEditingOpt(opt); setEditOptText(opt.text || ""); setEditOptTrue(opt.is_true); setEditOptImage(opt.image || ""); }}
                                 className="p-1 text-gray-400 hover:text-indigo-600 cursor-pointer">
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                               </button>
@@ -443,25 +459,26 @@ export default function ApplicantQuestionsPage() {
                           )}
                         </div>
                       ))}
-
+ 
                       {addingOptionFor === q.id ? (
                         <div className="mt-2 p-3 bg-white rounded-xl border border-gray-200 space-y-2">
                           <textarea value={newOptText} onChange={(e) => setNewOptText(e.target.value)} rows={2}
                             placeholder="Cavab mətni (HTML dəstəklənir)"
                             className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none resize-none" />
+                          <ImageUploader storageBase={storageBase} current={newOptImage} onChange={setNewOptImage} />
                           <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                             <input type="checkbox" checked={newOptTrue} onChange={(e) => setNewOptTrue(e.target.checked)} className="accent-emerald-500" />
                             Düzgün cavab
                           </label>
                           <div className="flex gap-2">
-                            <button onClick={() => { const fd = new FormData(); fd.append("intent","add-option"); fd.append("question_id",String(q.id)); fd.append("text",newOptText); fd.append("is_true",String(newOptTrue)); submit(fd,{method:"post"}); setNewOptText(""); setNewOptTrue(false); }}
-                              disabled={!newOptText.trim()}
+                            <button onClick={() => { const fd = new FormData(); fd.append("intent","add-option"); fd.append("question_id",String(q.id)); fd.append("text",newOptText); fd.append("is_true",String(newOptTrue)); fd.append("image",newOptImage); submit(fd,{method:"post"}); }}
+                              disabled={!newOptText.trim() && !newOptImage}
                               className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg cursor-pointer disabled:opacity-50">Əlavə Et</button>
                             <button onClick={() => setAddingOptionFor(null)} className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg cursor-pointer">İmtina</button>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setAddingOptionFor(q.id); setNewOptText(""); setNewOptTrue(false); }}
+                        <button onClick={() => { setAddingOptionFor(q.id); setNewOptText(""); setNewOptTrue(false); setNewOptImage(""); }}
                           className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 mt-1 cursor-pointer">
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
                           Cavab əlavə et

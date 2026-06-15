@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit } from "react-router";
 import type { Route } from "./+types/miq-question-options";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -7,6 +7,64 @@ const isProd = typeof window !== "undefined"
   ? window.location.hostname.endsWith("imtahanver.online")
   : true;
 const STORAGE_BASE = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
+const getApiBase = (params: any) => {
+  const isSubject = params.subjectId !== undefined;
+  return isSubject 
+    ? `http://backend:80/api/adminapi/miq-questions/${params.questionId}/options`
+    : `http://backend:80/api/adminapi/miq-direct-questions/${params.questionId}/options`;
+};
+
+function ImageUploader({ storageBase, current, onChange }: {
+  storageBase: string; current: string; onChange: (path: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("image", file);
+    try {
+      const res = await fetch("/api/upload-applicant-image", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) onChange(data.path);
+    } catch { /* noop */ }
+    setUploading(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Şəkil (İstəyə bağlı)</label>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all cursor-pointer disabled:opacity-50">
+          <svg className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {uploading
+              ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            }
+          </svg>
+          {uploading ? "Yüklənir..." : current ? "Dəyiş" : "Şəkil seç"}
+        </button>
+        {current && (
+          <button type="button" onClick={() => onChange("")}
+            className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer">Sil</button>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+      </div>
+      {current && (
+        <img src={`${storageBase}/${current.replace(/^\/+/, "")}`} alt="Cavab variantı şəkli"
+          className="mt-2 max-h-40 rounded-xl border border-gray-200 object-contain bg-gray-50" />
+      )}
+    </div>
+  );
+}
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Cavab Variantları — İmtahanVer Admin" }];
@@ -18,10 +76,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   if (!session || !session.token) return redirect("/login");
 
-  const questionId = params.questionId;
-
   const res = await fetch(
-    `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options`,
+    getApiBase(params),
     {
       headers: {
         "Accept": "application/json",
@@ -50,16 +106,16 @@ export async function action({ params, request }: Route.ActionArgs) {
   const session = (await sessionCookie.parse(cookieHeader)) as AdminSession | null;
   if (!session || !session.token) return redirect("/login");
 
-  const questionId = params.questionId;
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
   const token = session.token;
+  const apiBase = getApiBase(params);
 
   try {
     if (intent === "reorder") {
       const ids = JSON.parse(formData.get("ids") as string);
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options/reorder`,
+        `${apiBase}/reorder`,
         {
           method: "PUT",
           headers: {
@@ -78,9 +134,10 @@ export async function action({ params, request }: Route.ActionArgs) {
     if (intent === "create") {
       const text = formData.get("text") as string;
       const isTrue = formData.get("is_true") === "true";
+      const image = formData.get("image") as string || null;
 
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options`,
+        apiBase,
         {
           method: "POST",
           headers: {
@@ -88,7 +145,7 @@ export async function action({ params, request }: Route.ActionArgs) {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ text, is_true: isTrue })
+          body: JSON.stringify({ text, is_true: isTrue, image })
         }
       );
 
@@ -101,9 +158,10 @@ export async function action({ params, request }: Route.ActionArgs) {
       const id = formData.get("id") as string;
       const text = formData.get("text") as string;
       const isTrue = formData.get("is_true") === "true";
+      const image = formData.get("image") as string || null;
 
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options/${id}`,
+        `${apiBase}/${id}`,
         {
           method: "PUT",
           headers: {
@@ -111,7 +169,7 @@ export async function action({ params, request }: Route.ActionArgs) {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ text, is_true: isTrue })
+          body: JSON.stringify({ text, is_true: isTrue, image })
         }
       );
 
@@ -124,7 +182,7 @@ export async function action({ params, request }: Route.ActionArgs) {
       const id = formData.get("id") as string;
 
       const res = await fetch(
-        `http://backend:80/api/adminapi/miq-direct-questions/${questionId}/options/${id}`,
+        `${apiBase}/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -164,8 +222,10 @@ export default function MiqQuestionOptionsPage() {
   // Form states
   const [addText, setAddText] = useState("");
   const [addIsTrue, setAddIsTrue] = useState(false);
+  const [addImage, setAddImage] = useState("");
   const [editText, setEditText] = useState("");
   const [editIsTrue, setEditIsTrue] = useState(false);
+  const [editImage, setEditImage] = useState("");
 
   // Drag state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -184,8 +244,10 @@ export default function MiqQuestionOptionsPage() {
       setSelected(null);
       setAddText("");
       setAddIsTrue(false);
+      setAddImage("");
       setEditText("");
       setEditIsTrue(false);
+      setEditImage("");
     } else if (actionData?.error) {
       setToastMessage(actionData.error);
       setToastType("error");
@@ -281,6 +343,7 @@ export default function MiqQuestionOptionsPage() {
             onClick={() => {
               setAddText("");
               setAddIsTrue(false);
+              setAddImage("");
               setShowAddModal(true);
             }}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer shrink-0"
@@ -342,13 +405,21 @@ export default function MiqQuestionOptionsPage() {
 
               {/* Text */}
               <div className="flex-1">
-                {opt.text ? (
+                {opt.text && (
                   <div
                     className="text-gray-900 text-sm font-medium leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: opt.text }}
                   />
-                ) : (
-                  <p className="text-sm italic text-gray-400">Cavab mətni yoxdur</p>
+                )}
+                {opt.image && (
+                  <img
+                    src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
+                    alt="Cavab variantı şəkli"
+                    className="mt-2 max-h-24 rounded-lg border border-gray-150 object-contain bg-gray-55"
+                  />
+                )}
+                {!opt.text && !opt.image && (
+                  <p className="text-sm italic text-gray-400">Cavab boşdur</p>
                 )}
               </div>
 
@@ -370,6 +441,7 @@ export default function MiqQuestionOptionsPage() {
                   setSelected(opt);
                   setEditText(opt.text || "");
                   setEditIsTrue(opt.is_true);
+                  setEditImage(opt.image || "");
                   setShowEditModal(true);
                 }}
                 title="Redaktə et"
@@ -414,9 +486,10 @@ export default function MiqQuestionOptionsPage() {
               <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
             </div>
 
-            <Form method="post" className="space-y-4">
+             <Form method="post" className="space-y-4">
               <input type="hidden" name="intent" value="create" />
               <input type="hidden" name="is_true" value={addIsTrue ? "true" : "false"} />
+              <input type="hidden" name="image" value={addImage} />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
@@ -431,6 +504,8 @@ export default function MiqQuestionOptionsPage() {
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                 />
               </div>
+
+              <ImageUploader storageBase={STORAGE_BASE} current={addImage} onChange={setAddImage} />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
@@ -497,6 +572,7 @@ export default function MiqQuestionOptionsPage() {
               <input type="hidden" name="intent" value="update" />
               <input type="hidden" name="id" value={selected.id} />
               <input type="hidden" name="is_true" value={editIsTrue ? "true" : "false"} />
+              <input type="hidden" name="image" value={editImage} />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
@@ -511,6 +587,8 @@ export default function MiqQuestionOptionsPage() {
                   className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                 />
               </div>
+
+              <ImageUploader storageBase={STORAGE_BASE} current={editImage} onChange={setEditImage} />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">

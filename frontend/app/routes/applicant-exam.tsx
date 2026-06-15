@@ -463,17 +463,26 @@ export default function ApplicantExam() {
                             {q.options.map((opt: any, oIdx: number) => {
                               const isSelected = userSelectedOptionId === opt.id;
                               let styles = isSelected
-                                ? "border-emerald-500 bg-emerald-50/20 text-emerald-800 dark:text-emerald-300 font-semibold"
+                                ? "border-emerald-500 bg-emerald-555/20 text-emerald-800 dark:text-emerald-300 font-semibold"
                                 : "border-slate-100 dark:border-slate-800 bg-slate-50/10";
 
                               return (
-                                <div key={opt.id} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-xs ${styles}`}>
-                                  <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
-                                    isSelected ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-300 text-slate-500"
+                                <div key={opt.id} className={`flex items-start gap-3 px-4 py-2.5 rounded-xl border text-xs ${styles}`}>
+                                  <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
+                                    isSelected ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-300 text-slate-505"
                                   }`}>
                                     {OPTION_LABELS[oIdx] ?? oIdx + 1}
                                   </span>
-                                  <div dangerouslySetInnerHTML={{ __html: opt.text }} />
+                                  <div className="flex-1">
+                                    {opt.text && <div dangerouslySetInnerHTML={{ __html: opt.text }} />}
+                                    {opt.image && (
+                                      <img
+                                        src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
+                                        alt="Variant şəkli"
+                                        className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                                      />
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
@@ -673,7 +682,16 @@ export default function ApplicantExam() {
                             }`}>
                               {OPTION_LABELS[oIdx] ?? oIdx + 1}
                             </span>
-                            <div dangerouslySetInnerHTML={{ __html: opt.text }} />
+                            <div className="flex-1">
+                              {opt.text && <div dangerouslySetInnerHTML={{ __html: opt.text }} />}
+                              {opt.image && (
+                                <img
+                                  src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
+                                  alt="Variant şəkli"
+                                  className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                                />
+                              )}
+                            </div>
                           </button>
                         );
                       })}

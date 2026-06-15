@@ -34,6 +34,7 @@ class MiqQuestionOptionService implements MiqQuestionOptionServiceInterface
             'miq_question_id' => $questionId,
             'text'            => $data['text'] ?? null,
             'is_true'         => !empty($data['is_true']) && $data['is_true'] ? true : false,
+            'image'           => $data['image'] ?? null,
             'order'           => $order,
         ]);
     }
@@ -53,6 +54,7 @@ class MiqQuestionOptionService implements MiqQuestionOptionServiceInterface
         return $this->optionRepository->update($option, [
             'text'    => array_key_exists('text', $data) ? $data['text'] : $option->text,
             'is_true' => !empty($data['is_true']) && $data['is_true'] ? true : false,
+            'image'   => array_key_exists('image', $data) ? $data['image'] : $option->image,
         ]);
     }
 

@@ -13,6 +13,7 @@ class ApplicantQuestionOption extends Model
         'applicant_question_id',
         'text',
         'is_true',
+        'image',
         'order',
     ];
 

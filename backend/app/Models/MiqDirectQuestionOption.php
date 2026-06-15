@@ -10,6 +10,7 @@ class MiqDirectQuestionOption extends Model
         'miq_direct_question_id',
         'text',
         'is_true',
+        'image',
         'order',
     ];
 

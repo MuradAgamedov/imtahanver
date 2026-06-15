@@ -43,6 +43,7 @@ class MiqQuestionOptionController extends Controller
         $validator = Validator::make($request->all(), [
             'text'    => 'nullable|string',
             'is_true' => 'nullable|boolean',
+            'image'   => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -53,6 +54,7 @@ class MiqQuestionOptionController extends Controller
             $option = $this->optionService->createOption($questionId, [
                 'text'    => $request->input('text'),
                 'is_true' => $request->boolean('is_true', false),
+                'image'   => $request->input('image'),
             ]);
 
             return response()->json([
@@ -70,6 +72,7 @@ class MiqQuestionOptionController extends Controller
         $validator = Validator::make($request->all(), [
             'text'    => 'nullable|string',
             'is_true' => 'nullable|boolean',
+            'image'   => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -80,6 +83,7 @@ class MiqQuestionOptionController extends Controller
             $option = $this->optionService->updateOption($id, [
                 'text'    => $request->input('text'),
                 'is_true' => $request->boolean('is_true', false),
+                'image'   => $request->input('image'),
             ]);
 
             return response()->json([
