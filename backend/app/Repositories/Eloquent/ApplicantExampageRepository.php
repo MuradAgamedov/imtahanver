@@ -11,7 +11,7 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
     public function all(?string $search = null): Collection
     {
         if (empty($search)) {
-            return ApplicantExampage::with('groups')->orderBy('id', 'desc')->get();
+            return ApplicantExampage::with('groups.subjects')->orderBy('id', 'desc')->get();
         }
 
         try {
@@ -67,7 +67,7 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
                 return new Collection();
             }
 
-            return ApplicantExampage::with('groups')
+            return ApplicantExampage::with('groups.subjects')
                 ->whereIn('id', $ids)
                 ->orderByRaw('FIELD(id, ' . implode(',', $ids) . ')')
                 ->get();
@@ -75,7 +75,7 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Elasticsearch applicant_exampages search error: ' . $e->getMessage());
 
-            return ApplicantExampage::orderBy('id', 'desc')
+            return ApplicantExampage::with('groups.subjects')->orderBy('id', 'desc')
                 ->where('title', 'like', '%' . $search . '%')
                 ->get();
         }
@@ -83,7 +83,7 @@ class ApplicantExampageRepository implements ApplicantExampageRepositoryInterfac
 
     public function findById(int $id): ?ApplicantExampage
     {
-        return ApplicantExampage::with('groups')->find($id);
+        return ApplicantExampage::with('groups.subjects')->find($id);
     }
 
     public function create(array $data): ApplicantExampage
