@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/grade-applicant";
 import { sessionCookie, type AdminSession } from "../lib/session";
 import { cn } from "../lib/utils";
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E"];
+const STORAGE_BASE = typeof window !== "undefined" && window.location.hostname.endsWith("imtahanver.online")
+  ? "https://api.imtahanver.online"
+  : "http://localhost:8000";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Yazılı Cavabları Qiymətləndir — İmtahanVer Admin" }];
@@ -289,10 +292,21 @@ export default function GradeApplicantPage() {
                 }
 
                 const points = parseFloat(answerObj?.points || 0);
+                const prevPassageId = idx > 0 ? filteredQuestions[idx - 1].applicant_question_passage_id : null;
+                const showPassageHeader = q.passage && q.applicant_question_passage_id !== prevPassageId;
 
                 return (
+                  <Fragment key={q.id}>
+                  {showPassageHeader && (
+                    <div className="bg-indigo-50/50 border border-indigo-150 rounded-2xl p-6 space-y-2">
+                      <span className="text-[10px] font-bold text-indigo-650 uppercase tracking-wider">Keçid</span>
+                      <p className="text-sm text-gray-800">{q.passage.text}</p>
+                      {q.passage.audio && (
+                        <audio controls src={`${STORAGE_BASE}/${q.passage.audio.replace(/^\/+/, "")}`} className="h-8 max-w-xs" />
+                      )}
+                    </div>
+                  )}
                   <div
-                    key={q.id}
                     className="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm relative overflow-hidden"
                   >
                     {/* Header */}
@@ -607,6 +621,7 @@ export default function GradeApplicantPage() {
                       )}
                     </div>
                   </div>
+                  </Fragment>
                 );
               })}
             </div>

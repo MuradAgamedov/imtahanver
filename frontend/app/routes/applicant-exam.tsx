@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useLoaderData, redirect, useBlocker } from "react-router";
 import type { Route } from "./+types/applicant-exam";
 import { sessionCookie, type UserSession } from "../lib/session";
@@ -15,6 +15,9 @@ function withImageUrl(questions: any[]): any[] {
   return questions.map((q) => ({
     ...q,
     image_url: q.image ? `${STORAGE_BASE}/${q.image.replace(/^\/+/, "")}` : null,
+    passage: q.passage
+      ? { ...q.passage, audio_url: q.passage.audio ? `${STORAGE_BASE}/${q.passage.audio.replace(/^\/+/, "")}` : null }
+      : null,
   }));
 }
 
@@ -667,9 +670,20 @@ export default function ApplicantExam() {
       <main className="mx-auto max-w-4xl px-4 sm:px-6 mt-8 space-y-10">
           {questions.map((q: any, idx: number) => {
             const userTextAns = selectedAnswers[`text_${q.id}`] || "";
+            const prevPassageId = idx > 0 ? questions[idx - 1].applicant_question_passage_id : null;
+            const showPassageHeader = q.passage && q.applicant_question_passage_id !== prevPassageId;
             return (
+              <Fragment key={q.id}>
+              {showPassageHeader && (
+                <div className="bg-paper-2/60 border border-ink/10 rounded-3xl p-6 md:p-8 space-y-3">
+                  <span className="text-xs font-bold text-ink-soft/70 uppercase tracking-wider">Keçid</span>
+                  <p className="text-base text-ink leading-relaxed whitespace-pre-line">{q.passage.text}</p>
+                  {q.passage.audio_url && (
+                    <audio controls src={q.passage.audio_url} className="w-full max-w-md" />
+                  )}
+                </div>
+              )}
               <div
-                key={q.id}
                 id={`question-card-${q.id}`}
                 className="bg-paper border border-ink/10 rounded-3xl p-6 md:p-8 shadow-sm scroll-mt-24"
               >
@@ -803,6 +817,7 @@ export default function ApplicantExam() {
                 </div>
 
               </div>
+              </Fragment>
             );
           })}
       </main>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useLoaderData, useActionData, useNavigation, useSubmit, redirect } from "react-router";
 import type { Route } from "./+types/applicant-questions";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -27,13 +27,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const isProd = true;
   const storageBase = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
 
-  const [epRes, grRes, qRes] = await Promise.all([
+  const [epRes, grRes, qRes, paRes] = await Promise.all([
     fetch("http://backend:80/api/adminapi/applicant-exampages", { headers }),
     fetch("http://backend:80/api/adminapi/applicant-groups", { headers }),
     fetch(`http://backend:80/api/adminapi/applicant-exampages/${id}/groups/${groupId}/subjects/${subjectId}/questions`, { headers }),
+    fetch(`http://backend:80/api/adminapi/applicant-exampages/${id}/groups/${groupId}/subjects/${subjectId}/passages`, { headers }),
   ]);
 
-  const [epData, grData, qData] = await Promise.all([epRes.json(), grRes.json(), qRes.json()]);
+  const [epData, grData, qData, paData] = await Promise.all([epRes.json(), grRes.json(), qRes.json(), paRes.json()]);
 
   const exampage = epData.success ? epData.data.find((e: any) => e.id === Number(id)) ?? null : null;
   const group = grData.success ? grData.data.find((g: any) => g.id === Number(groupId)) ?? null : null;
@@ -44,6 +45,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     questions: qData.success ? qData.data : [],
     counts: qData.counts ?? { 1: 0, 2: 0, 3: 0 },
     limits: qData.limits ?? { 1: 22, 2: 5, 3: 3 },
+    passages: paData.success ? paData.data : [],
     exampageId: id, groupId, subjectId,
     storageBase,
   };
@@ -59,15 +61,18 @@ export async function action({ request, params }: Route.ActionArgs) {
   const intent = formData.get("intent") as string;
   const headers = { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${session.token}` };
   const base = `http://backend:80/api/adminapi/applicant-exampages/${id}/groups/${groupId}/subjects/${subjectId}/questions`;
+  const passageBase = `http://backend:80/api/adminapi/applicant-exampages/${id}/groups/${groupId}/subjects/${subjectId}/passages`;
 
   try {
     if (intent === "create-question") {
+      const passageId = formData.get("applicant_question_passage_id") as string;
       const res = await fetch(base, {
         method: "POST", headers,
         body: JSON.stringify({
           question_type: Number(formData.get("question_type")),
           title: formData.get("title"),
           image: formData.get("image") || null,
+          applicant_question_passage_id: passageId ? Number(passageId) : null,
         }),
       });
       const data = await res.json();
@@ -76,13 +81,44 @@ export async function action({ request, params }: Route.ActionArgs) {
     }
     if (intent === "update-question") {
       const qId = formData.get("question_id") as string;
+      const passageId = formData.get("applicant_question_passage_id") as string;
       const res = await fetch(`${base}/${qId}`, {
         method: "POST", headers,
-        body: JSON.stringify({ title: formData.get("title"), image: formData.get("image") || null }),
+        body: JSON.stringify({
+          title: formData.get("title"),
+          image: formData.get("image") || null,
+          applicant_question_passage_id: passageId ? Number(passageId) : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) return { error: data.message || "Sual yenilənmədi." };
       return { success: "Sual yeniləndi.", intent };
+    }
+    if (intent === "create-passage") {
+      const res = await fetch(passageBase, {
+        method: "POST", headers,
+        body: JSON.stringify({ text: formData.get("text"), audio: formData.get("audio") || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Keçid əlavə edilmədi." };
+      return { success: "Keçid əlavə edildi.", intent };
+    }
+    if (intent === "update-passage") {
+      const pId = formData.get("passage_id") as string;
+      const res = await fetch(`${passageBase}/${pId}`, {
+        method: "PUT", headers,
+        body: JSON.stringify({ text: formData.get("text"), audio: formData.get("audio") || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Keçid yenilənmədi." };
+      return { success: "Keçid yeniləndi.", intent };
+    }
+    if (intent === "delete-passage") {
+      const pId = formData.get("passage_id") as string;
+      const res = await fetch(`${passageBase}/${pId}`, { method: "DELETE", headers });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Keçid silinmədi." };
+      return { success: "Keçid silindi.", intent };
     }
     if (intent === "delete-question") {
       const qId = formData.get("question_id") as string;
@@ -198,8 +234,59 @@ function ImageUploader({ storageBase, current, onChange }: {
   );
 }
 
+function AudioUploader({ storageBase, current, onChange }: {
+  storageBase: string; current: string; onChange: (path: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("audio", file);
+    try {
+      // Upload through admin server to avoid CORS
+      const res = await fetch("/api/upload-applicant-audio", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) onChange(data.path);
+    } catch { /* noop */ }
+    setUploading(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Audio (İstəyə bağlı)</label>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all cursor-pointer disabled:opacity-50">
+          <svg className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {uploading
+              ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19a3 3 0 11-6 0 3 3 0 016 0zm12-3a3 3 0 11-6 0 3 3 0 016 0z" />
+            }
+          </svg>
+          {uploading ? "Yüklənir..." : current ? "Dəyiş" : "Audio seç"}
+        </button>
+        {current && (
+          <button type="button" onClick={() => onChange("")}
+            className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer">Sil</button>
+        )}
+        <input ref={inputRef} type="file" accept="audio/*" className="hidden"
+          onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+      </div>
+      {current && (
+        <audio controls src={`${storageBase}/${current.replace(/^\/+/, "")}`} className="mt-2 w-full max-w-sm" />
+      )}
+    </div>
+  );
+}
+
 export default function ApplicantQuestionsPage() {
-  const { exampage, group, subject, questions, counts, limits, exampageId, groupId, subjectId, storageBase } = useLoaderData<typeof loader>();
+  const { exampage, group, subject, questions, counts, limits, passages, exampageId, groupId, subjectId, storageBase } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -256,12 +343,20 @@ export default function ApplicantQuestionsPage() {
   const [selectedType, setSelectedType] = useState(1);
   const [addTitle, setAddTitle] = useState("");
   const [addImage, setAddImage] = useState("");
+  const [addPassageId, setAddPassageId] = useState("");
 
   const [editingQ, setEditingQ] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editImage, setEditImage] = useState("");
+  const [editPassageId, setEditPassageId] = useState("");
 
   const [deletingQ, setDeletingQ] = useState<any>(null);
+
+  const [showPassageModal, setShowPassageModal] = useState(false);
+  const [editingPassage, setEditingPassage] = useState<any>(null);
+  const [passageText, setPassageText] = useState("");
+  const [passageAudio, setPassageAudio] = useState("");
+  const [deletingPassage, setDeletingPassage] = useState<any>(null);
   const [expandedQ, setExpandedQ] = useState<number | null>(null);
   const [addingOptionFor, setAddingOptionFor] = useState<number | null>(null);
   const [newOptText, setNewOptText] = useState("");
@@ -277,9 +372,10 @@ export default function ApplicantQuestionsPage() {
   useEffect(() => {
     if (actionData?.success) {
       setToast({ msg: actionData.success, type: "success" });
-      setShowAddModal(false); setAddStep("type"); setAddTitle(""); setAddImage("");
-      setEditingQ(null); setDeletingQ(null);
+      setShowAddModal(false); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddPassageId("");
+      setEditingQ(null); setDeletingQ(null); setEditPassageId("");
       setAddingOptionFor(null); setNewOptText(""); setNewOptImage(""); setEditingOpt(null); setEditOptImage("");
+      setShowPassageModal(false); setEditingPassage(null); setPassageText(""); setPassageAudio(""); setDeletingPassage(null);
     } else if (actionData?.error) {
       setToast({ msg: actionData.error, type: "error" });
     }
@@ -318,8 +414,15 @@ export default function ApplicantQuestionsPage() {
         <Link to={`/applicant-exampages/${exampageId}/groups/${groupId}/subjects`} className="text-xs font-semibold text-gray-400 hover:text-indigo-600 transition-colors">Qrup {group.title}</Link>
         <span className="text-gray-300 text-xs">/</span>
         <span className="text-xs font-bold text-gray-900">{subject.title}</span>
-        <div className="ml-auto">
-          <button onClick={() => { setShowAddModal(true); setAddStep("type"); setAddTitle(""); setAddImage(""); }}
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={() => { setShowPassageModal(true); setEditingPassage(null); setPassageText(""); setPassageAudio(""); }}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 px-4 py-2 text-xs font-bold shadow-sm cursor-pointer transition-all">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Keçid
+          </button>
+          <button onClick={() => { setShowAddModal(true); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddPassageId(""); }}
             className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-bold shadow-sm cursor-pointer transition-all">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -328,6 +431,42 @@ export default function ApplicantQuestionsPage() {
           </button>
         </div>
       </div>
+
+      {/* Keçidlər (passages) */}
+      {passages.length > 0 && (
+        <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm space-y-3">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Keçidlər (mətn/audio bir neçə suala bağlı ola bilər)</h3>
+          <div className="space-y-2">
+            {passages.map((p: any) => (
+              <div key={p.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-gray-150 bg-gray-50/60">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800 line-clamp-2">{p.text}</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    {p.audio && (
+                      <audio controls src={`${storageBase}/${p.audio.replace(/^\/+/, "")}`} className="h-8 max-w-xs" />
+                    )}
+                    <span className="text-[11px] font-semibold text-gray-400">{p.questions_count ?? 0} suala bağlı</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => { setEditingPassage(p); setPassageText(p.text); setPassageAudio(p.audio || ""); setShowPassageModal(true); }}
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-slate-50 hover:text-indigo-600 cursor-pointer">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDeletingPassage(p)}
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 cursor-pointer">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Counters */}
       <div className="grid grid-cols-3 gap-4">
@@ -362,7 +501,20 @@ export default function ApplicantQuestionsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {grouped[type].map((q: any, idx: number) => (
+              {grouped[type].map((q: any, idx: number) => {
+                const prevPassageId = idx > 0 ? grouped[type][idx - 1].applicant_question_passage_id : null;
+                const showPassageHeader = q.passage && q.applicant_question_passage_id !== prevPassageId;
+                return (
+                <Fragment key={q.id}>
+                {showPassageHeader && (
+                  <div className="rounded-2xl border border-indigo-150 bg-indigo-50/50 p-4 space-y-2">
+                    <span className="text-[10px] font-bold text-indigo-650 uppercase tracking-wider">Keçid</span>
+                    <p className="text-sm text-gray-800">{q.passage.text}</p>
+                    {q.passage.audio && (
+                      <audio controls src={`${storageBase}/${q.passage.audio.replace(/^\/+/, "")}`} className="h-8 max-w-xs" />
+                    )}
+                  </div>
+                )}
                 <div key={q.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, type, idx)}
@@ -395,7 +547,7 @@ export default function ApplicantQuestionsPage() {
                           {expandedQ === q.id ? "▲" : "▼"}
                         </button>
                       )}
-                      <button onClick={() => { setEditingQ(q); setEditTitle(q.title); setEditImage(q.image ?? ""); }}
+                      <button onClick={() => { setEditingQ(q); setEditTitle(q.title); setEditImage(q.image ?? ""); setEditPassageId(q.applicant_question_passage_id ? String(q.applicant_question_passage_id) : ""); }}
                         className="rounded-lg p-1.5 text-gray-400 hover:bg-slate-50 hover:text-indigo-600 cursor-pointer">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -487,7 +639,9 @@ export default function ApplicantQuestionsPage() {
                     </div>
                   )}
                 </div>
-              ))}
+                </Fragment>
+                );
+              })}
             </div>
           )}
         </section>
@@ -545,11 +699,23 @@ export default function ApplicantQuestionsPage() {
                     <RichTextEditor value={addTitle} onChange={setAddTitle} placeholder="Sual mətni..." />
                   </div>
                   <ImageUploader storageBase={storageBase} current={addImage} onChange={setAddImage} />
+                  {passages.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bağlı Keçid (İstəyə bağlı)</label>
+                      <select value={addPassageId} onChange={(e) => setAddPassageId(e.target.value)}
+                        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 cursor-pointer">
+                        <option value="">Yoxdur</option>
+                        {passages.map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.text.slice(0, 60)}{p.text.length > 60 ? "…" : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="flex gap-3 justify-end pt-2">
                     <button type="button" onClick={() => setShowAddModal(false)}
                       className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
                     <button type="button" disabled={navigation.state === "submitting"}
-                      onClick={() => { const fd = new FormData(); fd.append("intent","create-question"); fd.append("question_type",String(selectedType)); fd.append("title",addTitle); fd.append("image",addImage); submit(fd,{method:"post"}); }}
+                      onClick={() => { const fd = new FormData(); fd.append("intent","create-question"); fd.append("question_type",String(selectedType)); fd.append("title",addTitle); fd.append("image",addImage); fd.append("applicant_question_passage_id",addPassageId); submit(fd,{method:"post"}); }}
                       className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">
                       {navigation.state === "submitting" ? "Əlavə edilir..." : "Əlavə Et"}
                     </button>
@@ -575,11 +741,23 @@ export default function ApplicantQuestionsPage() {
                 <RichTextEditor value={editTitle} onChange={setEditTitle} />
               </div>
               <ImageUploader storageBase={storageBase} current={editImage} onChange={setEditImage} />
+              {passages.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bağlı Keçid (İstəyə bağlı)</label>
+                  <select value={editPassageId} onChange={(e) => setEditPassageId(e.target.value)}
+                    className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 cursor-pointer">
+                    <option value="">Yoxdur</option>
+                    {passages.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.text.slice(0, 60)}{p.text.length > 60 ? "…" : ""}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setEditingQ(null)}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
                 <button disabled={navigation.state === "submitting"}
-                  onClick={() => { const fd = new FormData(); fd.append("intent","update-question"); fd.append("question_id",String(editingQ.id)); fd.append("title",editTitle); fd.append("image",editImage); submit(fd,{method:"post"}); }}
+                  onClick={() => { const fd = new FormData(); fd.append("intent","update-question"); fd.append("question_id",String(editingQ.id)); fd.append("title",editTitle); fd.append("image",editImage); fd.append("applicant_question_passage_id",editPassageId); submit(fd,{method:"post"}); }}
                   className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">Yadda Saxla</button>
               </div>
             </div>
@@ -596,6 +774,60 @@ export default function ApplicantQuestionsPage() {
             <div className="flex gap-3 justify-end mt-6">
               <button onClick={() => setDeletingQ(null)} className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
               <button onClick={() => { const fd = new FormData(); fd.append("intent","delete-question"); fd.append("question_id",String(deletingQ.id)); submit(fd,{method:"post"}); }}
+                className="py-2.5 px-5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer">Sil</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD/EDIT PASSAGE MODAL ── */}
+      {showPassageModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-150 rounded-2xl w-full max-w-xl p-6 shadow-2xl animate-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-base font-bold text-gray-900">{editingPassage ? "Keçidi Redaktə Et" : "Yeni Keçid"}</h3>
+              <button onClick={() => setShowPassageModal(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
+            </div>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mətn (oxu/dinləmə parçası)</label>
+                <textarea value={passageText} onChange={(e) => setPassageText(e.target.value)} rows={6}
+                  placeholder="Keçidin mətnini daxil edin..."
+                  className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none resize-y focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+              </div>
+              <AudioUploader storageBase={storageBase} current={passageAudio} onChange={setPassageAudio} />
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => setShowPassageModal(false)}
+                  className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
+                <button type="button" disabled={navigation.state === "submitting" || !passageText.trim()}
+                  onClick={() => {
+                    const fd = new FormData();
+                    fd.append("intent", editingPassage ? "update-passage" : "create-passage");
+                    if (editingPassage) fd.append("passage_id", String(editingPassage.id));
+                    fd.append("text", passageText);
+                    fd.append("audio", passageAudio);
+                    submit(fd, { method: "post" });
+                  }}
+                  className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">
+                  {navigation.state === "submitting" ? "Yadda saxlanılır..." : "Yadda Saxla"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE PASSAGE CONFIRM ── */}
+      {deletingPassage && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-150 rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in duration-200">
+            <h3 className="text-base font-bold text-gray-900 mb-2">Keçidi Sil</h3>
+            <p className="text-sm text-gray-500">
+              Bu keçid silinəcək. Ona bağlı {deletingPassage.questions_count ?? 0} sual keçidsiz (müstəqil) sual olaraq qalacaq, silinməyəcək.
+            </p>
+            <div className="flex gap-3 justify-end mt-6">
+              <button onClick={() => setDeletingPassage(null)} className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
+              <button onClick={() => { const fd = new FormData(); fd.append("intent","delete-passage"); fd.append("passage_id",String(deletingPassage.id)); submit(fd,{method:"post"}); }}
                 className="py-2.5 px-5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer">Sil</button>
             </div>
           </div>
