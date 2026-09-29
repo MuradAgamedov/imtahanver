@@ -323,6 +323,9 @@ class ExamSession extends Model
 
             $weight = $this->getApplicantSubjectWeight($group->identify, $subj->identify);
 
+            $totalQuestions = $closedCount + $codeableCount + $writtenCount;
+            $totalUnanswered = $unansweredClosed + $unansweredCodeable + $unansweredWritten;
+
             $breakdown[] = [
                 'subject_id' => $subj->id,
                 'subject_title' => $subj->title,
@@ -338,6 +341,8 @@ class ExamSession extends Model
                 'written_unanswered' => $unansweredWritten,
                 'subject_score' => round($subjectRelativeScore, 2),
                 'weighted_score' => round($subjectRelativeScore * $weight, 2),
+                'total_questions' => $totalQuestions,
+                'answered_count' => $totalQuestions - $totalUnanswered,
             ];
         }
 

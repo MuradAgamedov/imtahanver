@@ -259,14 +259,27 @@ export default function ResultsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {sess.status === "completed" ? (
-                        <span className={cn(
-                          "inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-extrabold border",
-                          sess.applicant_exampage_id
-                            ? "bg-emerald-50 text-emerald-650 border-emerald-100"
-                            : "bg-indigo-50 text-indigo-600 border-indigo-100"
-                        )}>
-                          {sess.score} / {sess.applicant_exampage_id ? 400 : 100}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={cn(
+                            "inline-flex items-center rounded-xl px-3 py-1.5 text-sm font-extrabold border",
+                            sess.applicant_exampage_id
+                              ? "bg-emerald-50 text-emerald-650 border-emerald-100"
+                              : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                          )}>
+                            {sess.score} / {sess.applicant_exampage_id ? 400 : 100}
+                          </span>
+                          {sess.applicant_exampage_id && sess.applicant_breakdown && (
+                            (() => {
+                              const totalQuestions = sess.applicant_breakdown.reduce((acc: number, b: any) => acc + (b.total_questions || 0), 0);
+                              const answeredCount = sess.applicant_breakdown.reduce((acc: number, b: any) => acc + (b.answered_count || 0), 0);
+                              return (
+                                <span className="text-[10px] text-gray-450 font-semibold">
+                                  {answeredCount} / {totalQuestions} sual cavablandırılıb
+                                </span>
+                              );
+                            })()
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-400 font-medium">Davam edir</span>
                       )}
