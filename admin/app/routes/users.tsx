@@ -250,7 +250,7 @@ export default function UsersPage() {
           </span>
           <input
             type="search"
-            placeholder="Ad, soyad və ya email..."
+            placeholder="ID, ad, soyad və ya email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-gray-250 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all"
@@ -297,6 +297,7 @@ export default function UsersPage() {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">ID</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Ad Soyad</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">E-poçt Ünvanı</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-450">Kateqoriya</th>
@@ -307,6 +308,7 @@ export default function UsersPage() {
             <tbody className="divide-y divide-gray-50">
               {filteredUsers.map((user: any) => (
                 <tr key={user.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-6 py-4 text-xs font-mono font-semibold text-gray-500">#{user.user_code ?? "—"}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-600">

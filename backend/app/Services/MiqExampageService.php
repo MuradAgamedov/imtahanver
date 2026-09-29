@@ -24,6 +24,16 @@ class MiqExampageService implements MiqExampageServiceInterface
         ];
     }
 
+    public function listDemoExampages(): array
+    {
+        $exampages = $this->exampageRepository->demoOnly();
+        return [
+            'success' => true,
+            'data' => $exampages,
+            'status_code' => 200
+        ];
+    }
+
     public function createExampage(array $data): array
     {
         $exampage = $this->exampageRepository->create($data);
@@ -46,6 +56,17 @@ class MiqExampageService implements MiqExampageServiceInterface
         $fields = [];
         if (isset($data['title'])) $fields['title'] = $data['title'];
         if (isset($data['exam_duration'])) $fields['exam_duration'] = (int) $data['exam_duration'];
+        if (array_key_exists('is_demo', $data)) $fields['is_demo'] = (bool) $data['is_demo'];
+        if (array_key_exists('starts_at', $data)) {
+            $fields['starts_at'] = !empty($data['starts_at']) ? $data['starts_at'] : null;
+        }
+        if (array_key_exists('price', $data)) {
+            $fields['price'] = $data['price'] !== null && $data['price'] !== '' ? (float) $data['price'] : null;
+        }
+        if (($fields['is_demo'] ?? null) === true) {
+            $fields['starts_at'] = null;
+            $fields['price'] = null;
+        }
 
         $updated = $this->exampageRepository->update($exampage, $fields);
 

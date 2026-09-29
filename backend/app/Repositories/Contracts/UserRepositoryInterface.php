@@ -9,8 +9,12 @@ interface UserRepositoryInterface
     public function findById(int $id): ?User;
     
     public function findByEmail(string $email): ?User;
-    
+
+    public function findByGoogleId(string $googleId): ?User;
+
     public function create(array $data): User;
+
+    public function createGoogleUser(array $data): User;
     
     public function verifyEmail(User $user): bool;
     
@@ -21,6 +25,8 @@ interface UserRepositoryInterface
     public function allNonAdmins(?string $search = null): \Illuminate\Database\Eloquent\Collection;
 
     public function allAdmins(?string $search = null): \Illuminate\Database\Eloquent\Collection;
+
+    public function searchLimited(string $search, int $limit = 10): \Illuminate\Database\Eloquent\Collection;
 
     public function delete(User $user): bool;
 }

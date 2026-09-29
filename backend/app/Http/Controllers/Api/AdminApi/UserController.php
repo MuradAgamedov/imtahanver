@@ -23,6 +23,17 @@ class UserController extends Controller
         return response()->json($result, $result['status_code']);
     }
 
+    public function search(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return response()->json(['success' => true, 'data' => [], 'status_code' => 200]);
+        }
+
+        $result = $this->userService->searchUsers($q, 10);
+        return response()->json($result, $result['status_code']);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [

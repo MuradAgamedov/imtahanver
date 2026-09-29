@@ -12,12 +12,30 @@ use Illuminate\Notifications\Notifiable;
 
 use App\Traits\Searchable;
 
-#[Fillable(['first_name', 'last_name', 'email', 'password', 'email_verified_at', 'user_category_identify', 'is_admin'])]
+#[Fillable(['first_name', 'last_name', 'email', 'password', 'email_verified_at', 'user_category_identify', 'is_admin', 'google_id', 'user_code'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, Searchable;
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (empty($user->user_code)) {
+                $user->user_code = static::generateUniqueCode();
+            }
+        });
+    }
+
+    public static function generateUniqueCode(): string
+    {
+        do {
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        } while (static::where('user_code', $code)->exists());
+
+        return $code;
+    }
 
     /**
      * Get the attributes that should be cast.

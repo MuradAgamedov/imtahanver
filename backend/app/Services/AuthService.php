@@ -151,6 +151,88 @@ class AuthService implements AuthServiceInterface
         ];
     }
 
+    public function loginWithGoogle(string $idToken): array
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(8)
+                ->get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $idToken]);
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Google ilə əlaqə qurulmadı. Yenidən cəhd edin.',
+                'status_code' => 502,
+            ];
+        }
+
+        if (!$response->successful()) {
+            return [
+                'success' => false,
+                'message' => 'Google girişi doğrulanmadı.',
+                'status_code' => 401,
+            ];
+        }
+
+        $payload = $response->json();
+        $configuredClientId = config('services.google.client_id');
+        $emailVerified = $payload['email_verified'] ?? false;
+        $emailVerified = $emailVerified === true || $emailVerified === 'true';
+
+        if (
+            empty($payload['sub']) ||
+            empty($payload['email']) ||
+            !$emailVerified ||
+            (!empty($configuredClientId) && ($payload['aud'] ?? null) !== $configuredClientId)
+        ) {
+            return [
+                'success' => false,
+                'message' => 'Google girişi doğrulanmadı.',
+                'status_code' => 401,
+            ];
+        }
+
+        $googleId = $payload['sub'];
+        $email = $payload['email'];
+
+        $user = $this->userRepository->findByGoogleId($googleId);
+
+        if (!$user) {
+            $user = $this->userRepository->findByEmail($email);
+
+            if ($user) {
+                $this->userRepository->update($user, [
+                    'google_id' => $googleId,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ]);
+                $user->refresh();
+            } else {
+                $firstName = $payload['given_name'] ?? explode(' ', $payload['name'] ?? $email)[0];
+                $lastName = $payload['family_name'] ?? '';
+
+                $user = $this->userRepository->createGoogleUser([
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'email' => $email,
+                    'google_id' => $googleId,
+                ]);
+            }
+        }
+
+        $token = $this->generateToken($user);
+
+        return [
+            'success' => true,
+            'message' => 'Giriş uğurludur.',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+            ],
+            'status_code' => 200,
+        ];
+    }
+
     public function forgotPassword(string $email): array
     {
         $user = $this->userRepository->findByEmail($email);

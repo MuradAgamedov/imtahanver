@@ -27,6 +27,16 @@ class AdminUserService implements AdminUserServiceInterface
         ];
     }
 
+    public function searchUsers(string $search, int $limit = 10): array
+    {
+        $users = $this->userRepository->searchLimited($search, $limit);
+        return [
+            'success' => true,
+            'data' => $users,
+            'status_code' => 200
+        ];
+    }
+
     public function createUser(array $data): array
     {
         $existing = $this->userRepository->findByEmail($data['email']);

@@ -17,6 +17,11 @@ class UserRepository implements UserRepositoryInterface
         return User::where('email', $email)->first();
     }
 
+    public function findByGoogleId(string $googleId): ?User
+    {
+        return User::where('google_id', $googleId)->first();
+    }
+
     public function create(array $data): User
     {
         return User::create([
@@ -24,6 +29,18 @@ class UserRepository implements UserRepositoryInterface
             'last_name' => $data['lastName'],
             'email' => $data['email'],
             'password' => $data['password'],
+        ]);
+    }
+
+    public function createGoogleUser(array $data): User
+    {
+        return User::create([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'google_id' => $data['google_id'],
+            'password' => null,
+            'email_verified_at' => now(),
         ]);
     }
 
@@ -117,7 +134,8 @@ class UserRepository implements UserRepositoryInterface
 
             return User::where('is_admin', false)
                 ->where(function($q) use ($search) {
-                    $q->where('first_name', 'like', '%' . $search . '%')
+                    $q->where('user_code', $search)
+                      ->orWhere('first_name', 'like', '%' . $search . '%')
                       ->orWhere('last_name', 'like', '%' . $search . '%')
                       ->orWhere('email', 'like', '%' . $search . '%');
                 })
@@ -206,6 +224,26 @@ class UserRepository implements UserRepositoryInterface
                 ->orderBy('id', 'desc')
                 ->get();
         }
+    }
+
+    /**
+     * Lightweight, capped user lookup for admin-side "search and pick a
+     * person" widgets (e.g. manually adding someone to an exam
+     * registration). Plain LIKE query — no Elasticsearch round-trip needed
+     * for a small, always-limited result set.
+     */
+    public function searchLimited(string $search, int $limit = 10): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::where('is_admin', false)
+            ->where(function ($q) use ($search) {
+                $q->where('user_code', $search)
+                  ->orWhere('first_name', 'like', '%' . $search . '%')
+                  ->orWhere('last_name', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%');
+            })
+            ->orderBy('id', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     public function delete(User $user): bool

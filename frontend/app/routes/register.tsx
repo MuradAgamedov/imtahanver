@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Form, Link, useNavigation, useSearchParams, useActionData, redirect } from 'react-router';
+import { Form, Link, useNavigation, useSearchParams, useActionData, useLoaderData, redirect } from 'react-router';
 import type { Route } from './+types/register';
 import { AuthPanel } from '../components/auth/auth-panel';
+import { GoogleAuthButton } from '../components/auth/google-auth-button';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
@@ -22,7 +23,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect('/');
   }
 
-  return {};
+  return { googleClientId: process.env.GOOGLE_CLIENT_ID ?? '' };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -261,6 +262,7 @@ export default function RegisterPage() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === 'submitting';
   const actionData = useActionData() as { error?: string } | undefined;
+  const { googleClientId } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
 
   const verify = searchParams.get('verify') === 'true';
@@ -309,28 +311,16 @@ export default function RegisterPage() {
         <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16 xl:px-24">
           {/* Mobile logo */}
           <div className="mb-8 flex lg:hidden">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600">
-                <svg width="18" height="18" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                  <path
-                    d="M7 9h14M7 14h10M7 19h12"
-                    stroke="#fff"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="21" cy="19" r="3" fill="#fff" opacity=".9" />
-                </svg>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">
-                İmtahan<strong>Ver</strong>
-              </span>
+            <Link to="/" className="flex items-center gap-1 font-serif-brand">
+              <span className="text-lg font-bold text-ink">İmtahan</span>
+              <span className="text-lg font-bold text-amber-brand-deep">Ver</span>
             </Link>
           </div>
 
           <div className="mx-auto w-full max-w-sm">
             <header className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Emaili təsdiqləyin</h1>
-              <p className="mt-1.5 text-sm text-gray-500">
+              <h1 className="font-serif-brand text-2xl font-bold text-ink">Emaili təsdiqləyin</h1>
+              <p className="mt-1.5 text-sm text-ink-soft">
                 <strong>{emailParam}</strong> ünvanına 6 rəqəmli OTP təsdiqləmə kodu göndərildi.
               </p>
             </header>
@@ -338,7 +328,7 @@ export default function RegisterPage() {
 
 
             {actionData?.error && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100">
                 {actionData.error}
               </div>
             )}
@@ -363,11 +353,11 @@ export default function RegisterPage() {
               </Button>
             </Form>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
+            <p className="mt-6 text-center text-sm text-ink-soft">
               Kodu almadınız?{' '}
               <Link
                 to="/register"
-                className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
+                className="font-semibold text-amber-brand-deep transition-colors hover:text-amber-brand"
               >
                 Yenidən qeydiyyatdan keçin
               </Link>
@@ -379,41 +369,29 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-paper">
       <AuthPanel />
 
       {/* ── Form panel ── */}
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16 xl:px-24">
         {/* Mobile logo */}
         <div className="mb-8 flex lg:hidden">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600">
-              <svg width="18" height="18" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                <path
-                  d="M7 9h14M7 14h10M7 19h12"
-                  stroke="#fff"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
-                <circle cx="21" cy="19" r="3" fill="#fff" opacity=".9" />
-              </svg>
-            </div>
-            <span className="text-lg font-semibold text-gray-900">
-              İmtahan<strong>Ver</strong>
-            </span>
+          <Link to="/" className="flex items-center gap-1 font-serif-brand">
+            <span className="text-lg font-bold text-ink">İmtahan</span>
+            <span className="text-lg font-bold text-amber-brand-deep">Ver</span>
           </Link>
         </div>
 
         <div className="mx-auto w-full max-w-sm">
           <header className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Hesab yaradın</h1>
-            <p className="mt-1.5 text-sm text-gray-500">
+            <h1 className="font-serif-brand text-2xl font-bold text-ink">Hesab yaradın</h1>
+            <p className="mt-1.5 text-sm text-ink-soft">
               Pulsuz başlamaq üçün məlumatlarınızı daxil edin
             </p>
           </header>
 
           {actionData?.error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100">
               {actionData.error}
             </div>
           )}
@@ -475,7 +453,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="text-gray-400 transition-colors hover:text-gray-600"
+                    className="text-ink-soft/60 transition-colors hover:text-ink-soft"
                     aria-label={showPassword ? 'Şifrəni gizlət' : 'Şifrəni göstər'}
                   >
                     {showPassword ? <EyeOffIcon /> : <EyeOpenIcon />}
@@ -499,7 +477,7 @@ export default function RegisterPage() {
                     ))}
                   </div>
                   {strength.label && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-ink-soft">
                       Şifrə gücü:{' '}
                       <span className={cn('font-medium', strengthLabelColor[strength.level])}>
                         {strength.label}
@@ -525,7 +503,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm((v) => !v)}
-                  className="text-gray-400 transition-colors hover:text-gray-600"
+                  className="text-ink-soft/60 transition-colors hover:text-ink-soft"
                   aria-label={showConfirm ? 'Şifrəni gizlət' : 'Şifrəni göstər'}
                 >
                   {showConfirm ? <EyeOffIcon /> : <EyeOpenIcon />}
@@ -542,22 +520,26 @@ export default function RegisterPage() {
                   checked={form.terms}
                   onChange={(e) => update('terms', e.target.checked)}
                   onBlur={() => handleBlur('terms')}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-indigo-600 focus:ring-indigo-500"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-soft/40 accent-amber-brand focus:ring-amber-brand"
                 />
-                <span className="text-sm text-gray-600">
-                  <Link
-                    to="/terms"
-                    className="font-medium text-indigo-600 hover:text-indigo-700"
+                <span className="text-sm text-ink-soft">
+                  <a
+                    href="https://imtahanver.online/istifade-sertleri"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-amber-brand-deep hover:text-amber-brand"
                   >
                     İstifadə şərtlərini
-                  </Link>{' '}
+                  </a>{' '}
                   və{' '}
-                  <Link
-                    to="/privacy"
-                    className="font-medium text-indigo-600 hover:text-indigo-700"
+                  <a
+                    href="https://imtahanver.online/mexfilik-siyaseti"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-amber-brand-deep hover:text-amber-brand"
                   >
                     Gizlilik siyasətini
-                  </Link>{' '}
+                  </a>{' '}
                   qəbul edirəm
                 </span>
               </label>
@@ -582,11 +564,15 @@ export default function RegisterPage() {
             </Button>
           </Form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-5">
+            <GoogleAuthButton clientId={googleClientId} />
+          </div>
+
+          <p className="mt-6 text-center text-sm text-ink-soft">
             Artıq hesabınız var?{' '}
             <Link
               to="/login"
-              className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
+              className="font-semibold text-amber-brand-deep transition-colors hover:text-amber-brand"
             >
               Daxil olun
             </Link>

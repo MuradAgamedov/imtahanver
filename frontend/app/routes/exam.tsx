@@ -91,7 +91,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       const sessionData = await sessionRes.json();
 
       if (!sessionData.success) {
-        throw new Error(sessionData.message || "Sessiya yaradılmadı.");
+        return {
+          exampage: null,
+          subject: null,
+          fennQuestions: [],
+          tedrisQuestions: [],
+          examSession: null,
+          remainingSeconds: 0,
+          initialAnswers: {},
+          token: session.token,
+          errorMessage: sessionData.message || "Sessiya yaradılmadı.",
+        };
       }
 
       examSessionData = sessionData.session;
@@ -136,23 +146,23 @@ function QuestionCard({
   onSelect: (optionId: number) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 shadow-sm">
+    <div className="rounded-2xl border border-ink/10 bg-paper p-6 shadow-sm">
       <div className="flex gap-3 mb-4">
-        <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+        <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-amber-brand/10 text-amber-brand-deep text-xs font-bold">
           {index + 1}
         </span>
         <div
-          className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed whitespace-pre-line [&_i]:italic [&_b]:font-bold [&_u]:underline"
+          className="text-sm font-medium text-ink leading-relaxed whitespace-pre-line [&_i]:italic [&_b]:font-bold [&_u]:underline"
           dangerouslySetInnerHTML={{ __html: question.text ?? "" }}
         />
       </div>
 
       {question.image_url && (
-        <div className="mb-4 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+        <div className="mb-4 rounded-xl overflow-hidden border border-ink/10">
           <img
             src={question.image_url}
             alt={`Sual ${index + 1}`}
-            className="w-full max-h-72 object-contain bg-slate-50 dark:bg-slate-900"
+            className="w-full max-h-72 object-contain bg-paper-2"
           />
         </div>
       )}
@@ -166,15 +176,15 @@ function QuestionCard({
               onClick={() => onSelect(opt.id)}
               className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left text-sm transition-all cursor-pointer ${
                 isSelected
-                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-200 font-semibold"
-                  : "border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300"
+                  ? "border-amber-brand bg-amber-brand/10 text-amber-brand-deep font-semibold"
+                  : "border-ink/10 hover:bg-paper-2 text-ink"
               }`}
             >
               <span
                 className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${
                   isSelected
-                    ? "border-indigo-500 bg-indigo-500 text-white"
-                    : "border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400"
+                    ? "border-amber-brand bg-amber-brand text-white"
+                    : "border-ink/20 text-ink-soft"
                 }`}
               >
                 {OPTION_LABELS[i] ?? i + 1}
@@ -190,7 +200,7 @@ function QuestionCard({
                   <img
                     src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
                     alt="Variant şəkli"
-                    className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                    className="mt-2 max-h-24 rounded-lg border border-ink/10 object-contain bg-paper"
                   />
                 )}
               </div>
@@ -209,7 +219,7 @@ function useCountdown(totalSeconds: number, onExpired?: () => void) {
   useEffect(() => {
     ref.current = totalSeconds;
     setRemaining(totalSeconds);
-    
+
     if (totalSeconds <= 0) {
       return;
     }
@@ -243,6 +253,7 @@ export default function Exam() {
     remainingSeconds,
     initialAnswers,
     token,
+    errorMessage,
   } = useLoaderData<typeof loader>();
 
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>(initialAnswers || {});
@@ -290,7 +301,7 @@ export default function Exam() {
     if (completedSession) return;
 
     const answerKey = `${prefix}_${questionId}`;
-    
+
     // Save to local state optimistically
     setSelectedAnswers((prev) => ({ ...prev, [answerKey]: optionId }));
 
@@ -365,10 +376,12 @@ export default function Exam() {
   // If the loader fails or parameters are invalid
   if (!exampage || !subject || !sessionState) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center p-8 bg-white dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm max-w-sm">
-          <p className="text-sm font-semibold text-red-500">İmtahan məlumatları tapılmadı və ya giriş icazəniz yoxdur.</p>
-          <Link to="/" className="mt-4 inline-block text-xs font-bold text-indigo-600 hover:underline">
+      <div className="min-h-screen flex items-center justify-center bg-paper">
+        <div className="text-center p-8 bg-paper rounded-2xl border border-ink/10 shadow-sm max-w-sm">
+          <p className="text-sm font-semibold text-red-500">
+            {errorMessage || "İmtahan məlumatları tapılmadı və ya giriş icazəniz yoxdur."}
+          </p>
+          <Link to="/" className="mt-4 inline-block text-xs font-bold text-amber-brand-deep hover:underline">
             Ana səhifəyə qayıt
           </Link>
         </div>
@@ -385,24 +398,24 @@ export default function Exam() {
 
     const specialtyPoints = specialtyCorrect * 2 - specialtyIncorrect * 0.5;
     const pedagogyPoints = pedagogyCorrect * 1 - pedagogyIncorrect * 0.25;
-    
+
     const totalAnswered = specialtyCorrect + specialtyIncorrect + pedagogyCorrect + pedagogyIncorrect;
     const totalUnanswered = totalQuestions - totalAnswered;
 
     return (
-      <div className="min-h-screen bg-slate-50/70 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans pb-16">
-        <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-100 dark:border-slate-800">
+      <div className="min-h-screen bg-paper text-ink font-sans pb-16">
+        <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-paper/80 border-b border-ink/10">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link
               to="/"
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-semibold text-ink-soft hover:text-amber-brand-deep transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
               </svg>
               Panellərə Qayıt
             </Link>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold text-ink-soft bg-paper-2 px-3 py-1 rounded-full">
               İmtahan Yekunlaşdı
             </span>
           </div>
@@ -410,27 +423,27 @@ export default function Exam() {
 
         <main className="mx-auto max-w-3xl px-4 sm:px-6 mt-8">
           {/* Result card */}
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 shadow-xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 h-40 w-40 bg-violet-500/5 rounded-full blur-3xl"></div>
+          <div className="bg-paper border border-ink/10 rounded-3xl p-8 shadow-xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 h-40 w-40 bg-amber-brand/5 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 h-40 w-40 bg-board/5 rounded-full blur-3xl"></div>
 
             <div className="text-center relative z-10">
-              <span className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold px-3 py-1 rounded-full mb-3">
+              <span className="inline-flex items-center gap-1 bg-amber-brand/10 text-amber-brand-deep text-xs font-bold px-3 py-1 rounded-full mb-3">
                 MİQ SINAQ NƏTİCƏSİ
               </span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
                 {subject.title} Fənni
               </h2>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{exampage.title}</p>
-              
+              <p className="text-xs text-ink-soft/70 mt-1">{exampage.title}</p>
+
               {/* Score Meter */}
               <div className="mt-8 flex justify-center">
-                <div className="relative flex items-center justify-center h-44 w-44 rounded-full border-4 border-indigo-50 dark:border-indigo-950/50 bg-gradient-to-tr from-indigo-50/10 to-violet-50/10 shadow-inner">
+                <div className="relative flex items-center justify-center h-44 w-44 rounded-full border-4 border-amber-brand/10 bg-amber-brand/5 shadow-inner">
                   <div className="text-center">
-                    <span className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                    <span className="text-4xl font-extrabold text-amber-brand-deep tabular-nums">
                       {completedSession.score}
                     </span>
-                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block mt-0.5">
+                    <span className="text-xs font-semibold text-ink-soft/70 block mt-0.5">
                       100 Bal Şkalasından
                     </span>
                   </div>
@@ -440,16 +453,16 @@ export default function Exam() {
               {/* Pass/Fail Status Banner */}
               <div className={`mt-6 rounded-2xl p-5 border text-center ${
                 specialtyPoints >= 34 && pedagogyPoints >= 6 && completedSession.score >= 40
-                  ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400' 
-                  : 'bg-rose-50/70 border-rose-200 text-rose-800 dark:bg-rose-950/20 dark:border-rose-900/40 dark:text-rose-400'
+                  ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50/70 border-rose-200 text-rose-800'
               }`}>
                 <div className="flex items-center justify-center gap-2">
                   {specialtyPoints >= 34 && pedagogyPoints >= 6 && completedSession.score >= 40 ? (
-                    <svg className="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   ) : (
-                    <svg className="w-6 h-6 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   )}
@@ -457,7 +470,7 @@ export default function Exam() {
                     {specialtyPoints >= 34 && pedagogyPoints >= 6 && completedSession.score >= 40 ? "İmtahandan Keçdiniz" : "Kəsildiniz (Keçid balı toplanmadı)"}
                   </span>
                 </div>
-                
+
                 {/* Requirements breakdown */}
                 <div className="mt-4 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-dashed pt-4 border-current/25">
                   <div>
@@ -484,49 +497,49 @@ export default function Exam() {
                 </div>
               </div>
 
-              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-slate-100 dark:border-slate-900 py-6">
+              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-ink/10 py-6">
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block">Sual sayı</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{totalQuestions}</span>
+                  <span className="text-xs text-ink-soft/70 block">Sual sayı</span>
+                  <span className="text-lg font-bold text-ink">{totalQuestions}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block">Cavablandırılan</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{totalAnswered}</span>
+                  <span className="text-xs text-ink-soft/70 block">Cavablandırılan</span>
+                  <span className="text-lg font-bold text-ink">{totalAnswered}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 block">Boş buraxılan</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{totalUnanswered}</span>
+                  <span className="text-xs text-ink-soft/70 block">Boş buraxılan</span>
+                  <span className="text-lg font-bold text-ink">{totalUnanswered}</span>
                 </div>
               </div>
 
               {/* Detail Cards */}
               <div className="mt-8 space-y-4 text-left">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider pl-1">
+                <h4 className="text-sm font-bold text-ink uppercase tracking-wider pl-1">
                   Mövzular üzrə bölgü:
                 </h4>
-                
+
                 {/* Specialty block */}
-                <div className="bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-900/60 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="bg-paper-2 border border-ink/10 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    <h5 className="text-sm font-bold text-ink">
                       İxtisas Mövzusu (Fənn proqramları)
                     </h5>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Hər düzgün cavab <strong className="text-indigo-600 dark:text-indigo-400">+2 bal</strong>, hər səhv <strong className="text-red-500">-0.5 bal</strong> hesablanır.
+                    <p className="text-xs text-ink-soft mt-1 leading-relaxed">
+                      Hər düzgün cavab <strong className="text-amber-brand-deep">+2 bal</strong>, hər səhv <strong className="text-red-500">-0.5 bal</strong> hesablanır.
                     </p>
                   </div>
                   <div className="flex gap-4 sm:text-right">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-emerald-600 block">Düz</span>
-                      <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{specialtyCorrect}</span>
+                      <span className="text-sm font-extrabold text-ink">{specialtyCorrect}</span>
                     </div>
                     <div>
                       <span className="text-[10px] uppercase font-bold text-red-500 block">Səhv</span>
-                      <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{specialtyIncorrect}</span>
+                      <span className="text-sm font-extrabold text-ink">{specialtyIncorrect}</span>
                     </div>
-                    <div className="border-l border-slate-200 dark:border-slate-800 pl-4">
-                      <span className="text-[10px] uppercase font-bold text-indigo-500 block">Net Bal</span>
-                      <span className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                    <div className="border-l border-ink/10 pl-4">
+                      <span className="text-[10px] uppercase font-bold text-amber-brand-deep block">Net Bal</span>
+                      <span className="text-sm font-extrabold text-amber-brand-deep">
                         {specialtyPoints > 0 ? `+${specialtyPoints}` : specialtyPoints}
                       </span>
                     </div>
@@ -534,27 +547,27 @@ export default function Exam() {
                 </div>
 
                 {/* Pedagogy block */}
-                <div className="bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-900/60 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="bg-paper-2 border border-ink/10 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    <h5 className="text-sm font-bold text-ink">
                       Tədris metodikası və təlim strategiyaları
                     </h5>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Hər düzgün cavab <strong className="text-indigo-600 dark:text-indigo-400">+1 bal</strong>, hər səhv <strong className="text-red-500">-0.25 bal</strong> hesablanır.
+                    <p className="text-xs text-ink-soft mt-1 leading-relaxed">
+                      Hər düzgün cavab <strong className="text-amber-brand-deep">+1 bal</strong>, hər səhv <strong className="text-red-500">-0.25 bal</strong> hesablanır.
                     </p>
                   </div>
                   <div className="flex gap-4 sm:text-right">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-emerald-600 block">Düz</span>
-                      <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{pedagogyCorrect}</span>
+                      <span className="text-sm font-extrabold text-ink">{pedagogyCorrect}</span>
                     </div>
                     <div>
                       <span className="text-[10px] uppercase font-bold text-red-500 block">Səhv</span>
-                      <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{pedagogyIncorrect}</span>
+                      <span className="text-sm font-extrabold text-ink">{pedagogyIncorrect}</span>
                     </div>
-                    <div className="border-l border-slate-200 dark:border-slate-800 pl-4">
-                      <span className="text-[10px] uppercase font-bold text-indigo-500 block">Net Bal</span>
-                      <span className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                    <div className="border-l border-ink/10 pl-4">
+                      <span className="text-[10px] uppercase font-bold text-amber-brand-deep block">Net Bal</span>
+                      <span className="text-sm font-extrabold text-amber-brand-deep">
                         {pedagogyPoints > 0 ? `+${pedagogyPoints}` : pedagogyPoints}
                       </span>
                     </div>
@@ -564,23 +577,23 @@ export default function Exam() {
               </div>
 
               {/* Question Analysis Title */}
-              <div className="mt-12 border-t border-slate-100 dark:border-slate-800 pt-8 text-left">
-                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              <div className="mt-12 border-t border-ink/10 pt-8 text-left">
+                <h4 className="text-lg font-bold text-ink mb-2">
                   Sualların Analizi və Cavablar
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-ink-soft">
                   Aşağıdakı bölmələrdən düzgün və sizin verdiyiniz cavabları sual bazasında ətraflı incələyə bilərsiniz.
                 </p>
 
                 {/* Question Review Tabs */}
-                <div className="flex gap-2 mt-6 bg-slate-100 dark:bg-slate-850 p-1 rounded-xl w-fit">
+                <div className="flex gap-2 mt-6 bg-paper-2 p-1 rounded-xl w-fit">
                   <button
                     type="button"
                     onClick={() => setReviewTab("fenn")}
                     className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                       reviewTab === "fenn"
-                        ? "bg-white dark:bg-slate-950 shadow-sm text-indigo-600 dark:text-indigo-400"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                        ? "bg-paper shadow-sm text-amber-brand-deep"
+                        : "text-ink-soft hover:text-ink"
                     }`}
                   >
                     İxtisas Mövzusu ({fennQuestions.length})
@@ -590,8 +603,8 @@ export default function Exam() {
                     onClick={() => setReviewTab("tedris")}
                     className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                       reviewTab === "tedris"
-                        ? "bg-white dark:bg-slate-950 shadow-sm text-indigo-600 dark:text-indigo-400"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                        ? "bg-paper shadow-sm text-amber-brand-deep"
+                        : "text-ink-soft hover:text-ink"
                     }`}
                   >
                     Tədris Metodikası ({tedrisQuestions.length})
@@ -613,12 +626,12 @@ export default function Exam() {
                     return (
                       <div
                         key={q.id}
-                        className={`rounded-2xl border bg-white dark:bg-slate-950 p-6 shadow-sm transition-all duration-300 ${
+                        className={`rounded-2xl border bg-paper p-6 shadow-sm transition-all duration-300 ${
                           !isAnswered
-                            ? "border-slate-100 dark:border-slate-800"
+                            ? "border-ink/10"
                             : isUserCorrect
-                            ? "border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/5 dark:bg-emerald-950/5"
-                            : "border-red-100 dark:border-red-900/40 bg-red-50/5 dark:bg-red-950/5"
+                            ? "border-emerald-100 bg-emerald-50/5"
+                            : "border-red-100 bg-red-50/5"
                         }`}
                       >
                         {/* Question Header */}
@@ -626,15 +639,15 @@ export default function Exam() {
                           <div className="flex gap-3">
                             <span className={`flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
                               !isAnswered
-                                ? "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400"
+                                ? "bg-paper-2 text-ink-soft"
                                 : isUserCorrect
-                                ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400"
-                                : "bg-red-100 dark:bg-red-955 text-red-700 dark:text-red-400"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-red-100 text-red-700"
                             }`}>
                               {idx + 1}
                             </span>
                             <div
-                              className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed whitespace-pre-line [&_i]:italic [&_b]:font-bold [&_u]:underline"
+                              className="text-sm font-medium text-ink leading-relaxed whitespace-pre-line [&_i]:italic [&_b]:font-bold [&_u]:underline"
                               dangerouslySetInnerHTML={{ __html: q.text ?? "" }}
                             />
                           </div>
@@ -642,15 +655,15 @@ export default function Exam() {
                           {/* Status Badge */}
                           <div>
                             {!isAnswered ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-900 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-paper-2 px-2.5 py-0.5 text-xs font-semibold text-ink-soft">
                                 ⚪ Boş buraxılıb
                               </span>
                             ) : isUserCorrect ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                                 ✅ Doğru
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-955/50 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:text-red-400">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
                                 ❌ Yanlış
                               </span>
                             )}
@@ -659,11 +672,11 @@ export default function Exam() {
 
                         {/* Question Image if exists */}
                         {q.image_url && (
-                          <div className="mb-4 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+                          <div className="mb-4 rounded-xl overflow-hidden border border-ink/10">
                             <img
                               src={q.image_url}
                               alt={`Sual ${idx + 1}`}
-                              className="w-full max-h-72 object-contain bg-slate-50 dark:bg-slate-900"
+                              className="w-full max-h-72 object-contain bg-paper-2"
                             />
                           </div>
                         )}
@@ -674,25 +687,25 @@ export default function Exam() {
                             const isSelected = userSelectedOptionId === opt.id;
                             const isTrue = !!opt.is_true;
 
-                            let optionStyles = "border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 text-slate-700 dark:text-slate-300";
+                            let optionStyles = "border-ink/10 hover:bg-paper-2/50 text-ink";
                             let badgeLabel = "";
                             let badgeStyles = "";
 
                             if (isTrue) {
-                              optionStyles = "border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 font-semibold shadow-sm";
+                              optionStyles = "border-emerald-500 bg-emerald-50/40 text-emerald-900 font-semibold shadow-sm";
                               if (isSelected) {
                                 badgeLabel = "Sizin cavabınız (Doğru)";
-                                badgeStyles = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
+                                badgeStyles = "bg-emerald-100 text-emerald-700";
                               } else {
                                 badgeLabel = "Doğru cavab";
-                                badgeStyles = "bg-emerald-100/70 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+                                badgeStyles = "bg-emerald-100/70 text-emerald-700";
                               }
                             } else if (isSelected) {
-                              optionStyles = "border-red-500 bg-red-50/40 dark:bg-red-950/20 text-red-900 dark:text-red-300 font-semibold shadow-sm";
+                              optionStyles = "border-red-500 bg-red-50/40 text-red-900 font-semibold shadow-sm";
                               badgeLabel = "Sizin cavabınız (Yanlış)";
-                              badgeStyles = "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
+                              badgeStyles = "bg-red-100 text-red-700";
                             } else {
-                              optionStyles = "border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/20 text-slate-500 dark:text-slate-400 opacity-70";
+                              optionStyles = "border-ink/10 bg-paper-2/20 text-ink-soft opacity-70";
                             }
 
                             return (
@@ -707,7 +720,7 @@ export default function Exam() {
                                         ? "border-emerald-500 bg-emerald-500 text-white"
                                         : isSelected
                                         ? "border-red-500 bg-red-500 text-white"
-                                        : "border-slate-300 dark:border-slate-600 text-slate-500"
+                                        : "border-ink/20 text-ink-soft"
                                     }`}
                                   >
                                     {OPTION_LABELS[oIdx] ?? oIdx + 1}
@@ -723,7 +736,7 @@ export default function Exam() {
                                       <img
                                         src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
                                         alt="Variant şəkli"
-                                        className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                                        className="mt-2 max-h-24 rounded-lg border border-ink/10 object-contain bg-paper"
                                       />
                                     )}
                                   </div>
@@ -747,7 +760,7 @@ export default function Exam() {
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <Link
                   to="/"
-                  className="flex-1 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all cursor-pointer text-center"
+                  className="flex-1 py-3.5 px-4 bg-amber-brand hover:bg-amber-brand-deep text-white text-sm font-bold rounded-xl shadow-lg transition-all cursor-pointer text-center"
                 >
                   Ana Səhifəyə Qayıt
                 </Link>
@@ -762,11 +775,11 @@ export default function Exam() {
 
   // ─── RENDER EXAM TAKING UI ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans pb-16">
+    <div className="min-h-screen bg-paper text-ink font-sans pb-16">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-5 py-3.5 rounded-xl border bg-slate-900 text-white shadow-lg border-slate-800 animate-in fade-in slide-in-from-bottom-5">
-          <svg className="w-5 h-5 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-5 py-3.5 rounded-xl border bg-board text-white shadow-lg border-board-deep animate-in fade-in slide-in-from-bottom-5">
+          <svg className="w-5 h-5 text-amber-brand animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-sm font-semibold">{toastMessage}</span>
@@ -775,16 +788,16 @@ export default function Exam() {
 
       {/* Submit Confirmation Modal */}
       {showSubmitConfirm && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">İmtahanı bitirmək istəyirsiniz?</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper border border-ink/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-bold text-ink">İmtahanı bitirmək istəyirsiniz?</h3>
+            <p className="text-xs text-ink-soft mt-2">
               Hazırkı cavablarınız yadda saxlanılacaq və imtahan nəticələriniz dərhal hesablanacaq. Bu əməliyyatı geri qaytarmaq olmaz.
             </p>
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowSubmitConfirm(false)}
-                className="flex-1 py-2.5 px-4 border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
+                className="flex-1 py-2.5 px-4 border border-ink/10 hover:bg-paper-2 text-ink text-xs font-bold rounded-xl cursor-pointer"
               >
                 İmtahana davam et
               </button>
@@ -802,40 +815,40 @@ export default function Exam() {
 
       {/* Exit warning modal — triggered by in-app navigation (back button, link) */}
       {blocker.state === "blocked" && (
-        <div className="fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[60] bg-ink/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-paper border border-ink/10 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
             {/* Icon */}
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-5">
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
 
-            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white leading-snug">
+            <h3 className="text-xl font-extrabold text-ink leading-snug">
               İmtahandan çıxmaq istəyirsiniz?
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
-              Seçdiyiniz cavablar əsasında imtahan <strong className="text-slate-700 dark:text-slate-300">avtomatik yekunlaşacaq</strong> və nəticələriniz dərhal hesablanacaq.
+            <p className="text-sm text-ink-soft mt-3 leading-relaxed">
+              Seçdiyiniz cavablar əsasında imtahan <strong className="text-ink">avtomatik yekunlaşacaq</strong> və nəticələriniz dərhal hesablanacaq.
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+            <p className="text-xs text-ink-soft/70 mt-2">
               Bu əməliyyatı geri qaytarmaq olmaz.
             </p>
 
             {/* Stats summary */}
-            <div className="mt-5 flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+            <div className="mt-5 flex items-center gap-3 p-4 rounded-2xl bg-paper-2 border border-ink/10">
               <div className="flex-1 text-center">
-                <p className="text-xs text-slate-400 mb-1">Cavablandırılan</p>
-                <p className="text-lg font-extrabold text-indigo-600 dark:text-indigo-400">{answeredCount}</p>
+                <p className="text-xs text-ink-soft/70 mb-1">Cavablandırılan</p>
+                <p className="text-lg font-extrabold text-amber-brand-deep">{answeredCount}</p>
               </div>
-              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+              <div className="h-8 w-px bg-ink/15" />
               <div className="flex-1 text-center">
-                <p className="text-xs text-slate-400 mb-1">Ümumi sual</p>
-                <p className="text-lg font-extrabold text-slate-700 dark:text-slate-300">{totalQuestions}</p>
+                <p className="text-xs text-ink-soft/70 mb-1">Ümumi sual</p>
+                <p className="text-lg font-extrabold text-ink">{totalQuestions}</p>
               </div>
-              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+              <div className="h-8 w-px bg-ink/15" />
               <div className="flex-1 text-center">
-                <p className="text-xs text-slate-400 mb-1">Boş buraxılan</p>
-                <p className="text-lg font-extrabold text-slate-500 dark:text-slate-400">{totalQuestions - answeredCount}</p>
+                <p className="text-xs text-ink-soft/70 mb-1">Boş buraxılan</p>
+                <p className="text-lg font-extrabold text-ink-soft">{totalQuestions - answeredCount}</p>
               </div>
             </div>
 
@@ -843,7 +856,7 @@ export default function Exam() {
               <button
                 onClick={() => blocker.reset?.()}
                 disabled={isExitSubmitting}
-                className="flex-1 py-3 px-4 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-2xl transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 border border-ink/15 hover:bg-paper-2 text-ink text-sm font-bold rounded-2xl transition-all cursor-pointer disabled:opacity-50"
               >
                 İmtahana davam et
               </button>
@@ -854,7 +867,7 @@ export default function Exam() {
                   blocker.proceed?.();
                 }}
                 disabled={isExitSubmitting}
-                className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold rounded-2xl shadow-lg shadow-amber-100 dark:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-bold rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 {isExitSubmitting ? (
                   <>
@@ -873,42 +886,42 @@ export default function Exam() {
       )}
 
       {/* Sticky header */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-100 dark:border-slate-800">
+      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-paper/80 border-b border-ink/10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               to="/"
-              className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-ink-soft hover:text-amber-brand-deep transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
               </svg>
               Geri
             </Link>
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
-            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 truncate">
+            <div className="h-4 w-px bg-ink/15" />
+            <div className="flex items-center gap-2 text-xs text-ink-soft truncate">
               <span>MİQ</span>
               <span>›</span>
               <span>{exampage.title}</span>
               <span>›</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">{subject.title}</span>
+              <span className="font-semibold text-ink">{subject.title}</span>
             </div>
           </div>
 
           <div className="flex-shrink-0 flex items-center gap-4">
             <div className="flex items-center gap-1.5 text-sm">
-              <span className="font-bold text-indigo-600 dark:text-indigo-400">{answeredCount}</span>
-              <span className="text-slate-400">/</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">{totalQuestions}</span>
-              <span className="hidden sm:inline text-xs text-slate-400 dark:text-slate-500 ml-1">cavablanıb</span>
+              <span className="font-bold text-amber-brand-deep">{answeredCount}</span>
+              <span className="text-ink-soft/60">/</span>
+              <span className="font-semibold text-ink">{totalQuestions}</span>
+              <span className="hidden sm:inline text-xs text-ink-soft/70 ml-1">cavablanıb</span>
             </div>
 
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold tabular-nums transition-colors ${
               isDone
-                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600"
+                ? "bg-paper-2 text-ink-soft/60"
                 : isLow
-                ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 animate-pulse"
-                : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300"
+                ? "bg-red-50 text-red-600 animate-pulse"
+                : "bg-amber-brand/10 text-amber-brand-deep"
             }`}>
               <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -918,7 +931,7 @@ export default function Exam() {
 
             <button
               onClick={() => setShowSubmitConfirm(true)}
-              className="py-1.5 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm shadow-red-100 dark:shadow-none"
+              className="py-1.5 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
             >
               Bitir
             </button>
@@ -926,9 +939,9 @@ export default function Exam() {
         </div>
 
         {/* Progress bar */}
-        <div className="h-0.5 bg-slate-100 dark:bg-slate-800">
+        <div className="h-0.5 bg-paper-2">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-500"
+            className="h-full bg-amber-brand transition-all duration-500"
             style={{ width: totalQuestions > 0 ? `${(answeredCount / totalQuestions) * 100}%` : "0%" }}
           />
         </div>
@@ -936,21 +949,21 @@ export default function Exam() {
 
       {/* Questions List */}
       <main className="mx-auto max-w-4xl px-4 sm:px-6 mt-8 space-y-10">
-        
+
         {/* Fənn sualları */}
         {fennQuestions.length > 0 && (
           <section>
             <div className="flex items-center gap-3 mb-5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-brand/10 text-amber-brand-deep">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <div>
-                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                <h4 className="text-base font-bold text-ink">
                   Fənn Sualları — {subject.title}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{fennQuestions.length} sual (Hər sual 2 bal, səhv -0.5 bal)</p>
+                <p className="text-xs text-ink-soft">{fennQuestions.length} sual (Hər sual 2 bal, səhv -0.5 bal)</p>
               </div>
             </div>
             <div className="space-y-5">
@@ -971,16 +984,16 @@ export default function Exam() {
         {tedrisQuestions.length > 0 && (
           <section>
             <div className="flex items-center gap-3 mb-5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-board/10 text-board">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
               <div>
-                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                <h4 className="text-base font-bold text-ink">
                   Tədris Metodikası Sualları
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{tedrisQuestions.length} sual (Hər sual 1 bal, səhv -0.25 bal)</p>
+                <p className="text-xs text-ink-soft">{tedrisQuestions.length} sual (Hər sual 1 bal, səhv -0.25 bal)</p>
               </div>
             </div>
             <div className="space-y-5">
@@ -999,8 +1012,8 @@ export default function Exam() {
 
         {fennQuestions.length === 0 && tedrisQuestions.length === 0 && (
           <div className="text-center py-24">
-            <p className="text-sm text-slate-400 dark:text-slate-600">Bu fənn üçün hələ sual əlavə edilməyib.</p>
-            <Link to="/" className="mt-4 inline-block text-sm font-semibold text-indigo-600 hover:underline">
+            <p className="text-sm text-ink-soft/70">Bu fənn üçün hələ sual əlavə edilməyib.</p>
+            <Link to="/" className="mt-4 inline-block text-sm font-semibold text-amber-brand-deep hover:underline">
               Ana səhifəyə qayıt
             </Link>
           </div>

@@ -12,6 +12,8 @@ class ApplicantFrontQuestionsController extends Controller
 {
     public function exampages(): JsonResponse
     {
+        // Both demo and paid papers are shown — paid ones are gated behind
+        // registration/payment and their scheduled start time client-side.
         $exampages = ApplicantExampage::orderBy('id', 'desc')->get();
         return response()->json([
             'success' => true,

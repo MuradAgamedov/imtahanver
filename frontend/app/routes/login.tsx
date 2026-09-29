@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Form, Link, useNavigation, useActionData, redirect } from 'react-router';
+import { Form, Link, useNavigation, useActionData, useLoaderData, redirect } from 'react-router';
 import type { Route } from './+types/login';
 import { AuthPanel } from '../components/auth/auth-panel';
+import { GoogleAuthButton } from '../components/auth/google-auth-button';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { sessionCookie } from '../lib/session';
@@ -21,7 +22,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect('/');
   }
 
-  return {};
+  return { googleClientId: process.env.GOOGLE_CLIENT_ID ?? '' };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -147,6 +148,7 @@ export default function LoginPage() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === 'submitting';
   const actionData = useActionData() as { error?: string } | undefined;
+  const { googleClientId } = useLoaderData<typeof loader>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -169,41 +171,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-paper">
       <AuthPanel />
 
       {/* ── Form panel ── */}
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16 xl:px-24">
         {/* Mobile logo */}
         <div className="mb-10 flex lg:hidden">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600">
-              <svg width="18" height="18" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                <path
-                  d="M7 9h14M7 14h10M7 19h12"
-                  stroke="#fff"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
-                <circle cx="21" cy="19" r="3" fill="#fff" opacity=".9" />
-              </svg>
-            </div>
-            <span className="text-lg font-semibold text-gray-900">
-              İmtahan<strong>Ver</strong>
-            </span>
+          <Link to="/" className="flex items-center gap-1 font-serif-brand">
+            <span className="text-lg font-bold text-ink">İmtahan</span>
+            <span className="text-lg font-bold text-amber-brand-deep">Ver</span>
           </Link>
         </div>
 
         <div className="mx-auto w-full max-w-sm">
           <header className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Xoş gəldiniz</h1>
-            <p className="mt-1.5 text-sm text-gray-500">
+            <h1 className="font-serif-brand text-2xl font-bold text-ink">Xoş gəldiniz</h1>
+            <p className="mt-1.5 text-sm text-ink-soft">
               Hesabınıza daxil olmaq üçün məlumatlarınızı daxil edin
             </p>
           </header>
 
           {actionData?.error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100 animate-pulse">
+            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100 animate-pulse">
               {actionData.error}
             </div>
           )}
@@ -237,7 +227,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-ink-soft/60 hover:text-ink-soft transition-colors"
                   aria-label={showPassword ? 'Şifrəni gizlət' : 'Şifrəni göstər'}
                 >
                   {showPassword ? <EyeOffIcon /> : <EyeOpenIcon />}
@@ -250,14 +240,14 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   name="remember"
-                  className="h-4 w-4 rounded border-gray-300 accent-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-ink-soft/40 accent-amber-brand focus:ring-amber-brand"
                 />
-                <span className="text-sm text-gray-600">Məni xatırla</span>
+                <span className="text-sm text-ink-soft">Məni xatırla</span>
               </label>
 
               <Link
                 to="/forgot-password"
-                className="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+                className="text-sm font-medium text-amber-brand-deep transition-colors hover:text-amber-brand"
               >
                 Şifrəni unutdunuz?
               </Link>
@@ -268,11 +258,15 @@ export default function LoginPage() {
             </Button>
           </Form>
 
-          <p className="mt-8 text-center text-sm text-gray-500">
+          <div className="mt-5">
+            <GoogleAuthButton clientId={googleClientId} />
+          </div>
+
+          <p className="mt-8 text-center text-sm text-ink-soft">
             Hesabınız yoxdur?{' '}
             <Link
               to="/register"
-              className="font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
+              className="font-semibold text-amber-brand-deep transition-colors hover:text-amber-brand"
             >
               Qeydiyyat
             </Link>

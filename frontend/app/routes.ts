@@ -6,6 +6,7 @@ export default [
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
   route("forgot-password", "routes/forgot-password.tsx"),
+  route("auth/google", "routes/auth.google.ts"),
   route("exams", "routes/exams.tsx"),
   route("miq-exampages", "routes/miq-exampages.tsx"),
   route("miq-exampages/:exampageId/subjects", "routes/exam-subjects.tsx"),
@@ -13,6 +14,7 @@ export default [
   route("applicant-exampages", "routes/applicant-exampages.tsx"),
   route("applicant-exampages/:exampageId/groups", "routes/applicant-exampage-groups.tsx"),
   route("exam/applicant/:exampageId/:groupId", "routes/applicant-exam.tsx"),
+  route("odenis/:registrationId", "routes/odenis.tsx"),
   route("api/exam-questions", "routes/api.exam-questions.ts"),
 
 ] satisfies RouteConfig;

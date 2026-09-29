@@ -1,0 +1,14 @@
+RewriteEngine On
+RewriteBase /
+
+# Redirect visible /page.php URLs to the clean /page URL (SEO-friendly, avoids duplicate URLs).
+# Forced to https:// explicitly since Apache sits behind a TLS-terminating proxy
+# and doesn't otherwise know the original request was HTTPS.
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\s/+([^?\s]+)\.php[\s?] [NC]
+RewriteRule ^ https://%{HTTP_HOST}/%1 [R=301,L]
+
+# Internally serve /page from page.php when no such file/directory exists directly.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]

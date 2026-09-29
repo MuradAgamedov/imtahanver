@@ -69,9 +69,18 @@ export async function action({ request }: Route.ActionArgs) {
 
     if (intent === "update") {
       const id = formData.get("id") as string;
+      const is_demo = formData.get("is_demo") === "on";
+      const starts_at = formData.get("starts_at") as string;
+      const price = formData.get("price") as string;
       const res = await fetch(`http://backend:80/api/adminapi/applicant-exampages/${id}`, {
         method: "PUT", headers,
-        body: JSON.stringify({ title: formData.get("title"), exam_duration: Number(formData.get("exam_duration")) }),
+        body: JSON.stringify({
+          title: formData.get("title"),
+          exam_duration: Number(formData.get("exam_duration")),
+          is_demo,
+          starts_at: is_demo ? null : (starts_at || null),
+          price: is_demo ? null : (price || null),
+        }),
       });
       const data = await res.json();
       if (!res.ok) return { error: data.message || "Vərəq yenilənmədi." };
@@ -106,6 +115,14 @@ export async function action({ request }: Route.ActionArgs) {
   return {};
 }
 
+function toDatetimeLocal(value?: string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function ApplicantExampagesPage() {
   const { exampages, allGroups, search } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
@@ -119,6 +136,9 @@ export default function ApplicantExampagesPage() {
   const [selectedExampage, setSelectedExampage] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDuration, setEditDuration] = useState("");
+  const [editIsDemo, setEditIsDemo] = useState(true);
+  const [editStartsAt, setEditStartsAt] = useState("");
+  const [editPrice, setEditPrice] = useState("");
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -230,7 +250,7 @@ export default function ApplicantExampagesPage() {
                   ID: #{ep.id}
                 </span>
                 <h3 className="text-base font-bold text-gray-900 truncate">{ep.title}</h3>
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
                   <p className="text-xs text-gray-400">{ep.created_at ? new Date(ep.created_at).toLocaleString("az-AZ") : "-"}</p>
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -238,10 +258,25 @@ export default function ApplicantExampagesPage() {
                     </svg>
                     {ep.exam_duration ?? 150} dəq
                   </span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    ep.is_demo === false ? "bg-violet-50 text-violet-700" : "bg-emerald-50 text-emerald-700"
+                  }`}>
+                    {ep.is_demo === false ? "Pullu" : "Demo"}
+                  </span>
+                  {ep.is_demo === false && ep.starts_at && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                      Başlama: {new Date(ep.starts_at).toLocaleString("az-AZ")}
+                    </span>
+                  )}
+                  {ep.is_demo === false && ep.price != null && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                      {ep.price} AZN
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setSelectedExampage(ep); setEditTitle(ep.title || ""); setEditDuration(String(ep.exam_duration ?? 150)); setShowEditModal(true); }}
+                <button onClick={() => { setSelectedExampage(ep); setEditTitle(ep.title || ""); setEditDuration(String(ep.exam_duration ?? 150)); setEditIsDemo(ep.is_demo !== false); setEditStartsAt(toDatetimeLocal(ep.starts_at)); setEditPrice(ep.price != null ? String(ep.price) : ""); setShowEditModal(true); }}
                   title="Düzəliş et" className="rounded-xl p-2 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -286,6 +321,18 @@ export default function ApplicantExampagesPage() {
               </svg>
               Qrupları İdarə Et
             </button>
+
+            {ep.is_demo === false && (
+              <Link
+                to={`/exam-registrations?exam_type=applicant&exampage_id=${ep.id}&title=${encodeURIComponent(ep.title)}`}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-150 text-violet-700 px-4 py-2.5 text-xs font-bold shadow-sm transition-all cursor-pointer text-center"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-4a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4" />
+                </svg>
+                Qeydiyyatlar
+              </Link>
+            )}
           </div>
         ))}
       </div>
@@ -392,6 +439,41 @@ export default function ApplicantExampagesPage() {
                 <input type="number" name="exam_duration" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} min="1" max="600" required
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none" />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Növ</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setEditIsDemo(true)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
+                      editIsDemo ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}>
+                    Demo
+                  </button>
+                  <button type="button" onClick={() => setEditIsDemo(false)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${
+                      !editIsDemo ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}>
+                    Pullu
+                  </button>
+                </div>
+                <input type="hidden" name="is_demo" value={editIsDemo ? "on" : "off"} />
+                <p className="text-xs text-gray-400 mt-1.5">
+                  <strong>Pullu</strong> vərəqlər tələbələrə görünür, amma başlamazdan əvvəl qeydiyyat + ödəniş və başlama vaxtının çatması tələb olunur.
+                </p>
+              </div>
+              {!editIsDemo && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Başlama Tarixi və Saatı</label>
+                    <input type="datetime-local" name="starts_at" value={editStartsAt} onChange={(e) => setEditStartsAt(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Qiymət (AZN)</label>
+                    <input type="number" name="price" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} min="0" step="0.01"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none" />
+                  </div>
+                </>
+              )}
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => { setShowEditModal(false); setSelectedExampage(null); }}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>

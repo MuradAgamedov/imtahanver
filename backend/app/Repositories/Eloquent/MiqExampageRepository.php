@@ -84,6 +84,15 @@ class MiqExampageRepository implements MiqExampageRepositoryInterface
         }
     }
 
+    /**
+     * Unused by the front-end listing (which now shows demo and paid papers
+     * alike via all()) — kept for any admin-side filtering that may want it.
+     */
+    public function demoOnly(): Collection
+    {
+        return MiqExampage::where('is_demo', true)->orderBy('id', 'desc')->get();
+    }
+
     public function findById(int $id): ?MiqExampage
     {
         return MiqExampage::find($id);

@@ -12,11 +12,13 @@ Route::prefix('front')->group(function () {
     Route::post('register', [RegisterController::class, 'register']);
     Route::post('verify-otp', [RegisterController::class, 'verifyOtp']);
     Route::post('login', [LoginController::class, 'login']);
+    Route::post('auth/google', [\App\Http\Controllers\Api\Front\GoogleAuthController::class, 'login']);
     Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetOtp']);
     Route::post('reset-password', [ForgotPasswordController::class, 'resetPassword']);
     Route::get('user-categories', [ProfileController::class, 'getCategories']);
+    Route::get('home-features', [\App\Http\Controllers\Api\AdminApi\HomeFeatureController::class, 'index']);
     Route::get('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'index']);
-    Route::get('miq-exampages', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'index']);
+    Route::get('miq-exampages', [\App\Http\Controllers\Api\Front\MiqExampageController::class, 'index']);
     Route::get('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'index']);
     Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\MiqFrontQuestionsController::class, 'subjectQuestions']);
     Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/direct-questions', [\App\Http\Controllers\Api\Front\MiqFrontQuestionsController::class, 'directQuestions']);
@@ -43,6 +45,13 @@ Route::prefix('front')->group(function () {
         Route::post('exam-sessions/{sessionId}/answer', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'saveAnswer']);
         Route::post('exam-sessions/{sessionId}/submit', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'submit']);
         Route::get('exam-sessions/{sessionId}/results', [\App\Http\Controllers\Api\Front\ExamSessionController::class, 'getResults']);
+
+        // Exam Registration Routes (paid/scheduled exams)
+        Route::get('exam-registrations', [\App\Http\Controllers\Api\Front\ExamRegistrationController::class, 'index']);
+        Route::post('exam-registrations', [\App\Http\Controllers\Api\Front\ExamRegistrationController::class, 'store']);
+        Route::get('exam-registrations/{id}', [\App\Http\Controllers\Api\Front\ExamRegistrationController::class, 'show']);
+        Route::post('exam-registrations/{id}/mock-confirm', [\App\Http\Controllers\Api\Front\ExamRegistrationController::class, 'mockConfirm']);
+        Route::delete('exam-registrations/{id}', [\App\Http\Controllers\Api\Front\ExamRegistrationController::class, 'destroy']);
     });
 });
 
@@ -51,6 +60,7 @@ Route::prefix('adminapi')->group(function () {
 
     Route::middleware(JwtAuthMiddleware::class)->group(function () {
         Route::get('users', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'index']);
+        Route::get('users/search', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'search']);
         Route::post('users', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'store']);
         Route::put('users/{id}', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'update']);
         Route::delete('users/{id}', [\App\Http\Controllers\Api\AdminApi\UserController::class, 'destroy']);
@@ -65,6 +75,48 @@ Route::prefix('adminapi')->group(function () {
         Route::put('user-categories/{id}', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'update']);
         Route::delete('user-categories/{id}', [\App\Http\Controllers\Api\AdminApi\UserCategoryController::class, 'destroy']);
 
+        Route::get('home-features', [\App\Http\Controllers\Api\AdminApi\HomeFeatureController::class, 'index']);
+        Route::post('home-features', [\App\Http\Controllers\Api\AdminApi\HomeFeatureController::class, 'store']);
+        Route::put('home-features/reorder', [\App\Http\Controllers\Api\AdminApi\HomeFeatureController::class, 'reorder']);
+        Route::put('home-features/{id}', [\App\Http\Controllers\Api\AdminApi\HomeFeatureController::class, 'update']);
+        Route::delete('home-features/{id}', [\App\Http\Controllers\Api\AdminApi\HomeFeatureController::class, 'destroy']);
+
+        Route::get('home-faqs', [\App\Http\Controllers\Api\AdminApi\HomeFaqController::class, 'index']);
+        Route::post('home-faqs', [\App\Http\Controllers\Api\AdminApi\HomeFaqController::class, 'store']);
+        Route::put('home-faqs/reorder', [\App\Http\Controllers\Api\AdminApi\HomeFaqController::class, 'reorder']);
+        Route::put('home-faqs/{id}', [\App\Http\Controllers\Api\AdminApi\HomeFaqController::class, 'update']);
+        Route::delete('home-faqs/{id}', [\App\Http\Controllers\Api\AdminApi\HomeFaqController::class, 'destroy']);
+
+        Route::get('home-about', [\App\Http\Controllers\Api\AdminApi\HomeAboutController::class, 'show']);
+        Route::put('home-about', [\App\Http\Controllers\Api\AdminApi\HomeAboutController::class, 'update']);
+
+        Route::get('site-contact', [\App\Http\Controllers\Api\AdminApi\SiteContactController::class, 'show']);
+        Route::put('site-contact', [\App\Http\Controllers\Api\AdminApi\SiteContactController::class, 'update']);
+
+        Route::get('contact-messages', [\App\Http\Controllers\Api\AdminApi\ContactMessageController::class, 'index']);
+        Route::put('contact-messages/{id}/read', [\App\Http\Controllers\Api\AdminApi\ContactMessageController::class, 'markRead']);
+        Route::put('contact-messages/{id}/unread', [\App\Http\Controllers\Api\AdminApi\ContactMessageController::class, 'markUnread']);
+        Route::delete('contact-messages/{id}', [\App\Http\Controllers\Api\AdminApi\ContactMessageController::class, 'destroy']);
+
+        Route::get('social-links', [\App\Http\Controllers\Api\AdminApi\SocialLinkController::class, 'index']);
+        Route::post('social-links', [\App\Http\Controllers\Api\AdminApi\SocialLinkController::class, 'store']);
+        Route::put('social-links/reorder', [\App\Http\Controllers\Api\AdminApi\SocialLinkController::class, 'reorder']);
+        Route::put('social-links/{id}', [\App\Http\Controllers\Api\AdminApi\SocialLinkController::class, 'update']);
+        Route::delete('social-links/{id}', [\App\Http\Controllers\Api\AdminApi\SocialLinkController::class, 'destroy']);
+
+        Route::get('legal-pages', [\App\Http\Controllers\Api\AdminApi\LegalPageController::class, 'index']);
+        Route::get('legal-pages/{slug}', [\App\Http\Controllers\Api\AdminApi\LegalPageController::class, 'show']);
+        Route::put('legal-pages/{slug}', [\App\Http\Controllers\Api\AdminApi\LegalPageController::class, 'update']);
+
+        Route::get('site-texts', [\App\Http\Controllers\Api\AdminApi\SiteTextController::class, 'index']);
+        Route::put('site-texts', [\App\Http\Controllers\Api\AdminApi\SiteTextController::class, 'update']);
+
+        Route::get('home-categories', [\App\Http\Controllers\Api\AdminApi\HomeCategoryController::class, 'index']);
+        Route::post('home-categories', [\App\Http\Controllers\Api\AdminApi\HomeCategoryController::class, 'store']);
+        Route::put('home-categories/reorder', [\App\Http\Controllers\Api\AdminApi\HomeCategoryController::class, 'reorder']);
+        Route::put('home-categories/{id}', [\App\Http\Controllers\Api\AdminApi\HomeCategoryController::class, 'update']);
+        Route::delete('home-categories/{id}', [\App\Http\Controllers\Api\AdminApi\HomeCategoryController::class, 'destroy']);
+
         Route::get('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'index']);
         Route::post('miq-subjects', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'store']);
         Route::put('miq-subjects/reorder', [\App\Http\Controllers\Api\AdminApi\MiqSubjectController::class, 'reorder']);
@@ -76,6 +128,10 @@ Route::prefix('adminapi')->group(function () {
         Route::put('miq-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'update']);
         Route::delete('miq-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqExampageController::class, 'destroy']);
         Route::get('miq-exampages/{exampageId}/question-types', [\App\Http\Controllers\Api\AdminApi\MiqQuestionTypeController::class, 'show']);
+
+        Route::get('exam-registrations', [\App\Http\Controllers\Api\AdminApi\ExamRegistrationController::class, 'index']);
+        Route::post('exam-registrations', [\App\Http\Controllers\Api\AdminApi\ExamRegistrationController::class, 'store']);
+        Route::delete('exam-registrations/{id}', [\App\Http\Controllers\Api\AdminApi\ExamRegistrationController::class, 'destroy']);
 
         Route::get('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'index']);
         Route::post('miq-exampages/{exampageId}/subjects', [\App\Http\Controllers\Api\AdminApi\MiqExampageSubjectController::class, 'store']);

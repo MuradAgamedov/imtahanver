@@ -8,6 +8,7 @@ use App\Models\MiqExampage;
 interface MiqExampageRepositoryInterface
 {
     public function all(?string $search = null): Collection;
+    public function demoOnly(): Collection;
     public function findById(int $id): ?MiqExampage;
     public function create(array $data): MiqExampage;
     public function update(MiqExampage $exampage, array $data): MiqExampage;

@@ -148,6 +148,7 @@ class ProfileController extends Controller
             'success' => true,
             'user' => [
                 'id' => $user->id,
+                'user_code' => $user->user_code,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,

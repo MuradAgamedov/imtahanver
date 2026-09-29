@@ -15,12 +15,20 @@ use App\Models\ApplicantSubject;
 use App\Models\ApplicantQuestion;
 use App\Models\ApplicantQuestionOption;
 use App\Models\ApplicantWrittenAnswer;
+use App\Services\Contracts\ExamRegistrationServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class ExamSessionController extends Controller
 {
+    protected ExamRegistrationServiceInterface $registrationService;
+
+    public function __construct(ExamRegistrationServiceInterface $registrationService)
+    {
+        $this->registrationService = $registrationService;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -68,6 +76,31 @@ class ExamSessionController extends Controller
                 ->where('miq_exampage_id', $exampageId)
                 ->where('status', 'completed')
                 ->first();
+        }
+
+        // Paid/scheduled exam gate — demo papers skip this entirely.
+        $exampage = $isApplicant ? ApplicantExampage::find($exampageId) : MiqExampage::find($exampageId);
+        if ($exampage && $exampage->is_demo === false) {
+            $isRegistered = $this->registrationService->isRegisteredAndPaid(
+                $user->id,
+                $isApplicant ? 'applicant' : 'miq',
+                $exampageId
+            );
+
+            if (!$isRegistered) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu imtahana qeydiyyatdan keçib ödəniş etməlisiniz.',
+                ], 403);
+            }
+
+            if ($exampage->starts_at && now()->lt($exampage->starts_at)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'İmtahan hələ başlamayıb.',
+                    'starts_at' => $exampage->starts_at,
+                ], 403);
+            }
         }
 
         if ($completedSession) {

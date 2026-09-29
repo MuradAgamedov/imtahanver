@@ -10,10 +10,13 @@ class ApplicantExampage extends Model
 {
     use HasFactory, Searchable;
 
-    protected $fillable = ['title', 'exam_duration'];
+    protected $fillable = ['title', 'exam_duration', 'is_demo', 'starts_at', 'price'];
 
     protected $casts = [
         'exam_duration' => 'integer',
+        'is_demo' => 'boolean',
+        'starts_at' => 'datetime',
+        'price' => 'decimal:2',
     ];
 
     protected static function boot()

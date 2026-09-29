@@ -95,7 +95,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       const sessionData = await sessionRes.json();
 
       if (!sessionData.success) {
-        throw new Error(sessionData.message || "Sessiya yaradılmadı.");
+        return {
+          exampage: null,
+          group: null,
+          questions: [],
+          examSession: null,
+          remainingSeconds: 0,
+          initialAnswers: {},
+          token: session.token,
+          exampageId,
+          groupId,
+          errorMessage: sessionData.message || "Sessiya yaradılmadı.",
+        };
       }
 
       examSessionData = sessionData.session;
@@ -170,6 +181,7 @@ export default function ApplicantExam() {
     token,
     exampageId,
     groupId,
+    errorMessage,
   } = useLoaderData<typeof loader>();
 
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, any>>(initialAnswers || {});
@@ -345,10 +357,10 @@ export default function ApplicantExam() {
 
   if (!exampage || !group || !sessionState) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center p-8 bg-white dark:bg-slate-950 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-          <p className="text-red-500 font-semibold">Məlumatlar yüklənə bilmədi.</p>
-          <Link to="/applicant-exampages" className="mt-4 inline-block text-xs font-bold text-indigo-600 hover:underline">
+      <div className="min-h-screen flex items-center justify-center bg-paper">
+        <div className="text-center p-8 bg-paper rounded-2xl shadow-sm border border-ink/10">
+          <p className="text-red-500 font-semibold">{errorMessage || "Məlumatlar yüklənə bilmədi."}</p>
+          <Link to="/applicant-exampages" className="mt-4 inline-block text-xs font-bold text-amber-brand-deep hover:underline">
             Geri qayıt
           </Link>
         </div>
@@ -368,57 +380,57 @@ export default function ApplicantExam() {
     const unansweredCount = questions.length - answeredCount;
 
     return (
-      <div className="min-h-screen bg-slate-50/70 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans pb-16">
-        <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border-b border-slate-100 dark:border-slate-800">
+      <div className="min-h-screen bg-paper text-ink font-sans pb-16">
+        <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-paper/80 border-b border-ink/10">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link
               to={`/applicant-exampages/${exampageId}/groups`}
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-semibold text-ink-soft hover:text-emerald-600 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
               </svg>
               Qruplara Qayıt
             </Link>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-550 bg-slate-100 dark:bg-slate-850 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold text-ink-soft/70 bg-paper-2 px-3 py-1 rounded-full">
               Sınaq Bitib
             </span>
           </div>
         </header>
 
         <main className="mx-auto max-w-3xl px-4 sm:px-6 mt-8">
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 shadow-xl overflow-hidden relative">
+          <div className="bg-paper border border-ink/10 rounded-3xl p-8 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 h-40 w-40 bg-emerald-500/5 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 h-40 w-40 bg-teal-500/5 rounded-full blur-3xl"></div>
 
             <div className="text-center relative z-10">
-              <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-3">
+              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-xs font-bold px-3 py-1 rounded-full mb-3">
                 ABİTURİYENT İMTAHANI
               </span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
                 {group.title}
               </h2>
-              <p className="text-xs text-slate-400 dark:text-slate-550 mt-1">
+              <p className="text-xs text-ink-soft/70 mt-1">
                 {exampage.title}
               </p>
 
-              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-slate-100 dark:border-slate-900 py-6">
+              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-ink/10 py-6">
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-550 block">Sual sayı</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{questions.length}</span>
+                  <span className="text-xs text-ink-soft/70 block">Sual sayı</span>
+                  <span className="text-lg font-bold text-ink">{questions.length}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-550 block">Cavablandırılan</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{answeredCount}</span>
+                  <span className="text-xs text-ink-soft/70 block">Cavablandırılan</span>
+                  <span className="text-lg font-bold text-ink">{answeredCount}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 dark:text-slate-550 block">Boş buraxılan</span>
-                  <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{unansweredCount}</span>
+                  <span className="text-xs text-ink-soft/70 block">Boş buraxılan</span>
+                  <span className="text-lg font-bold text-ink">{unansweredCount}</span>
                 </div>
               </div>
 
               <div className="mt-12 text-left">
-                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                <h4 className="text-lg font-bold text-ink mb-4">
                   Suallara verilmiş cavablar
                 </h4>
 
@@ -432,28 +444,28 @@ export default function ApplicantExam() {
                     return (
                       <div
                         key={q.id}
-                        className="rounded-2xl border bg-white dark:bg-slate-950 p-6 shadow-sm border-slate-100 dark:border-slate-800"
+                        className="rounded-2xl border bg-paper p-6 shadow-sm border-ink/10"
                       >
                         <div className="flex items-start justify-between gap-4 mb-4">
                           <div className="flex gap-3">
-                            <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-650">
+                            <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold bg-paper-2 text-ink-soft">
                               {idx + 1}
                             </span>
                             <div
-                              className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed"
+                              className="text-sm font-medium text-ink leading-relaxed"
                               dangerouslySetInnerHTML={{ __html: q.title ?? "" }}
                             />
                           </div>
 
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            isAnswered ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40" : "bg-slate-100 text-slate-500"
+                            isAnswered ? "bg-emerald-50 text-emerald-700" : "bg-paper-2 text-ink-soft"
                           }`}>
                             {isAnswered ? "Cavablandırılıb" : "Boş"}
                           </span>
                         </div>
 
                         {q.image_url && (
-                          <div className="mb-4 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+                          <div className="mb-4 rounded-xl overflow-hidden border border-ink/10">
                             <img src={q.image_url} alt="" className="w-full max-h-72 object-contain" />
                           </div>
                         )}
@@ -463,13 +475,13 @@ export default function ApplicantExam() {
                             {q.options.map((opt: any, oIdx: number) => {
                               const isSelected = userSelectedOptionId === opt.id;
                               let styles = isSelected
-                                ? "border-emerald-500 bg-emerald-555/20 text-emerald-800 dark:text-emerald-300 font-semibold"
-                                : "border-slate-100 dark:border-slate-800 bg-slate-50/10";
+                                ? "border-emerald-500 bg-emerald-50/40 text-emerald-800 font-semibold"
+                                : "border-ink/10 bg-paper-2/40";
 
                               return (
                                 <div key={opt.id} className={`flex items-start gap-3 px-4 py-2.5 rounded-xl border text-xs ${styles}`}>
                                   <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
-                                    isSelected ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-300 text-slate-505"
+                                    isSelected ? "bg-emerald-500 text-white border-emerald-500" : "border-ink/20 text-ink-soft"
                                   }`}>
                                     {OPTION_LABELS[oIdx] ?? oIdx + 1}
                                   </span>
@@ -479,7 +491,7 @@ export default function ApplicantExam() {
                                       <img
                                         src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
                                         alt="Variant şəkli"
-                                        className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                                        className="mt-2 max-h-24 rounded-lg border border-ink/10 object-contain bg-paper"
                                       />
                                     )}
                                   </div>
@@ -488,10 +500,10 @@ export default function ApplicantExam() {
                             })}
                           </div>
                         ) : (
-                          <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl space-y-2 text-xs">
+                          <div className="p-4 bg-paper-2 rounded-xl space-y-2 text-xs">
                             <p>
-                              <span className="text-slate-400 block mb-0.5">Sizin cavabınız:</span>
-                              <strong className={isAnswered ? "text-emerald-600 text-sm font-bold" : "text-slate-500 text-sm font-semibold"}>
+                              <span className="text-ink-soft/70 block mb-0.5">Sizin cavabınız:</span>
+                              <strong className={isAnswered ? "text-emerald-600 text-sm font-bold" : "text-ink-soft text-sm font-semibold"}>
                                 {userTextAns || "—"}
                               </strong>
                             </p>
@@ -521,9 +533,9 @@ export default function ApplicantExam() {
 
   // ─── RENDER EXAM TAKING UI ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans pb-16">
+    <div className="min-h-screen bg-paper text-ink font-sans pb-16">
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-5 py-3.5 rounded-xl border bg-slate-900 text-white shadow-lg border-slate-800 animate-in fade-in slide-in-from-bottom-5">
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-5 py-3.5 rounded-xl border bg-board text-white shadow-lg border-board-deep animate-in fade-in slide-in-from-bottom-5">
           <svg className="w-5 h-5 text-emerald-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -532,16 +544,16 @@ export default function ApplicantExam() {
       )}
 
       {showSubmitConfirm && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">İmtahanı bitirmək istəyirsiniz?</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper border border-ink/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-ink">İmtahanı bitirmək istəyirsiniz?</h3>
+            <p className="text-xs text-ink-soft mt-2">
               Hazırkı cavablarınız yadda saxlanılacaq və sınaq nəticələriniz dərhal hesablanacaq. Bu əməliyyat geri qaytarılmır.
             </p>
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowSubmitConfirm(false)}
-                className="flex-1 py-2.5 px-4 border border-slate-100 dark:border-slate-800 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+                className="flex-1 py-2.5 px-4 border border-ink/10 hover:bg-paper-2 text-ink text-xs font-bold rounded-xl cursor-pointer"
               >
                 İmtahana davam et
               </button>
@@ -558,25 +570,25 @@ export default function ApplicantExam() {
       )}
 
       {blocker.state === "blocked" && (
-        <div className="fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-5">
+        <div className="fixed inset-0 z-[60] bg-ink/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-paper border border-ink/10 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-5">
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
 
-            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white leading-snug">
+            <h3 className="text-xl font-extrabold text-ink leading-snug">
               İmtahandan çıxmaq istəyirsiniz?
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
-              İmtahanı yarımçıq qoysanız, seçdiyiniz cavablar üzrə nəticələr <strong className="text-slate-700 dark:text-slate-300">avtomatik yekunlaşacaq</strong>.
+            <p className="text-sm text-ink-soft mt-3 leading-relaxed">
+              İmtahanı yarımçıq qoysanız, seçdiyiniz cavablar üzrə nəticələr <strong className="text-ink">avtomatik yekunlaşacaq</strong>.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={() => blocker.reset()}
-                className="flex-1 py-3 px-4 border border-slate-100 dark:border-slate-850 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+                className="flex-1 py-3 px-4 border border-ink/10 hover:bg-paper-2 text-ink text-xs font-bold rounded-xl cursor-pointer"
               >
                 İmtahana qayıt
               </button>
@@ -596,24 +608,24 @@ export default function ApplicantExam() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-45 w-full bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 shadow-sm">
+      <header className="sticky top-0 z-40 w-full bg-paper border-b border-ink/10 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-emerald-600 tracking-wider block leading-none mb-1">
               ABİTURİYENT İMTAHANI
             </span>
-            <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-none">
-              {group.title} · <span className="text-xs font-medium text-slate-400">{exampage.title}</span>
+            <h1 className="text-sm font-bold text-ink leading-none">
+              {group.title} · <span className="text-xs font-medium text-ink-soft/70">{exampage.title}</span>
             </h1>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Timer */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-850 bg-slate-50 dark:bg-slate-900">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-ink/10 bg-paper-2">
               <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tabular-nums">
+              <span className="text-sm font-extrabold text-ink tabular-nums">
                 {timerDisplay}
               </span>
             </div>
@@ -636,32 +648,32 @@ export default function ApplicantExam() {
               <div
                 key={q.id}
                 id={`question-card-${q.id}`}
-                className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm scroll-mt-24"
+                className="bg-paper border border-ink/10 rounded-3xl p-6 md:p-8 shadow-sm scroll-mt-24"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-sm font-bold">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 text-sm font-bold">
                     {idx + 1}
                   </span>
-                  <span className="text-xs font-semibold text-slate-400">
+                  <span className="text-xs font-semibold text-ink-soft/70">
                     {q.question_type === 1 ? "Qapalı sual" : q.question_type === 2 ? "Kodlaşdırıla bilən açıq sual" : "Yazılı açıq sual"}
                   </span>
                 </div>
 
                 {/* Title / Question text */}
                 <div
-                  className="text-base font-medium text-slate-900 dark:text-white leading-relaxed mb-6 whitespace-pre-line"
+                  className="text-base font-medium text-ink leading-relaxed mb-6 whitespace-pre-line"
                   dangerouslySetInnerHTML={{ __html: q.title ?? "" }}
                 />
 
                 {/* Question Image if exists */}
                 {q.image_url && (
-                  <div className="mb-6 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-850">
-                    <img src={q.image_url} alt="" className="w-full max-h-80 object-contain bg-slate-50 dark:bg-slate-900" />
+                  <div className="mb-6 rounded-2xl overflow-hidden border border-ink/10">
+                    <img src={q.image_url} alt="" className="w-full max-h-80 object-contain bg-paper-2" />
                   </div>
                 )}
 
                 {/* Answers Input Area */}
-                <div className="border-t border-slate-100 dark:border-slate-850 pt-6">
+                <div className="border-t border-ink/10 pt-6">
                   {q.question_type === 1 ? (
                     // Closed Options (A, B, C, D, E)
                     <div className="space-y-3">
@@ -673,12 +685,12 @@ export default function ApplicantExam() {
                             onClick={() => handleSelectClosed(q.id, opt.id)}
                             className={`w-full flex items-start gap-3 px-5 py-4 rounded-2xl border text-left text-sm transition-all cursor-pointer ${
                               isSelected
-                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-200 font-semibold"
-                                : "border-slate-100 dark:border-slate-850 hover:bg-slate-50/50 text-slate-700 dark:text-slate-300"
+                                ? "border-emerald-500 bg-emerald-50 text-emerald-800 font-semibold"
+                                : "border-ink/10 hover:bg-paper-2/50 text-ink"
                             }`}
                           >
                             <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${
-                              isSelected ? "bg-emerald-550 border-emerald-550 text-white" : "border-slate-300 text-slate-500"
+                              isSelected ? "bg-emerald-500 border-emerald-500 text-white" : "border-ink/20 text-ink-soft"
                             }`}>
                               {OPTION_LABELS[oIdx] ?? oIdx + 1}
                             </span>
@@ -688,7 +700,7 @@ export default function ApplicantExam() {
                                 <img
                                   src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
                                   alt="Variant şəkli"
-                                  className="mt-2 max-h-24 rounded-lg border border-slate-200/60 object-contain bg-white dark:bg-slate-900"
+                                  className="mt-2 max-h-24 rounded-lg border border-ink/10 object-contain bg-paper"
                                 />
                               )}
                             </div>
@@ -699,7 +711,7 @@ export default function ApplicantExam() {
                   ) : q.question_type === 2 ? (
                     // Codeable open question (textarea instead of input text)
                     <div>
-                      <label className="text-xs font-bold text-slate-400 block mb-2">
+                      <label className="text-xs font-bold text-ink-soft/70 block mb-2">
                         Riyazi/Hərfi cavabı daxil edin:
                       </label>
                       <textarea
@@ -714,13 +726,13 @@ export default function ApplicantExam() {
                         }}
                         onBlur={(e) => handleSaveOpen(q.id, e.target.value)}
                         placeholder="Məs. 12,5"
-                        className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold"
+                        className="w-full px-4 py-3 rounded-2xl border border-ink/10 bg-paper-2/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold"
                       />
                     </div>
                   ) : (
                     // Written open question (textarea)
                     <div>
-                      <label className="text-xs font-bold text-slate-400 block mb-2">
+                      <label className="text-xs font-bold text-ink-soft/70 block mb-2">
                         Açıq yazılı cavabınızı daxil edin:
                       </label>
                       <textarea
@@ -735,18 +747,18 @@ export default function ApplicantExam() {
                         }}
                         onBlur={(e) => handleSaveOpen(q.id, e.target.value)}
                         placeholder="Buraya qeyd edin..."
-                        className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm"
+                        className="w-full px-4 py-3 rounded-2xl border border-ink/10 bg-paper-2/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm"
                       />
                     </div>
                   )}
                 </div>
 
                 {/* Bottom Card Navigation */}
-                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-850 flex justify-between items-center">
+                <div className="mt-8 pt-6 border-t border-ink/10 flex justify-between items-center">
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleClearAnswer(q.id, q.question_type)}
-                      className="py-2.5 px-4 text-xs font-bold text-slate-500 hover:text-red-500 transition-colors cursor-pointer border border-transparent hover:border-red-250 rounded-xl"
+                      className="py-2.5 px-4 text-xs font-bold text-ink-soft hover:text-red-500 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-xl"
                     >
                       Cavabı Sil
                     </button>

@@ -82,6 +82,12 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const isApplicantPath = location.pathname.startsWith("/applicant");
   const [isApplicantOpen, setIsApplicantOpen] = useState(isApplicantPath);
 
+  const isHomePath = location.pathname.startsWith("/home-") || location.pathname.startsWith("/site-texts");
+  const [isHomeOpen, setIsHomeOpen] = useState(isHomePath);
+
+  const isContactPath = ["/contact-messages", "/site-contact", "/social-links"].some((p) => location.pathname.startsWith(p));
+  const [isContactOpen, setIsContactOpen] = useState(isContactPath);
+
   return (
     <>
       {/* Mobile Backdrop Overlay */}
@@ -204,6 +210,215 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               </ul>
             )}
           </li>
+
+            {/* Ana Səhifə Collapsible Dropdown */}
+            <li>
+              <button
+                onClick={() => setIsHomeOpen(!isHomeOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer text-slate-400 hover:bg-slate-800 hover:text-white",
+                  isHomePath && "text-white bg-slate-800/40"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 12l9-9 9 9" />
+                    <path d="M5 10v10h14V10" />
+                  </svg>
+                  <span>Ana Səhifə</span>
+                </div>
+                <svg
+                  className={cn("h-4 w-4 transform transition-transform duration-200", isHomeOpen && "rotate-90")}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {isHomeOpen && (
+                <ul className="mt-1 pl-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                  <li>
+                    <NavLink
+                      to="/home-features"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Xüsusiyyətlər
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/home-faqs"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Suallar (FAQ)
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/home-about"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Haqqımızda
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/home-categories"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Kateqoriyalar
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/site-texts"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Sayt Mətnləri
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* Əlaqə Collapsible Dropdown */}
+            <li>
+              <button
+                onClick={() => setIsContactOpen(!isContactOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer text-slate-400 hover:bg-slate-800 hover:text-white",
+                  isContactPath && "text-white bg-slate-800/40"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="M3 7l9 6 9-6" />
+                  </svg>
+                  <span>Əlaqə</span>
+                </div>
+                <svg
+                  className={cn("h-4 w-4 transform transition-transform duration-200", isContactOpen && "rotate-90")}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {isContactOpen && (
+                <ul className="mt-1 pl-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                  <li>
+                    <NavLink
+                      to="/contact-messages"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Mesajlar
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/site-contact"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Əlaqə Məlumatları
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/social-links"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Sosial Şəbəkələr
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* Hüquqi Səhifələr */}
+            <li>
+              <NavLink to="/legal-pages" className={navLinkClass} onClick={onClose}>
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+                Hüquqi Səhifələr
+              </NavLink>
+            </li>
 
             {/* Abituriyent Collapsible Dropdown */}
             <li>

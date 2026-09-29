@@ -6,6 +6,7 @@ interface AdminUserServiceInterface
 {
     // Standard User CRUD
     public function listUsers(?string $search = null): array;
+    public function searchUsers(string $search, int $limit = 10): array;
     public function createUser(array $data): array;
     public function updateUser(int $id, array $data): array;
     public function deleteUser(int $id): array;

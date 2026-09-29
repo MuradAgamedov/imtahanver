@@ -36,13 +36,11 @@ services:
     image: redis:7-alpine
     container_name: imtahanver_redis
     restart: unless-stopped
-    command: redis-server --save 60 1 --loglevel warning
-    ports:
-      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -126,6 +124,7 @@ services:
       NODE_ENV: production
       API_URL: http://backend:80
       STORAGE_URL: ${STORAGE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
   admin:
     build:
@@ -147,6 +146,9 @@ services:
       dockerfile: Dockerfile
     container_name: imtahanver_main
     restart: unless-stopped
+    environment:
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY}
+      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY}
     ports:
       - "8085:80"
 
