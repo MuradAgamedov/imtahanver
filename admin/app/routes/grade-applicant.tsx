@@ -272,6 +272,7 @@ export default function GradeApplicantPage() {
                 const isClosed = q.question_type === 1;
                 const isCodeable = q.question_type === 2;
                 const isWritten = q.question_type === 3;
+                const hasCorrectOption = !!q.options?.find((o: any) => o.is_true);
 
                 // Retrieve answers
                 let answerObj: any = null;
@@ -444,9 +445,58 @@ export default function GradeApplicantPage() {
                               </div>
                             </div>
                           )}
-                          <p className="text-[10px] text-gray-400 italic">
-                            * Kodlaşdırıla bilən açıq suallar sistem tərəfindən avtomatik yoxlanılır.
-                          </p>
+                          {hasCorrectOption ? (
+                            <p className="text-[10px] text-gray-400 italic">
+                              * Kodlaşdırıla bilən açıq suallar sistem tərəfindən avtomatik yoxlanılır.
+                            </p>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-150 rounded-md px-2 py-0.5">
+                                  Düzgün cavab təyin edilməyib — əl ilə qiymətləndirin
+                                </span>
+                                {answerObj?.is_correct === true ? (
+                                  <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-150">
+                                    Düzgün (+1 Bal)
+                                  </span>
+                                ) : answerObj?.is_correct === false ? (
+                                  <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-150">
+                                    Səhv (0 Bal)
+                                  </span>
+                                ) : null}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={gradingQuestionId === q.id || !isAnswered}
+                                  onClick={() => handleGrade(q.id, false)}
+                                  className={cn(
+                                    "px-4 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
+                                    answerObj?.is_correct === false
+                                      ? "bg-rose-50 border-rose-200 text-rose-700"
+                                      : "bg-white border-gray-250 text-gray-700 hover:bg-slate-50"
+                                  )}
+                                >
+                                  Səhv İşarələ (0 Bal)
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={gradingQuestionId === q.id || !isAnswered}
+                                  onClick={() => handleGrade(q.id, true)}
+                                  className={cn(
+                                    "px-4 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
+                                    answerObj?.is_correct === true
+                                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                      : "bg-emerald-600 border-transparent text-white hover:bg-emerald-700 shadow-sm"
+                                  )}
+                                >
+                                  {gradingQuestionId === q.id ? "Yadda saxlanılır..." : "Düzgün İşarələ (+1 Bal)"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         // Type 3: Written Open question

@@ -173,7 +173,16 @@ class ExamSession extends Model
                             } else {
                                 $ans->update(['is_correct' => false, 'points' => 0.0]);
                             }
+                        } elseif (!is_null($ans->is_correct)) {
+                            // No correct option configured on the question: trust the admin's manual grade.
+                            if ($ans->is_correct) {
+                                $Da_codeable++;
+                                $ans->update(['points' => 1.0]);
+                            } else {
+                                $ans->update(['points' => 0.0]);
+                            }
                         }
+                        // else: no correct option and not yet manually graded — leave pending.
                     } else {
                         if ($ans) {
                             $ans->update(['is_correct' => false, 'points' => 0.0]);
@@ -276,6 +285,15 @@ class ExamSession extends Model
                             } else {
                                 $Y_codeable++;
                             }
+                        } elseif (!is_null($ans->is_correct)) {
+                            // No correct option configured: trust the admin's manual grade.
+                            if ($ans->is_correct) {
+                                $Da_codeable++;
+                            } else {
+                                $Y_codeable++;
+                            }
+                        } else {
+                            $ungradedWrittenCount++;
                         }
                     } else {
                         $unansweredCodeable++;
