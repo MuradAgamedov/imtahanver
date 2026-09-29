@@ -101,6 +101,18 @@ class ExamResultController extends Controller
         $session->score = $session->calculateApplicantScore();
         $session->save();
 
+        $session->load([
+            'user',
+            'exampage',
+            'subject',
+            'applicantExampage',
+            'applicantGroup',
+            'applicantSubject',
+            'answers.applicantQuestion',
+            'answers.applicantOption',
+            'applicantWrittenAnswers.question',
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Cavab uğurla qiymətləndirildi.',
