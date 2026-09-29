@@ -144,6 +144,12 @@ Route::prefix('adminapi')->group(function () {
         Route::delete('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'destroy']);
         Route::put('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'reorder']);
 
+        // MIQ Question Passages (keçidlər — shared text/audio linked to several questions)
+        Route::get('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\MiqQuestionPassageController::class, 'index']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\MiqQuestionPassageController::class, 'store']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionPassageController::class, 'update']);
+        Route::delete('miq-exampages/{exampageId}/question-types/{questionTypeId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionPassageController::class, 'destroy']);
+
         // MIQ Question Options Endpoints (subject-based questions)
         Route::get('miq-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'index']);
         Route::post('miq-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MiqQuestionOptionController::class, 'store']);

@@ -48,7 +48,8 @@ class MiqQuestionController extends Controller
 
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string',
-            'image' => 'nullable|image|max:4096' // Max 4MB image
+            'image' => 'nullable|image|max:4096', // Max 4MB image
+            'miq_question_passage_id' => 'nullable|integer|exists:miq_question_passages,id',
         ]);
 
         if ($validator->fails()) {
@@ -62,8 +63,9 @@ class MiqQuestionController extends Controller
             'miq_exampage_id' => (int)$exampageId,
             'miq_question_type_id' => (int)$questionTypeId,
             'miq_subject_id' => $subjId,
+            'miq_question_passage_id' => $request->input('miq_question_passage_id') ?: null,
             'text' => $request->input('text'),
-            'image' => $request->file('image')
+            'image' => $request->file('image'),
         ];
 
         try {
@@ -85,7 +87,8 @@ class MiqQuestionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string',
-            'image' => 'nullable' // Can be file or null
+            'image' => 'nullable', // Can be file or null
+            'miq_question_passage_id' => 'nullable|integer|exists:miq_question_passages,id',
         ]);
 
         if ($validator->fails()) {
@@ -98,6 +101,10 @@ class MiqQuestionController extends Controller
         $data = [
             'text' => $request->input('text')
         ];
+
+        if ($request->has('miq_question_passage_id')) {
+            $data['miq_question_passage_id'] = $request->input('miq_question_passage_id') ?: null;
+        }
 
         // Handle image if passed
         if ($request->hasFile('image')) {

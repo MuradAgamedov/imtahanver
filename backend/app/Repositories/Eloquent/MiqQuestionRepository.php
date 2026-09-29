@@ -11,9 +11,11 @@ class MiqQuestionRepository implements MiqQuestionRepositoryInterface
 {
     public function getQuestions(int $exampageId, int $questionTypeId, ?int $subjectId): Collection
     {
-        return MiqQuestion::where('miq_exampage_id', $exampageId)
+        return MiqQuestion::with('passage')
+            ->where('miq_exampage_id', $exampageId)
             ->where('miq_question_type_id', $questionTypeId)
             ->where('miq_subject_id', $subjectId)
+            ->orderBy(DB::raw('COALESCE(miq_question_passage_id, id)'))
             ->orderBy('order')
             ->get();
     }

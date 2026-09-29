@@ -13,6 +13,7 @@ class MiqQuestion extends Model
         'miq_exampage_id',
         'miq_question_type_id',
         'miq_subject_id',
+        'miq_question_passage_id',
         'text',
         'image',
         'order'
@@ -56,5 +57,10 @@ class MiqQuestion extends Model
     public function options()
     {
         return $this->hasMany(MiqQuestionOption::class, 'miq_question_id')->orderBy('order');
+    }
+
+    public function passage()
+    {
+        return $this->belongsTo(MiqQuestionPassage::class, 'miq_question_passage_id');
     }
 }
