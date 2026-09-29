@@ -8,12 +8,8 @@ const isProd = typeof window !== "undefined"
   : true;
 const STORAGE_BASE = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
 
-const getApiBase = (params: any) => {
-  const isSubject = params.subjectId !== undefined;
-  return isSubject 
-    ? `http://backend:80/api/adminapi/miq-questions/${params.questionId}/options`
-    : `http://backend:80/api/adminapi/miq-direct-questions/${params.questionId}/options`;
-};
+const getApiBase = (params: any) =>
+  `http://backend:80/api/adminapi/miq-questions/${params.questionId}/options`;
 
 function ImageUploader({ storageBase, current, onChange }: {
   storageBase: string; current: string; onChange: (path: string) => void;
