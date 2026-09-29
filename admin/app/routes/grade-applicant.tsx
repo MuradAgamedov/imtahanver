@@ -452,9 +452,7 @@ export default function GradeApplicantPage() {
                           ) : (
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 pt-3">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-150 rounded-md px-2 py-0.5">
-                                  Düzgün cavab təyin edilməyib — əl ilə qiymətləndirin
-                                </span>
+                                <span className="text-xs font-bold text-gray-500">Qiymət:</span>
                                 {answerObj?.is_correct === true ? (
                                   <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-150">
                                     Düzgün (+1 Bal)
@@ -463,7 +461,11 @@ export default function GradeApplicantPage() {
                                   <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-150">
                                     Səhv (0 Bal)
                                   </span>
-                                ) : null}
+                                ) : (
+                                  <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 border border-amber-150 animate-pulse">
+                                    Yoxlanılmayıb
+                                  </span>
+                                )}
                               </div>
 
                               <div className="flex items-center gap-2">
