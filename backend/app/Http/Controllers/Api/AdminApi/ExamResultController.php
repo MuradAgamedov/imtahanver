@@ -56,6 +56,8 @@ class ExamResultController extends Controller
             $questions = \App\Models\ApplicantQuestion::with('options')
                 ->where('applicant_exampage_id', $session->applicant_exampage_id)
                 ->where('applicant_group_id', $session->applicant_group_id)
+                ->orderBy('applicant_subject_id')
+                ->orderBy('question_type')
                 ->orderBy('order')
                 ->get();
         }
