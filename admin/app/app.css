@@ -3,6 +3,30 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /*
+   * The UI throughout this app uses half-step shades (150, 250, 450, 650, 750, 850)
+   * that don't exist in Tailwind's default palette. Without these, every utility
+   * class using them (e.g. bg-indigo-650, text-gray-650) silently generates no CSS.
+   * Values are the midpoint between the neighboring standard Tailwind shades.
+   */
+  --color-amber-150: #feeca8;
+  --color-emerald-150: #bcf6da;
+  --color-emerald-650: #048760;
+  --color-gray-150: #eceef0;
+  --color-gray-250: #dbdee3;
+  --color-gray-450: #848a98;
+  --color-gray-650: #414b5a;
+  --color-gray-750: #2b3544;
+  --color-indigo-150: #d4dcfe;
+  --color-indigo-650: #493fd8;
+  --color-red-650: #ca2121;
+  --color-red-750: #a91c1c;
+  --color-rose-150: #fed8dc;
+  --color-slate-150: #eaeef4;
+  --color-slate-850: #162032;
+  --color-teal-150: #b2f8ea;
+  --color-violet-150: #e5e0fe;
 }
 
 html,
