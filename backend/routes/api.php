@@ -208,5 +208,6 @@ Route::prefix('adminapi')->group(function () {
         Route::get('exam-results', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'index']);
         Route::get('exam-results/{id}', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'show']);
         Route::post('exam-results/{id}/grade', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'grade']);
+        Route::post('exam-results/{id}/written-answer', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'updateWrittenAnswer']);
     });
 });

@@ -61,6 +61,9 @@ export default function GradeApplicantPage() {
     examSession.applicant_group?.subjects?.[0]?.id || 0
   );
   const [gradingQuestionId, setGradingQuestionId] = useState<number | null>(null);
+  const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [savingAnswerId, setSavingAnswerId] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
@@ -99,6 +102,41 @@ export default function GradeApplicantPage() {
       showToast("İnternet və ya server xətası baş verdi.", "error");
     } finally {
       setGradingQuestionId(null);
+    }
+  };
+
+  const handleUpdateWrittenAnswer = async (questionId: number, text: string) => {
+    setSavingAnswerId(questionId);
+    try {
+      const isProd = typeof window !== "undefined" && window.location.hostname.endsWith("imtahanver.online");
+      const apiBase = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
+      const res = await fetch(`${apiBase}/api/adminapi/exam-results/${examSession.id}/written-answer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          applicant_question_id: questionId,
+          written_answer: text,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setExamSession(data.session);
+        setEditingQuestionId(null);
+        showToast("Cavab uğurla yeniləndi!");
+      } else {
+        showToast(data.message || "Cavab yenilənərkən xəta baş verdi.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("İnternet və ya server xətası baş verdi.", "error");
+    } finally {
+      setSavingAnswerId(null);
     }
   };
 
@@ -346,23 +384,66 @@ export default function GradeApplicantPage() {
                         </div>
                       ) : isCodeable ? (
                         <div className="space-y-2 text-xs">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                            <div>
-                              <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider">Tələbənin Cavabı:</span>
-                              <strong className={cn(
-                                "text-sm",
-                                points > 0 ? "text-emerald-600" : "text-red-500"
-                              )}>
-                                {answerObj?.written_answer || "—"}
-                              </strong>
+                          {editingQuestionId === q.id ? (
+                            <div className="space-y-2">
+                              <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider">Tələbənin Cavabını Redaktə Et:</span>
+                              <input
+                                type="text"
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                autoFocus
+                                className="w-full px-3 py-2 rounded-lg border border-gray-250 text-sm font-semibold focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                              />
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={savingAnswerId === q.id}
+                                  onClick={() => handleUpdateWrittenAnswer(q.id, editText)}
+                                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-650 text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+                                >
+                                  {savingAnswerId === q.id ? "Yadda saxlanılır..." : "Yadda Saxla"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={savingAnswerId === q.id}
+                                  onClick={() => setEditingQuestionId(null)}
+                                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-250 text-gray-600 hover:bg-slate-50 cursor-pointer"
+                                >
+                                  İmtina Et
+                                </button>
+                              </div>
                             </div>
-                            <div className="text-right sm:text-right">
-                              <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider">Düzgün Cavab:</span>
-                              <strong className="text-sm text-gray-800">
-                                {q.options?.find((o: any) => o.is_true)?.text || "Təyin edilməyib"}
-                              </strong>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                              <div>
+                                <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider">Tələbənin Cavabı:</span>
+                                <div className="flex items-center gap-2">
+                                  <strong className={cn(
+                                    "text-sm",
+                                    points > 0 ? "text-emerald-600" : "text-red-500"
+                                  )}>
+                                    {answerObj?.written_answer || "—"}
+                                  </strong>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingQuestionId(q.id);
+                                      setEditText(answerObj?.written_answer || "");
+                                    }}
+                                    className="text-[10px] font-bold text-indigo-650 hover:underline cursor-pointer"
+                                  >
+                                    Redaktə et
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="text-right sm:text-right">
+                                <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider">Düzgün Cavab:</span>
+                                <strong className="text-sm text-gray-800">
+                                  {q.options?.find((o: any) => o.is_true)?.text || "Təyin edilməyib"}
+                                </strong>
+                              </div>
                             </div>
-                          </div>
+                          )}
                           <p className="text-[10px] text-gray-400 italic">
                             * Kodlaşdırıla bilən açıq suallar sistem tərəfindən avtomatik yoxlanılır.
                           </p>
@@ -371,10 +452,54 @@ export default function GradeApplicantPage() {
                         // Type 3: Written Open question
                         <div className="space-y-4">
                           <div>
-                            <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Tələbənin Cavabı:</span>
-                            <div className="bg-white border border-gray-150 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap font-medium">
-                              {answerObj?.written_answer || <span className="text-gray-300 italic">Tələbə bu suala heç bir cavab yazmayıb.</span>}
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider">Tələbənin Cavabı:</span>
+                              {editingQuestionId !== q.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingQuestionId(q.id);
+                                    setEditText(answerObj?.written_answer || "");
+                                  }}
+                                  className="text-[10px] font-bold text-indigo-650 hover:underline cursor-pointer"
+                                >
+                                  Redaktə et
+                                </button>
+                              )}
                             </div>
+                            {editingQuestionId === q.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  rows={4}
+                                  value={editText}
+                                  onChange={(e) => setEditText(e.target.value)}
+                                  autoFocus
+                                  className="w-full px-4 py-3 rounded-lg border border-gray-250 text-sm text-gray-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={savingAnswerId === q.id}
+                                    onClick={() => handleUpdateWrittenAnswer(q.id, editText)}
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-650 text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+                                  >
+                                    {savingAnswerId === q.id ? "Yadda saxlanılır..." : "Yadda Saxla"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={savingAnswerId === q.id}
+                                    onClick={() => setEditingQuestionId(null)}
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-250 text-gray-600 hover:bg-slate-50 cursor-pointer"
+                                  >
+                                    İmtina Et
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-white border border-gray-150 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap font-medium">
+                                {answerObj?.written_answer || <span className="text-gray-300 italic">Tələbə bu suala heç bir cavab yazmayıb.</span>}
+                              </div>
+                            )}
                           </div>
 
                           {/* Grading controls */}

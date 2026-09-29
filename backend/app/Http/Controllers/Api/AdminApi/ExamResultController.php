@@ -119,4 +119,55 @@ class ExamResultController extends Controller
             'session' => $session,
         ]);
     }
+
+    public function updateWrittenAnswer(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'applicant_question_id' => 'required|exists:applicant_questions,id',
+            'written_answer' => 'nullable|string',
+        ]);
+
+        $session = ExamSession::findOrFail($id);
+        if (is_null($session->applicant_exampage_id)) {
+            return response()->json(['success' => false, 'message' => 'Bu MİQ imtahanıdır, əl ilə redaktə dəstəklənmir.'], 400);
+        }
+
+        $writtenAnswer = \App\Models\ApplicantWrittenAnswer::where('exam_session_id', $session->id)
+            ->where('applicant_question_id', $request->applicant_question_id)
+            ->first();
+
+        if (!$writtenAnswer) {
+            $writtenAnswer = \App\Models\ApplicantWrittenAnswer::create([
+                'exam_session_id' => $session->id,
+                'applicant_question_id' => $request->applicant_question_id,
+                'written_answer' => $request->written_answer ?? '',
+            ]);
+        } else {
+            $writtenAnswer->update([
+                'written_answer' => $request->written_answer ?? '',
+            ]);
+        }
+
+        // Recalculate score (codeable answers are auto-graded against written_answer)
+        $session->score = $session->calculateApplicantScore();
+        $session->save();
+
+        $session->load([
+            'user',
+            'exampage',
+            'subject',
+            'applicantExampage',
+            'applicantGroup',
+            'applicantSubject',
+            'answers.applicantQuestion',
+            'answers.applicantOption',
+            'applicantWrittenAnswers.question',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cavab uğurla yeniləndi.',
+            'session' => $session,
+        ]);
+    }
 }
