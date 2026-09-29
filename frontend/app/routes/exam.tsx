@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useLoaderData, redirect, useBlocker } from "react-router";
 import type { Route } from "./+types/exam";
 import { sessionCookie, type UserSession } from "../lib/session";
@@ -15,6 +15,9 @@ function withImageUrl(questions: any[]): any[] {
   return questions.map((q) => ({
     ...q,
     image_url: q.image ? `${STORAGE_BASE}/${q.image.replace(/^\/+/, "")}` : null,
+    passage: q.passage
+      ? { ...q.passage, audio_url: q.passage.audio ? `${STORAGE_BASE}${q.passage.audio}` : null }
+      : null,
   }));
 }
 
@@ -967,15 +970,29 @@ export default function Exam() {
               </div>
             </div>
             <div className="space-y-5">
-              {fennQuestions.map((q: any, idx: number) => (
-                <QuestionCard
-                  key={q.id}
-                  index={idx}
-                  question={q}
-                  selectedOptionId={selectedAnswers[`fenn_${q.id}`]}
-                  onSelect={(optId) => handleSelect("fenn", q.id, optId)}
-                />
-              ))}
+              {fennQuestions.map((q: any, idx: number) => {
+                const prevPassageId = idx > 0 ? fennQuestions[idx - 1].miq_question_passage_id : null;
+                const showPassageHeader = q.passage && q.miq_question_passage_id !== prevPassageId;
+                return (
+                  <Fragment key={q.id}>
+                    {showPassageHeader && (
+                      <div className="rounded-2xl border border-ink/10 bg-paper-2/60 p-6 space-y-3">
+                        <span className="text-xs font-bold text-ink-soft/70 uppercase tracking-wider">Keçid</span>
+                        <p className="text-sm text-ink leading-relaxed whitespace-pre-line">{q.passage.text}</p>
+                        {q.passage.audio_url && (
+                          <audio controls src={q.passage.audio_url} className="w-full max-w-md" />
+                        )}
+                      </div>
+                    )}
+                    <QuestionCard
+                      index={idx}
+                      question={q}
+                      selectedOptionId={selectedAnswers[`fenn_${q.id}`]}
+                      onSelect={(optId) => handleSelect("fenn", q.id, optId)}
+                    />
+                  </Fragment>
+                );
+              })}
             </div>
           </section>
         )}
@@ -997,15 +1014,29 @@ export default function Exam() {
               </div>
             </div>
             <div className="space-y-5">
-              {tedrisQuestions.map((q: any, idx: number) => (
-                <QuestionCard
-                  key={q.id}
-                  index={fennQuestions.length + idx}
-                  question={q}
-                  selectedOptionId={selectedAnswers[`tedris_${q.id}`]}
-                  onSelect={(optId) => handleSelect("tedris", q.id, optId)}
-                />
-              ))}
+              {tedrisQuestions.map((q: any, idx: number) => {
+                const prevPassageId = idx > 0 ? tedrisQuestions[idx - 1].miq_question_passage_id : null;
+                const showPassageHeader = q.passage && q.miq_question_passage_id !== prevPassageId;
+                return (
+                  <Fragment key={q.id}>
+                    {showPassageHeader && (
+                      <div className="rounded-2xl border border-ink/10 bg-paper-2/60 p-6 space-y-3">
+                        <span className="text-xs font-bold text-ink-soft/70 uppercase tracking-wider">Keçid</span>
+                        <p className="text-sm text-ink leading-relaxed whitespace-pre-line">{q.passage.text}</p>
+                        {q.passage.audio_url && (
+                          <audio controls src={q.passage.audio_url} className="w-full max-w-md" />
+                        )}
+                      </div>
+                    )}
+                    <QuestionCard
+                      index={fennQuestions.length + idx}
+                      question={q}
+                      selectedOptionId={selectedAnswers[`tedris_${q.id}`]}
+                      onSelect={(optId) => handleSelect("tedris", q.id, optId)}
+                    />
+                  </Fragment>
+                );
+              })}
             </div>
           </section>
         )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit, useParams } from "react-router";
 import { sessionCookie, type AdminSession } from "../lib/session";
 
@@ -24,15 +24,26 @@ export async function loader({ params, request }: { params: any; request: Reques
   const subjectId = params.subjectId ?? "null";
 
   try {
-    const res = await fetch(
-      `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/questions`,
-      {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${session.token}`
+    const [res, paRes] = await Promise.all([
+      fetch(
+        `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/questions`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${session.token}`
+          }
         }
-      }
-    );
+      ),
+      fetch(
+        `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/passages`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${session.token}`
+          }
+        }
+      ),
+    ]);
 
     if (res.status === 401) {
       return redirect("/login", {
@@ -43,16 +54,19 @@ export async function loader({ params, request }: { params: any; request: Reques
     }
 
     const data = await res.json();
+    const paData = await paRes.json();
     const questions = data.success ? data.data : [];
     const exampage = data.success ? data.exampage : null;
     const questionType = data.success ? data.question_type : null;
     const subject = data.success ? data.subject : null;
+    const passages = paData.success ? paData.data : [];
 
     return {
       questions,
       exampage,
       questionType,
       subject,
+      passages,
       session
     };
   } catch (err) {
@@ -103,12 +117,14 @@ export async function action({ params, request }: { params: any; request: Reques
     if (intent === "create") {
       const text = formData.get("text") as string;
       const image = formData.get("image") as File;
+      const passageId = formData.get("miq_question_passage_id") as string;
 
       const apiFormData = new FormData();
       if (text) apiFormData.append("text", text);
       if (image && image.size > 0) {
         apiFormData.append("image", image);
       }
+      if (passageId) apiFormData.append("miq_question_passage_id", passageId);
 
       const res = await fetch(
         `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/questions`,
@@ -132,6 +148,7 @@ export async function action({ params, request }: { params: any; request: Reques
       const text = formData.get("text") as string;
       const image = formData.get("image") as File;
       const imageRemoved = formData.get("image_removed") as string;
+      const passageId = formData.get("miq_question_passage_id") as string;
 
       const apiFormData = new FormData();
       if (text) apiFormData.append("text", text);
@@ -141,6 +158,7 @@ export async function action({ params, request }: { params: any; request: Reques
       if (imageRemoved) {
         apiFormData.append("image_removed", imageRemoved);
       }
+      apiFormData.append("miq_question_passage_id", passageId || "");
 
       const res = await fetch(
         `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/questions/${id}`,
@@ -177,6 +195,56 @@ export async function action({ params, request }: { params: any; request: Reques
       if (!res.ok) return { error: data.message || "Sual silinmədi." };
       return { success: data.message || "Sual uğurla silindi." };
     }
+
+    const passageBase = `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/passages`;
+
+    if (intent === "create-passage") {
+      const text = formData.get("text") as string;
+      const audio = formData.get("audio") as File;
+      const apiFormData = new FormData();
+      apiFormData.append("text", text);
+      if (audio && audio.size > 0) apiFormData.append("audio", audio);
+
+      const res = await fetch(passageBase, {
+        method: "POST",
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        body: apiFormData,
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Keçid əlavə edilmədi." };
+      return { success: data.message || "Keçid əlavə edildi." };
+    }
+
+    if (intent === "update-passage") {
+      const id = formData.get("id") as string;
+      const text = formData.get("text") as string;
+      const audio = formData.get("audio") as File;
+      const audioRemoved = formData.get("audio_removed") as string;
+      const apiFormData = new FormData();
+      apiFormData.append("text", text);
+      if (audio && audio.size > 0) apiFormData.append("audio", audio);
+      if (audioRemoved) apiFormData.append("audio_removed", audioRemoved);
+
+      const res = await fetch(`${passageBase}/${id}`, {
+        method: "POST",
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        body: apiFormData,
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Keçid yenilənmədi." };
+      return { success: data.message || "Keçid yeniləndi." };
+    }
+
+    if (intent === "delete-passage") {
+      const id = formData.get("id") as string;
+      const res = await fetch(`${passageBase}/${id}`, {
+        method: "DELETE",
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Keçid silinmədi." };
+      return { success: data.message || "Keçid silindi." };
+    }
   } catch (err) {
     console.error("Questions action error:", err);
     return { error: "Xəta baş verdi. Zəhmət olmasa yenidən yoxlayın." };
@@ -186,7 +254,7 @@ export async function action({ params, request }: { params: any; request: Reques
 }
 
 export default function MiqQuestionsPage() {
-  const { questions, exampage, questionType, subject } = useLoaderData<typeof loader>();
+  const { questions, exampage, questionType, subject, passages } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -196,6 +264,15 @@ export default function MiqQuestionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [addPassageId, setAddPassageId] = useState("");
+  const [editPassageId, setEditPassageId] = useState("");
+
+  const [showPassageModal, setShowPassageModal] = useState(false);
+  const [editingPassage, setEditingPassage] = useState<any>(null);
+  const [passageTextValue, setPassageTextValue] = useState("");
+  const [passageAudioPreview, setPassageAudioPreview] = useState<string | null>(null);
+  const [passageAudioRemoved, setPassageAudioRemoved] = useState(false);
+  const [deletingPassage, setDeletingPassage] = useState<any>(null);
 
   const [selectedQuestion, setSelectedQuestion] = useState<any>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -225,6 +302,14 @@ export default function MiqQuestionsPage() {
         setImagePreview(null);
         setEditImageRemoved(false);
         setEditorText("");
+        setAddPassageId("");
+        setEditPassageId("");
+        setShowPassageModal(false);
+        setEditingPassage(null);
+        setPassageTextValue("");
+        setPassageAudioPreview(null);
+        setPassageAudioRemoved(false);
+        setDeletingPassage(null);
       } else if (actionData.error) {
         setToastMessage(actionData.error);
         setToastType("error");
@@ -314,6 +399,14 @@ export default function MiqQuestionsPage() {
     }
   };
 
+  const handlePassageAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPassageAudioPreview(URL.createObjectURL(file));
+      setPassageAudioRemoved(false);
+    }
+  };
+
   return (
     <div className="space-y-6 relative">
       {/* Toast */}
@@ -347,22 +440,82 @@ export default function MiqQuestionsPage() {
             </h2>
             <p className="text-xs text-gray-500 mt-1">Bu bölməyə aid sualların siyahısı, yenilənməsi və sürükləyərək sıralanması paneli.</p>
           </div>
-          <button
-            onClick={() => {
-              setEditorText("");
-              setImagePreview(null);
-              setEditImageRemoved(false);
-              setShowAddModal(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer"
-          >
-            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-            </svg>
-            Sual Əlavə Et
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setEditingPassage(null);
+                setPassageTextValue("");
+                setPassageAudioPreview(null);
+                setPassageAudioRemoved(false);
+                setShowPassageModal(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 px-4 py-3 text-sm font-semibold shadow-sm transition-all cursor-pointer"
+            >
+              <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              Yeni Keçid
+            </button>
+            <button
+              onClick={() => {
+                setEditorText("");
+                setImagePreview(null);
+                setEditImageRemoved(false);
+                setAddPassageId("");
+                setShowAddModal(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer"
+            >
+              <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              Sual Əlavə Et
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Keçidlər (passages) */}
+      {passages.length > 0 && (
+        <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm space-y-3">
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Keçidlər (mətn/audio bir neçə suala bağlı ola bilər)</h3>
+          <div className="space-y-2">
+            {passages.map((p: any) => (
+              <div key={p.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-gray-150 bg-gray-50/60">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800 line-clamp-2">{p.text}</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    {p.audio && (
+                      <audio controls src={`${STORAGE_BASE}${p.audio}`} className="h-8 max-w-xs" />
+                    )}
+                    <span className="text-[11px] font-semibold text-gray-400">{p.questions_count ?? 0} suala bağlı</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => {
+                    setEditingPassage(p);
+                    setPassageTextValue(p.text);
+                    setPassageAudioPreview(p.audio ? `${STORAGE_BASE}${p.audio}` : null);
+                    setPassageAudioRemoved(false);
+                    setShowPassageModal(true);
+                  }}
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-slate-50 hover:text-indigo-600 cursor-pointer">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button onClick={() => setDeletingPassage(p)}
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 cursor-pointer">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Count Summary */}
       <p className="text-xs font-medium text-gray-450 uppercase tracking-wider">
@@ -371,9 +524,21 @@ export default function MiqQuestionsPage() {
 
       {/* Reorderable List of Questions */}
       <div className="space-y-4">
-        {localQuestions.map((q, index) => (
+        {localQuestions.map((q, index) => {
+          const prevPassageId = index > 0 ? localQuestions[index - 1].miq_question_passage_id : null;
+          const showPassageHeader = q.passage && q.miq_question_passage_id !== prevPassageId;
+          return (
+          <Fragment key={q.id}>
+          {showPassageHeader && (
+            <div className="rounded-2xl border border-indigo-150 bg-indigo-50/50 p-5 space-y-2">
+              <span className="text-[10px] font-bold text-indigo-650 uppercase tracking-wider">Keçid</span>
+              <p className="text-sm text-gray-800">{q.passage.text}</p>
+              {q.passage.audio && (
+                <audio controls src={`${STORAGE_BASE}${q.passage.audio}`} className="h-8 max-w-xs" />
+              )}
+            </div>
+          )}
           <div
-            key={q.id}
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
@@ -439,6 +604,7 @@ export default function MiqQuestionsPage() {
                   setEditorText(q.text || "");
                   setImagePreview(q.image ? `${STORAGE_BASE}${q.image}` : null);
                   setEditImageRemoved(false);
+                  setEditPassageId(q.miq_question_passage_id ? String(q.miq_question_passage_id) : "");
                   setShowEditModal(true);
                 }}
                 title="Redaktə et"
@@ -462,7 +628,9 @@ export default function MiqQuestionsPage() {
               </button>
             </div>
           </div>
-        ))}
+          </Fragment>
+          );
+        })}
 
 
         {localQuestions.length === 0 && (
@@ -590,9 +758,22 @@ export default function MiqQuestionsPage() {
                 </div>
               </div>
 
+              {passages.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Bağlı Keçid (İstəyə bağlı)</label>
+                  <select name="miq_question_passage_id" value={addPassageId} onChange={(e) => setAddPassageId(e.target.value)}
+                    className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none cursor-pointer">
+                    <option value="">Yoxdur</option>
+                    {passages.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.text.slice(0, 60)}{p.text.length > 60 ? "…" : ""}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex gap-3 justify-end mt-6">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowAddModal(false)}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all cursor-pointer"
                 >
@@ -726,9 +907,22 @@ export default function MiqQuestionsPage() {
                 </div>
               </div>
 
+              {passages.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Bağlı Keçid (İstəyə bağlı)</label>
+                  <select name="miq_question_passage_id" value={editPassageId} onChange={(e) => setEditPassageId(e.target.value)}
+                    className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none cursor-pointer">
+                    <option value="">Yoxdur</option>
+                    {passages.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.text.slice(0, 60)}{p.text.length > 60 ? "…" : ""}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex gap-3 justify-end mt-6">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => {
                     setShowEditModal(false);
                     setSelectedQuestion(null);
@@ -772,13 +966,93 @@ export default function MiqQuestionsPage() {
               >
                 İmtina
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={navigation.state === "submitting"}
                 className="py-2.5 px-5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl shadow transition-all cursor-pointer"
               >
                 Sil
               </button>
+            </Form>
+          </div>
+        </div>
+      )}
+
+      {/* PASSAGE ADD/EDIT MODAL */}
+      {showPassageModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-150 rounded-2xl max-w-xl w-full p-6 shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-base font-bold text-gray-900">{editingPassage ? "Keçidi Redaktə Et" : "Yeni Keçid"}</h3>
+              <button onClick={() => setShowPassageModal(false)} className="text-gray-400 hover:text-gray-650 transition-colors cursor-pointer">✕</button>
+            </div>
+
+            <Form method="post" encType="multipart/form-data" className="space-y-4">
+              <input type="hidden" name="intent" value={editingPassage ? "update-passage" : "create-passage"} />
+              {editingPassage && <input type="hidden" name="id" value={editingPassage.id} />}
+              <input type="hidden" name="audio_removed" value={passageAudioRemoved ? "true" : "false"} />
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Mətn (oxu/dinləmə parçası)</label>
+                <textarea
+                  name="text"
+                  rows={6}
+                  value={passageTextValue}
+                  onChange={(e) => setPassageTextValue(e.target.value)}
+                  placeholder="Keçidin mətnini daxil edin..."
+                  className="w-full bg-slate-50 border border-gray-250 rounded-xl px-4.5 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-650 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Audio (İstəyə bağlı)</label>
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 border border-gray-250 border-dashed rounded-xl p-4.5">
+                  <input
+                    type="file"
+                    name="audio"
+                    accept="audio/*"
+                    onChange={handlePassageAudioChange}
+                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  />
+                  {passageAudioPreview && (
+                    <div className="flex items-center gap-2">
+                      <audio controls src={passageAudioPreview} className="h-8" />
+                      <button type="button"
+                        onClick={() => { setPassageAudioPreview(null); setPassageAudioRemoved(true); }}
+                        className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer">Sil</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button type="button" onClick={() => setShowPassageModal(false)}
+                  className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all cursor-pointer">İmtina</button>
+                <button type="submit" disabled={navigation.state === "submitting" || !passageTextValue.trim()}
+                  className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow transition-all cursor-pointer disabled:opacity-50">
+                  Yadda Saxla
+                </button>
+              </div>
+            </Form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE PASSAGE CONFIRM */}
+      {deletingPassage && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-150 rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in duration-200">
+            <h3 className="text-base font-bold text-gray-900 mb-2">Keçidi Sil</h3>
+            <p className="text-sm text-gray-500">
+              Bu keçid silinəcək. Ona bağlı {deletingPassage.questions_count ?? 0} sual keçidsiz (müstəqil) sual olaraq qalacaq, silinməyəcək.
+            </p>
+            <Form method="post" className="flex gap-3 justify-end mt-6">
+              <input type="hidden" name="intent" value="delete-passage" />
+              <input type="hidden" name="id" value={deletingPassage.id} />
+              <button type="button" onClick={() => setDeletingPassage(null)}
+                className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all cursor-pointer">İmtina</button>
+              <button type="submit" disabled={navigation.state === "submitting"}
+                className="py-2.5 px-5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl shadow transition-all cursor-pointer">Sil</button>
             </Form>
           </div>
         </div>
