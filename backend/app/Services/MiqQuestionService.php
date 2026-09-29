@@ -35,6 +35,11 @@ class MiqQuestionService implements MiqQuestionServiceInterface
             $data['image'] = '/storage/' . $path;
         }
 
+        if (isset($data['audio']) && $data['audio'] instanceof UploadedFile) {
+            $path = $data['audio']->store('uploads/miq-questions-audio', 'public');
+            $data['audio'] = '/storage/' . $path;
+        }
+
         return $this->questionRepository->create($data);
     }
 
@@ -64,6 +69,23 @@ class MiqQuestionService implements MiqQuestionServiceInterface
             }
         }
 
+        if (isset($data['audio'])) {
+            if ($data['audio'] instanceof UploadedFile) {
+                if ($question->audio) {
+                    $oldPath = str_replace('/storage/', '', $question->audio);
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $path = $data['audio']->store('uploads/miq-questions-audio', 'public');
+                $data['audio'] = '/storage/' . $path;
+            } elseif ($data['audio'] === null || $data['audio'] === 'null' || $data['audio'] === '') {
+                if ($question->audio) {
+                    $oldPath = str_replace('/storage/', '', $question->audio);
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $data['audio'] = null;
+            }
+        }
+
         $this->questionRepository->update($question, $data);
         return $question->refresh();
     }
@@ -77,6 +99,11 @@ class MiqQuestionService implements MiqQuestionServiceInterface
 
         if ($question->image) {
             $oldPath = str_replace('/storage/', '', $question->image);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        if ($question->audio) {
+            $oldPath = str_replace('/storage/', '', $question->audio);
             Storage::disk('public')->delete($oldPath);
         }
 

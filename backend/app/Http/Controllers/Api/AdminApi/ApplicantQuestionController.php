@@ -89,6 +89,7 @@ class ApplicantQuestionController extends Controller
             'question_type'                  => $type,
             'title'                          => $request->title,
             'image'                          => $request->image ?? null,
+            'audio'                          => $request->audio ?? null,
             'order'                          => $maxOrder + 1,
         ]);
 
@@ -131,6 +132,7 @@ class ApplicantQuestionController extends Controller
         $question->update([
             'title' => $request->title,
             'image' => $request->image ?? $question->image,
+            'audio' => $request->audio ?? $question->audio,
             'applicant_question_passage_id' => $request->has('applicant_question_passage_id')
                 ? $request->applicant_question_passage_id
                 : $question->applicant_question_passage_id,

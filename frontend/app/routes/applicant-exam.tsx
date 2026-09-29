@@ -15,6 +15,7 @@ function withImageUrl(questions: any[]): any[] {
   return questions.map((q) => ({
     ...q,
     image_url: q.image ? `${STORAGE_BASE}/${q.image.replace(/^\/+/, "")}` : null,
+    audio_url: q.audio ? `${STORAGE_BASE}/${q.audio.replace(/^\/+/, "")}` : null,
     passage: q.passage
       ? { ...q.passage, audio_url: q.passage.audio ? `${STORAGE_BASE}/${q.passage.audio.replace(/^\/+/, "")}` : null }
       : null,
@@ -707,6 +708,10 @@ export default function ApplicantExam() {
                   <div className="mb-6 rounded-2xl overflow-hidden border border-ink/10">
                     <img src={q.image_url} alt="" className="w-full max-h-80 object-contain bg-paper-2" />
                   </div>
+                )}
+
+                {q.audio_url && (
+                  <audio controls src={q.audio_url} className="w-full mb-6" />
                 )}
 
                 {/* Answers Input Area */}

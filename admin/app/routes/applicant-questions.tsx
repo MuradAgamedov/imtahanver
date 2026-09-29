@@ -72,6 +72,7 @@ export async function action({ request, params }: Route.ActionArgs) {
           question_type: Number(formData.get("question_type")),
           title: formData.get("title"),
           image: formData.get("image") || null,
+          audio: formData.get("audio") || null,
           applicant_question_passage_id: passageId ? Number(passageId) : null,
         }),
       });
@@ -87,6 +88,7 @@ export async function action({ request, params }: Route.ActionArgs) {
         body: JSON.stringify({
           title: formData.get("title"),
           image: formData.get("image") || null,
+          audio: formData.get("audio") || null,
           applicant_question_passage_id: passageId ? Number(passageId) : null,
         }),
       });
@@ -343,11 +345,13 @@ export default function ApplicantQuestionsPage() {
   const [selectedType, setSelectedType] = useState(1);
   const [addTitle, setAddTitle] = useState("");
   const [addImage, setAddImage] = useState("");
+  const [addAudio, setAddAudio] = useState("");
   const [addPassageId, setAddPassageId] = useState("");
 
   const [editingQ, setEditingQ] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editImage, setEditImage] = useState("");
+  const [editAudio, setEditAudio] = useState("");
   const [editPassageId, setEditPassageId] = useState("");
 
   const [deletingQ, setDeletingQ] = useState<any>(null);
@@ -372,8 +376,8 @@ export default function ApplicantQuestionsPage() {
   useEffect(() => {
     if (actionData?.success) {
       setToast({ msg: actionData.success, type: "success" });
-      setShowAddModal(false); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddPassageId("");
-      setEditingQ(null); setDeletingQ(null); setEditPassageId("");
+      setShowAddModal(false); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddAudio(""); setAddPassageId("");
+      setEditingQ(null); setDeletingQ(null); setEditPassageId(""); setEditAudio("");
       setAddingOptionFor(null); setNewOptText(""); setNewOptImage(""); setEditingOpt(null); setEditOptImage("");
       setShowPassageModal(false); setEditingPassage(null); setPassageText(""); setPassageAudio(""); setDeletingPassage(null);
     } else if (actionData?.error) {
@@ -422,7 +426,7 @@ export default function ApplicantQuestionsPage() {
             </svg>
             Yeni Keçid
           </button>
-          <button onClick={() => { setShowAddModal(true); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddPassageId(""); }}
+          <button onClick={() => { setShowAddModal(true); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddAudio(""); setAddPassageId(""); }}
             className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-bold shadow-sm cursor-pointer transition-all">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -538,6 +542,9 @@ export default function ApplicantQuestionsPage() {
                           <img src={`${storageBase}/${q.image.replace(/^\/+/, "")}`} alt=""
                             className="mt-2 max-h-36 rounded-xl border border-gray-100 object-contain bg-gray-50" />
                         )}
+                        {q.audio && (
+                          <audio controls src={`${storageBase}/${q.audio.replace(/^\/+/, "")}`} className="mt-2 h-8 max-w-xs" />
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -547,7 +554,7 @@ export default function ApplicantQuestionsPage() {
                           {expandedQ === q.id ? "▲" : "▼"}
                         </button>
                       )}
-                      <button onClick={() => { setEditingQ(q); setEditTitle(q.title); setEditImage(q.image ?? ""); setEditPassageId(q.applicant_question_passage_id ? String(q.applicant_question_passage_id) : ""); }}
+                      <button onClick={() => { setEditingQ(q); setEditTitle(q.title); setEditImage(q.image ?? ""); setEditAudio(q.audio ?? ""); setEditPassageId(q.applicant_question_passage_id ? String(q.applicant_question_passage_id) : ""); }}
                         className="rounded-lg p-1.5 text-gray-400 hover:bg-slate-50 hover:text-indigo-600 cursor-pointer">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -699,6 +706,7 @@ export default function ApplicantQuestionsPage() {
                     <RichTextEditor value={addTitle} onChange={setAddTitle} placeholder="Sual mətni..." />
                   </div>
                   <ImageUploader storageBase={storageBase} current={addImage} onChange={setAddImage} />
+                  <AudioUploader storageBase={storageBase} current={addAudio} onChange={setAddAudio} />
                   {passages.length > 0 && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bağlı Keçid (İstəyə bağlı)</label>
@@ -715,7 +723,7 @@ export default function ApplicantQuestionsPage() {
                     <button type="button" onClick={() => setShowAddModal(false)}
                       className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
                     <button type="button" disabled={navigation.state === "submitting"}
-                      onClick={() => { const fd = new FormData(); fd.append("intent","create-question"); fd.append("question_type",String(selectedType)); fd.append("title",addTitle); fd.append("image",addImage); fd.append("applicant_question_passage_id",addPassageId); submit(fd,{method:"post"}); }}
+                      onClick={() => { const fd = new FormData(); fd.append("intent","create-question"); fd.append("question_type",String(selectedType)); fd.append("title",addTitle); fd.append("image",addImage); fd.append("audio",addAudio); fd.append("applicant_question_passage_id",addPassageId); submit(fd,{method:"post"}); }}
                       className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">
                       {navigation.state === "submitting" ? "Əlavə edilir..." : "Əlavə Et"}
                     </button>
@@ -741,6 +749,7 @@ export default function ApplicantQuestionsPage() {
                 <RichTextEditor value={editTitle} onChange={setEditTitle} />
               </div>
               <ImageUploader storageBase={storageBase} current={editImage} onChange={setEditImage} />
+              <AudioUploader storageBase={storageBase} current={editAudio} onChange={setEditAudio} />
               {passages.length > 0 && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bağlı Keçid (İstəyə bağlı)</label>
@@ -757,7 +766,7 @@ export default function ApplicantQuestionsPage() {
                 <button onClick={() => setEditingQ(null)}
                   className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl cursor-pointer">İmtina</button>
                 <button disabled={navigation.state === "submitting"}
-                  onClick={() => { const fd = new FormData(); fd.append("intent","update-question"); fd.append("question_id",String(editingQ.id)); fd.append("title",editTitle); fd.append("image",editImage); fd.append("applicant_question_passage_id",editPassageId); submit(fd,{method:"post"}); }}
+                  onClick={() => { const fd = new FormData(); fd.append("intent","update-question"); fd.append("question_id",String(editingQ.id)); fd.append("title",editTitle); fd.append("image",editImage); fd.append("audio",editAudio); fd.append("applicant_question_passage_id",editPassageId); submit(fd,{method:"post"}); }}
                   className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow cursor-pointer disabled:opacity-50">Yadda Saxla</button>
               </div>
             </div>

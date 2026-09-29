@@ -33,6 +33,7 @@ class ApplicantQuestion extends Model
         'question_type',
         'title',
         'image',
+        'audio',
         'order',
     ];
 

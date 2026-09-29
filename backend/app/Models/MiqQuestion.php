@@ -16,6 +16,7 @@ class MiqQuestion extends Model
         'miq_question_passage_id',
         'text',
         'image',
+        'audio',
         'order'
     ];
 

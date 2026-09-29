@@ -15,6 +15,7 @@ function withImageUrl(questions: any[]): any[] {
   return questions.map((q) => ({
     ...q,
     image_url: q.image ? `${STORAGE_BASE}/${q.image.replace(/^\/+/, "")}` : null,
+    audio_url: q.audio ? `${STORAGE_BASE}/${q.audio.replace(/^\/+/, "")}` : null,
     passage: q.passage
       ? { ...q.passage, audio_url: q.passage.audio ? `${STORAGE_BASE}${q.passage.audio}` : null }
       : null,
@@ -168,6 +169,10 @@ function QuestionCard({
             className="w-full max-h-72 object-contain bg-paper-2"
           />
         </div>
+      )}
+
+      {question.audio_url && (
+        <audio controls src={question.audio_url} className="w-full mb-4" />
       )}
 
       <div className="space-y-2">

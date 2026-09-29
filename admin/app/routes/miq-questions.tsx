@@ -117,12 +117,16 @@ export async function action({ params, request }: { params: any; request: Reques
     if (intent === "create") {
       const text = formData.get("text") as string;
       const image = formData.get("image") as File;
+      const audio = formData.get("audio") as File;
       const passageId = formData.get("miq_question_passage_id") as string;
 
       const apiFormData = new FormData();
       if (text) apiFormData.append("text", text);
       if (image && image.size > 0) {
         apiFormData.append("image", image);
+      }
+      if (audio && audio.size > 0) {
+        apiFormData.append("audio", audio);
       }
       if (passageId) apiFormData.append("miq_question_passage_id", passageId);
 
@@ -148,6 +152,8 @@ export async function action({ params, request }: { params: any; request: Reques
       const text = formData.get("text") as string;
       const image = formData.get("image") as File;
       const imageRemoved = formData.get("image_removed") as string;
+      const audio = formData.get("audio") as File;
+      const audioRemoved = formData.get("audio_removed") as string;
       const passageId = formData.get("miq_question_passage_id") as string;
 
       const apiFormData = new FormData();
@@ -157,6 +163,12 @@ export async function action({ params, request }: { params: any; request: Reques
       }
       if (imageRemoved) {
         apiFormData.append("image_removed", imageRemoved);
+      }
+      if (audio && audio.size > 0) {
+        apiFormData.append("audio", audio);
+      }
+      if (audioRemoved) {
+        apiFormData.append("audio_removed", audioRemoved);
       }
       apiFormData.append("miq_question_passage_id", passageId || "");
 
@@ -285,6 +297,8 @@ export default function MiqQuestionsPage() {
   // File Upload Preview States
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [editImageRemoved, setEditImageRemoved] = useState(false);
+  const [audioPreview, setAudioPreview] = useState<string | null>(null);
+  const [editAudioRemoved, setEditAudioRemoved] = useState(false);
 
   useEffect(() => {
     setLocalQuestions(questions);
@@ -301,6 +315,8 @@ export default function MiqQuestionsPage() {
         setSelectedQuestion(null);
         setImagePreview(null);
         setEditImageRemoved(false);
+        setAudioPreview(null);
+        setEditAudioRemoved(false);
         setEditorText("");
         setAddPassageId("");
         setEditPassageId("");
@@ -407,6 +423,14 @@ export default function MiqQuestionsPage() {
     }
   };
 
+  const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAudioPreview(URL.createObjectURL(file));
+      setEditAudioRemoved(false);
+    }
+  };
+
   return (
     <div className="space-y-6 relative">
       {/* Toast */}
@@ -461,6 +485,8 @@ export default function MiqQuestionsPage() {
                 setEditorText("");
                 setImagePreview(null);
                 setEditImageRemoved(false);
+                setAudioPreview(null);
+                setEditAudioRemoved(false);
                 setAddPassageId("");
                 setShowAddModal(true);
               }}
@@ -571,12 +597,15 @@ export default function MiqQuestionsPage() {
 
                 {q.image && (
                   <div className="relative inline-block rounded-xl overflow-hidden border border-gray-200 max-w-xs bg-slate-50">
-                    <img 
-                      src={`${STORAGE_BASE}${q.image}`} 
-                      alt="Sual Şəkli" 
+                    <img
+                      src={`${STORAGE_BASE}${q.image}`}
+                      alt="Sual Şəkli"
                       className="max-h-36 object-contain"
                     />
                   </div>
+                )}
+                {q.audio && (
+                  <audio controls src={`${STORAGE_BASE}${q.audio}`} className="h-8 max-w-xs" />
                 )}
               </div>
             </div>
@@ -604,6 +633,8 @@ export default function MiqQuestionsPage() {
                   setEditorText(q.text || "");
                   setImagePreview(q.image ? `${STORAGE_BASE}${q.image}` : null);
                   setEditImageRemoved(false);
+                  setAudioPreview(q.audio ? `${STORAGE_BASE}${q.audio}` : null);
+                  setEditAudioRemoved(false);
                   setEditPassageId(q.miq_question_passage_id ? String(q.miq_question_passage_id) : "");
                   setShowEditModal(true);
                 }}
@@ -742,16 +773,46 @@ export default function MiqQuestionsPage() {
                   {imagePreview && (
                     <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white max-w-[120px] max-h-[80px]">
                       <img src={imagePreview} alt="Preview" className="object-contain w-full h-full" />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           setImagePreview(null);
-                          const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                          const input = document.querySelector('input[type="file"][name="image"]') as HTMLInputElement;
                           if (input) input.value = "";
                         }}
                         className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 text-[8px] leading-none hover:bg-red-700 transition-colors cursor-pointer"
                       >
                         ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Audio Input & Preview */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sualın Audiosu</label>
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 border border-gray-250 border-dashed rounded-xl p-4.5">
+                  <input
+                    type="file"
+                    name="audio"
+                    accept="audio/*"
+                    onChange={handleAudioChange}
+                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  />
+                  {audioPreview && (
+                    <div className="flex items-center gap-2">
+                      <audio controls src={audioPreview} className="h-8" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAudioPreview(null);
+                          const input = document.querySelector('input[type="file"][name="audio"]') as HTMLInputElement;
+                          if (input) input.value = "";
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer"
+                      >
+                        Sil
                       </button>
                     </div>
                   )}
@@ -813,51 +874,52 @@ export default function MiqQuestionsPage() {
               <input type="hidden" name="intent" value="update" />
               <input type="hidden" name="id" value={selectedQuestion.id} />
               <input type="hidden" name="image_removed" value={editImageRemoved ? "true" : "false"} />
-              
+              <input type="hidden" name="audio_removed" value={editAudioRemoved ? "true" : "false"} />
+
               {/* Text Area with Rich Text Editor simulation helpers */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sualın Mətni (HTML dəstəkləyir)</label>
-                
+
                 {/* Editor Bar */}
                 <div className="flex flex-wrap gap-1 bg-slate-100 border border-b-0 border-gray-250 rounded-t-xl p-1.5">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => insertMarkup("b")}
                     className="px-2.5 py-1 text-xs font-bold rounded hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     B
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => insertMarkup("i")}
                     className="px-2.5 py-1 text-xs italic rounded hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     I
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => insertMarkup("u")}
                     className="px-2.5 py-1 text-xs underline rounded hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     U
                   </button>
                   <div className="w-px h-5 bg-gray-300 mx-1 align-middle inline-block self-center" />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => insertMarkup("h3")}
                     className="px-2 py-1 text-xs font-extrabold rounded hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     H3
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => insertMarkup("p")}
                     className="px-2 py-1 text-xs rounded hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     P
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => insertMarkup("br")}
                     className="px-2 py-1 text-xs font-mono rounded hover:bg-slate-200 transition-colors cursor-pointer"
                   >
@@ -890,17 +952,48 @@ export default function MiqQuestionsPage() {
                   {imagePreview && (
                     <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white max-w-[120px] max-h-[80px]">
                       <img src={imagePreview} alt="Preview" className="object-contain w-full h-full" />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           setImagePreview(null);
                           setEditImageRemoved(true);
-                          const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                          const input = document.querySelector('input[type="file"][name="image"]') as HTMLInputElement;
                           if (input) input.value = "";
                         }}
                         className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 text-[8px] leading-none hover:bg-red-700 transition-colors cursor-pointer"
                       >
                         ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Audio Input & Preview */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sualın Audiosu</label>
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 border border-gray-250 border-dashed rounded-xl p-4.5">
+                  <input
+                    type="file"
+                    name="audio"
+                    accept="audio/*"
+                    onChange={handleAudioChange}
+                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  />
+                  {audioPreview && (
+                    <div className="flex items-center gap-2">
+                      <audio controls src={audioPreview} className="h-8" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAudioPreview(null);
+                          setEditAudioRemoved(true);
+                          const input = document.querySelector('input[type="file"][name="audio"]') as HTMLInputElement;
+                          if (input) input.value = "";
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer"
+                      >
+                        Sil
                       </button>
                     </div>
                   )}

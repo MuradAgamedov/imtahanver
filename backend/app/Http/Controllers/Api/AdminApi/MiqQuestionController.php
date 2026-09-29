@@ -49,6 +49,7 @@ class MiqQuestionController extends Controller
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string',
             'image' => 'nullable|image|max:4096', // Max 4MB image
+            'audio' => 'nullable|mimes:mp3,wav,ogg,m4a,aac|max:20480', // Max 20MB audio
             'miq_question_passage_id' => 'nullable|integer|exists:miq_question_passages,id',
         ]);
 
@@ -66,6 +67,7 @@ class MiqQuestionController extends Controller
             'miq_question_passage_id' => $request->input('miq_question_passage_id') ?: null,
             'text' => $request->input('text'),
             'image' => $request->file('image'),
+            'audio' => $request->file('audio'),
         ];
 
         try {
@@ -88,6 +90,7 @@ class MiqQuestionController extends Controller
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string',
             'image' => 'nullable', // Can be file or null
+            'audio' => 'nullable', // Can be file or null
             'miq_question_passage_id' => 'nullable|integer|exists:miq_question_passages,id',
         ]);
 
@@ -111,6 +114,13 @@ class MiqQuestionController extends Controller
             $data['image'] = $request->file('image');
         } elseif ($request->input('image_removed') === 'true') {
             $data['image'] = null;
+        }
+
+        // Handle audio if passed
+        if ($request->hasFile('audio')) {
+            $data['audio'] = $request->file('audio');
+        } elseif ($request->input('audio_removed') === 'true') {
+            $data['audio'] = null;
         }
 
         try {

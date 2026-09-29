@@ -356,6 +356,10 @@ export default function GradeApplicantPage() {
                           />
                         </div>
                       )}
+
+                      {q.audio && (
+                        <audio controls src={`${STORAGE_BASE}/${q.audio.replace(/^\/+/, "")}`} className="w-full max-w-md" />
+                      )}
                     </div>
 
                     {/* Options / Student Answer Area */}
