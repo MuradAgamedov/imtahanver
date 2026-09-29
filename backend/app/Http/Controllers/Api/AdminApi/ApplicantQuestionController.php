@@ -194,7 +194,7 @@ class ApplicantQuestionController extends Controller
     public function uploadAudio(Request $request): JsonResponse
     {
         $request->validate([
-            'audio' => 'required|mimes:mp3,wav,ogg,m4a,aac|max:20480', // 20 MB
+            'audio' => 'required|mimes:mp3,wav,ogg,m4a,aac',
         ]);
 
         $path = $request->file('audio')->store('applicant-audio', 'public');
