@@ -173,6 +173,7 @@ export default function ApplicantExam() {
   } = useLoaderData<typeof loader>();
 
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, any>>(initialAnswers || {});
+  const openAnswerTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [sessionState, setSessionState] = useState<any>(examSession);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSession, setCompletedSession] = useState<any>(
@@ -275,6 +276,27 @@ export default function ApplicantExam() {
     }
   };
 
+  const scheduleSaveOpen = (questionId: number, text: string) => {
+    if (openAnswerTimers.current[questionId]) {
+      clearTimeout(openAnswerTimers.current[questionId]);
+    }
+    openAnswerTimers.current[questionId] = setTimeout(() => {
+      delete openAnswerTimers.current[questionId];
+      handleSaveOpen(questionId, text);
+    }, 800);
+  };
+
+  const flushPendingOpenAnswers = async () => {
+    const pending = Object.entries(openAnswerTimers.current);
+    openAnswerTimers.current = {};
+    await Promise.all(
+      pending.map(([questionId, timer]) => {
+        clearTimeout(timer);
+        return handleSaveOpen(Number(questionId), selectedAnswers[`text_${questionId}`] ?? "");
+      })
+    );
+  };
+
   const handleClearAnswer = async (questionId: number, type: number) => {
     if (completedSession) return;
 
@@ -313,6 +335,7 @@ export default function ApplicantExam() {
   const finishExam = async () => {
     setIsSubmitting(true);
     try {
+      await flushPendingOpenAnswers();
       const res = await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/submit`, {
         method: "POST",
         headers: {
@@ -711,8 +734,15 @@ export default function ApplicantExam() {
                             ...prev,
                             [`text_${q.id}`]: newVal,
                           }));
+                          scheduleSaveOpen(q.id, newVal);
                         }}
-                        onBlur={(e) => handleSaveOpen(q.id, e.target.value)}
+                        onBlur={(e) => {
+                          if (openAnswerTimers.current[q.id]) {
+                            clearTimeout(openAnswerTimers.current[q.id]);
+                            delete openAnswerTimers.current[q.id];
+                          }
+                          handleSaveOpen(q.id, e.target.value);
+                        }}
                         placeholder="Məs. 12,5"
                         className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold"
                       />
@@ -732,8 +762,15 @@ export default function ApplicantExam() {
                             ...prev,
                             [`text_${q.id}`]: newVal,
                           }));
+                          scheduleSaveOpen(q.id, newVal);
                         }}
-                        onBlur={(e) => handleSaveOpen(q.id, e.target.value)}
+                        onBlur={(e) => {
+                          if (openAnswerTimers.current[q.id]) {
+                            clearTimeout(openAnswerTimers.current[q.id]);
+                            delete openAnswerTimers.current[q.id];
+                          }
+                          handleSaveOpen(q.id, e.target.value);
+                        }}
                         placeholder="Buraya qeyd edin..."
                         className="w-full px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm"
                       />
