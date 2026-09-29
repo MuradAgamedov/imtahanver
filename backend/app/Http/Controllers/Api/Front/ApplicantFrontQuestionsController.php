@@ -7,6 +7,7 @@ use App\Models\ApplicantExampage;
 use App\Models\ApplicantGroup;
 use App\Models\ApplicantQuestion;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class ApplicantFrontQuestionsController extends Controller
 {
@@ -51,11 +52,12 @@ class ApplicantFrontQuestionsController extends Controller
 
     public function subjectQuestions(int $exampageId, int $groupId, int $subjectId): JsonResponse
     {
-        $questions = ApplicantQuestion::with(['options' => fn($q) => $q->orderBy('order')])
+        $questions = ApplicantQuestion::with(['options' => fn($q) => $q->orderBy('order'), 'passage'])
             ->where('applicant_exampage_id', $exampageId)
             ->where('applicant_group_id', $groupId)
             ->where('applicant_subject_id', $subjectId)
             ->orderBy('question_type')
+            ->orderBy(DB::raw('COALESCE(applicant_question_passage_id, id)'))
             ->orderBy('order')
             ->get();
 
@@ -69,12 +71,14 @@ class ApplicantFrontQuestionsController extends Controller
     {
         $questions = ApplicantQuestion::with([
             'options' => fn($q) => $q->orderBy('order'),
-            'subject'
+            'subject',
+            'passage',
         ])
             ->where('applicant_exampage_id', $exampageId)
             ->where('applicant_group_id', $groupId)
             ->orderBy('applicant_subject_id')
             ->orderBy('question_type')
+            ->orderBy(DB::raw('COALESCE(applicant_question_passage_id, id)'))
             ->orderBy('order')
             ->get();
 

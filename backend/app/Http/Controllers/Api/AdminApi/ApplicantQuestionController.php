@@ -7,6 +7,7 @@ use App\Models\ApplicantQuestion;
 use App\Models\ApplicantQuestionOption;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ApplicantQuestionController extends Controller
 {
@@ -14,11 +15,12 @@ class ApplicantQuestionController extends Controller
 
     public function index(int $exampageId, int $groupId, int $subjectId): JsonResponse
     {
-        $questions = ApplicantQuestion::with('options')
+        $questions = ApplicantQuestion::with(['options', 'passage'])
             ->where('applicant_exampage_id', $exampageId)
             ->where('applicant_group_id', $groupId)
             ->where('applicant_subject_id', $subjectId)
             ->orderBy('question_type')
+            ->orderBy(DB::raw('COALESCE(applicant_question_passage_id, id)'))
             ->orderBy('order')
             ->get();
 
@@ -40,9 +42,22 @@ class ApplicantQuestionController extends Controller
     public function store(Request $request, int $exampageId, int $groupId, int $subjectId): JsonResponse
     {
         $request->validate([
-            'question_type' => 'required|integer|in:1,2,3',
-            'title'         => 'nullable|string',
+            'question_type'                  => 'required|integer|in:1,2,3',
+            'title'                           => 'nullable|string',
+            'applicant_question_passage_id'   => 'nullable|integer|exists:applicant_question_passages,id',
         ]);
+
+        if ($request->applicant_question_passage_id) {
+            $passageBelongs = \App\Models\ApplicantQuestionPassage::where('id', $request->applicant_question_passage_id)
+                ->where('applicant_exampage_id', $exampageId)
+                ->where('applicant_group_id', $groupId)
+                ->where('applicant_subject_id', $subjectId)
+                ->exists();
+
+            if (!$passageBelongs) {
+                return response()->json(['success' => false, 'message' => 'Keçid tapılmadı.'], 422);
+            }
+        }
 
         $type = (int) $request->question_type;
         $limit = ApplicantQuestion::TYPE_LIMITS[$type];
@@ -67,13 +82,14 @@ class ApplicantQuestionController extends Controller
             ->max('order') ?? -1;
 
         $question = ApplicantQuestion::create([
-            'applicant_exampage_id' => $exampageId,
-            'applicant_group_id'    => $groupId,
-            'applicant_subject_id'  => $subjectId,
-            'question_type'         => $type,
-            'title'                 => $request->title,
-            'image'                 => $request->image ?? null,
-            'order'                 => $maxOrder + 1,
+            'applicant_exampage_id'          => $exampageId,
+            'applicant_group_id'             => $groupId,
+            'applicant_subject_id'           => $subjectId,
+            'applicant_question_passage_id'  => $request->applicant_question_passage_id ?? null,
+            'question_type'                  => $type,
+            'title'                          => $request->title,
+            'image'                          => $request->image ?? null,
+            'order'                          => $maxOrder + 1,
         ]);
 
         return response()->json([
@@ -95,11 +111,29 @@ class ApplicantQuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Sual tapılmadı.'], 404);
         }
 
-        $request->validate(['title' => 'nullable|string']);
+        $request->validate([
+            'title'                          => 'nullable|string',
+            'applicant_question_passage_id'  => 'nullable|integer|exists:applicant_question_passages,id',
+        ]);
+
+        if ($request->filled('applicant_question_passage_id')) {
+            $passageBelongs = \App\Models\ApplicantQuestionPassage::where('id', $request->applicant_question_passage_id)
+                ->where('applicant_exampage_id', $exampageId)
+                ->where('applicant_group_id', $groupId)
+                ->where('applicant_subject_id', $subjectId)
+                ->exists();
+
+            if (!$passageBelongs) {
+                return response()->json(['success' => false, 'message' => 'Keçid tapılmadı.'], 422);
+            }
+        }
 
         $question->update([
             'title' => $request->title,
             'image' => $request->image ?? $question->image,
+            'applicant_question_passage_id' => $request->has('applicant_question_passage_id')
+                ? $request->applicant_question_passage_id
+                : $question->applicant_question_passage_id,
         ]);
 
         return response()->json([
@@ -148,6 +182,20 @@ class ApplicantQuestionController extends Controller
         ]);
 
         $path = $request->file('image')->store('applicant-questions', 'public');
+
+        return response()->json([
+            'success' => true,
+            'path'    => 'storage/' . $path,
+        ]);
+    }
+
+    public function uploadAudio(Request $request): JsonResponse
+    {
+        $request->validate([
+            'audio' => 'required|mimes:mp3,wav,ogg,m4a,aac|max:20480', // 20 MB
+        ]);
+
+        $path = $request->file('audio')->store('applicant-audio', 'public');
 
         return response()->json([
             'success' => true,

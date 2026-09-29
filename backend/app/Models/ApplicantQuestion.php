@@ -29,6 +29,7 @@ class ApplicantQuestion extends Model
         'applicant_exampage_id',
         'applicant_group_id',
         'applicant_subject_id',
+        'applicant_question_passage_id',
         'question_type',
         'title',
         'image',
@@ -59,5 +60,10 @@ class ApplicantQuestion extends Model
     public function subject()
     {
         return $this->belongsTo(ApplicantSubject::class, 'applicant_subject_id');
+    }
+
+    public function passage()
+    {
+        return $this->belongsTo(ApplicantQuestionPassage::class, 'applicant_question_passage_id');
     }
 }

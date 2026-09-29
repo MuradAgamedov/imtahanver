@@ -186,8 +186,15 @@ Route::prefix('adminapi')->group(function () {
         Route::post('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'update']);
         Route::delete('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'destroy']);
 
-        // Applicant Question Image Upload
+        // Applicant Question Image/Audio Upload
         Route::post('applicant-questions/upload-image', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'uploadImage']);
+        Route::post('applicant-questions/upload-audio', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'uploadAudio']);
+
+        // Applicant Question Passages (keçidlər — shared text/audio linked to several questions)
+        Route::get('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionPassageController::class, 'index']);
+        Route::post('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionPassageController::class, 'store']);
+        Route::put('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionPassageController::class, 'update']);
+        Route::delete('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionPassageController::class, 'destroy']);
 
         // Applicant Question Options
         Route::get('applicant-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'indexOptions']);

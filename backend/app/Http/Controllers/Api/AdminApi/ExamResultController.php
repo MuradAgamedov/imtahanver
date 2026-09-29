@@ -53,11 +53,12 @@ class ExamResultController extends Controller
 
         $questions = [];
         if (!is_null($session->applicant_exampage_id)) {
-            $questions = \App\Models\ApplicantQuestion::with('options')
+            $questions = \App\Models\ApplicantQuestion::with(['options', 'passage'])
                 ->where('applicant_exampage_id', $session->applicant_exampage_id)
                 ->where('applicant_group_id', $session->applicant_group_id)
                 ->orderBy('applicant_subject_id')
                 ->orderBy('question_type')
+                ->orderBy(\Illuminate\Support\Facades\DB::raw('COALESCE(applicant_question_passage_id, id)'))
                 ->orderBy('order')
                 ->get();
         }
