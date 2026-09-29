@@ -16,6 +16,9 @@ RUN install-php-extensions \
 # Set document root for FrankenPHP
 ENV FRANKENPHP_DOCUMENT_ROOT=/app/public
 
+# Raise PHP's default 2M upload limit so audio uploads aren't silently rejected
+COPY docker/uploads.ini /usr/local/etc/php/conf.d/zz-uploads.ini
+
 # Install Composer
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 

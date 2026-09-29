@@ -299,7 +299,6 @@ export default function GradeApplicantPage() {
                   <Fragment key={q.id}>
                   {showPassageHeader && (
                     <div className="bg-indigo-50/50 border border-indigo-150 rounded-2xl p-6 space-y-2">
-                      <span className="text-[10px] font-bold text-indigo-650 uppercase tracking-wider">Keçid</span>
                       <p className="text-sm text-gray-800">{q.passage.text}</p>
                       {q.passage.audio && (
                         <audio controls src={`${STORAGE_BASE}/${q.passage.audio.replace(/^\/+/, "")}`} className="h-8 max-w-xs" />

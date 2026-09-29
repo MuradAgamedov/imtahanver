@@ -240,10 +240,12 @@ function AudioUploader({ storageBase, current, onChange }: {
   storageBase: string; current: string; onChange: (path: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     setUploading(true);
+    setError(null);
     const fd = new FormData();
     fd.append("audio", file);
     try {
@@ -253,8 +255,14 @@ function AudioUploader({ storageBase, current, onChange }: {
         body: fd,
       });
       const data = await res.json();
-      if (data.success) onChange(data.path);
-    } catch { /* noop */ }
+      if (data.success) {
+        onChange(data.path);
+      } else {
+        setError(data.message || "Audio yüklənmədi.");
+      }
+    } catch {
+      setError("İnternet xətası baş verdi.");
+    }
     setUploading(false);
   };
 
@@ -283,6 +291,7 @@ function AudioUploader({ storageBase, current, onChange }: {
       {current && (
         <audio controls src={`${storageBase}/${current.replace(/^\/+/, "")}`} className="mt-2 w-full max-w-sm" />
       )}
+      {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
     </div>
   );
 }
@@ -512,7 +521,6 @@ export default function ApplicantQuestionsPage() {
                 <Fragment key={q.id}>
                 {showPassageHeader && (
                   <div className="rounded-2xl border border-indigo-150 bg-indigo-50/50 p-4 space-y-2">
-                    <span className="text-[10px] font-bold text-indigo-650 uppercase tracking-wider">Keçid</span>
                     <p className="text-sm text-gray-800">{q.passage.text}</p>
                     {q.passage.audio && (
                       <audio controls src={`${storageBase}/${q.passage.audio.replace(/^\/+/, "")}`} className="h-8 max-w-xs" />

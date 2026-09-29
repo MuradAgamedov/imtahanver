@@ -677,7 +677,6 @@ export default function ApplicantExam() {
               <Fragment key={q.id}>
               {showPassageHeader && (
                 <div className="bg-paper-2/60 border border-ink/10 rounded-3xl p-6 md:p-8 space-y-3">
-                  <span className="text-xs font-bold text-ink-soft/70 uppercase tracking-wider">Keçid</span>
                   <p className="text-base text-ink leading-relaxed whitespace-pre-line">{q.passage.text}</p>
                   {q.passage.audio_url && (
                     <audio controls src={q.passage.audio_url} className="w-full max-w-md" />
