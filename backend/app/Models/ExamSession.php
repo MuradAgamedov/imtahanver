@@ -402,29 +402,9 @@ class ExamSession extends Model
             return false;
         };
 
-        // I Qrup (RK)
-        if ($gId === 'i-qrup-rk' || $gId === 'i-rk' || (str_contains($gTitle, 'i') && str_contains($gTitle, 'rk'))) {
-            if ($isSubj(['riyaz'])) return 1.5;
-            if ($isSubj(['fizik'])) return 1.5;
-            if ($isSubj(['kimya'])) return 1.0;
-        }
-
-        // I Qrup (RI)
-        if ($gId === 'i-qrup-ri' || $gId === 'i-ri' || (str_contains($gTitle, 'i') && str_contains($gTitle, 'ri'))) {
-            if ($isSubj(['riyaz'])) return 1.5;
-            if ($isSubj(['fizik'])) return 1.5;
-            if ($isSubj(['informat'])) return 1.0;
-        }
-
-        // II Qrup
-        if ($gId === 'ii-qrup' || $gId === 'ii' || str_contains($gTitle, 'ii') || str_contains($gTitle, '2-ci') || str_contains($gTitle, '2 ci')) {
-            if ($isSubj(['riyaz'])) return 1.5;
-            if ($isSubj(['cograf', 'coğraf'])) return 1.5;
-            if ($isSubj(['tarix'])) return 1.0;
-        }
-
-        // III Qrup (DT / DK)
+        // III Qrup (DT / DK) - check III before II and I
         if ($gId === 'iii-qrup-dk' || $gId === 'iii-qrup-dt' || $gId === 'iii-dt' || $gId === 'iii-dk' ||
+            (str_contains($gId, 'iii') && (str_contains($gId, 'dt') || str_contains($gId, 'dk'))) ||
             (str_contains($gTitle, 'iii') && (str_contains($gTitle, 'dt') || str_contains($gTitle, 'dk')))) {
             if ($isSubj(['azerb', 'azərb'])) return 1.5;
             if ($isSubj(['tarix'])) return 1.5;
@@ -432,17 +412,40 @@ class ExamSession extends Model
         }
 
         // III Qrup (TC)
-        if ($gId === 'iii-qrup-tc' || $gId === 'iii-tc' || (str_contains($gTitle, 'iii') && str_contains($gTitle, 'tc'))) {
+        if ($gId === 'iii-qrup-tc' || $gId === 'iii-tc' ||
+            str_contains($gId, 'tc') || str_contains($gTitle, 'tc')) {
             if ($isSubj(['azerb', 'azərb'])) return 1.5;
             if ($isSubj(['tarix'])) return 1.5;
             if ($isSubj(['cograf', 'coğraf'])) return 1.0;
         }
 
         // IV Qrup
-        if ($gId === 'iv-cu-qrup' || $gId === 'iv-qrup' || $gId === 'iv' || str_contains($gTitle, 'iv') || str_contains($gTitle, '4-cü') || str_contains($gTitle, '4 cü')) {
+        if ($gId === 'iv-cu-qrup' || $gId === 'iv-qrup' || $gId === 'iv' || str_contains($gId, 'iv') || str_contains($gTitle, 'iv') || str_contains($gTitle, '4-cü') || str_contains($gTitle, '4 cü')) {
             if ($isSubj(['biolo'])) return 1.5;
             if ($isSubj(['kimya'])) return 1.5;
             if ($isSubj(['fizik'])) return 1.0;
+        }
+
+        // II Qrup (ensure 'iii' does not match)
+        if ($gId === 'ii-qrup' || $gId === 'ii' ||
+            str_contains($gTitle, 'ii qrup') || str_contains($gTitle, 'ii-ci') || str_contains($gTitle, '2-ci') || str_contains($gTitle, '2 ci')) {
+            if ($isSubj(['riyaz'])) return 1.5;
+            if ($isSubj(['cograf', 'coğraf'])) return 1.5;
+            if ($isSubj(['tarix'])) return 1.0;
+        }
+
+        // I Qrup (RK)
+        if ($gId === 'i-qrup-rk' || $gId === 'i-rk' || str_contains($gId, 'rk') || str_contains($gTitle, 'rk')) {
+            if ($isSubj(['riyaz'])) return 1.5;
+            if ($isSubj(['fizik'])) return 1.5;
+            if ($isSubj(['kimya'])) return 1.0;
+        }
+
+        // I Qrup (RI)
+        if ($gId === 'i-qrup-ri' || $gId === 'i-ri' || str_contains($gId, 'ri') || str_contains($gTitle, 'ri')) {
+            if ($isSubj(['riyaz'])) return 1.5;
+            if ($isSubj(['fizik'])) return 1.5;
+            if ($isSubj(['informat'])) return 1.0;
         }
 
         return 1.0;
