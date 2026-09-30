@@ -344,16 +344,27 @@ export default function GradeApplicantPage() {
 
                       <div className="flex items-center gap-2">
                         {isAnswered ? (
-                          <span className={cn(
-                            "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold border",
-                            points > 0 
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                              : points < 0 
-                                ? "bg-red-50 text-red-700 border-red-100" 
-                                : "bg-gray-50 text-gray-650 border-gray-150"
-                          )}>
-                            Cavablandırılıb: {points >= 0 ? `+${points}` : points} Bal
-                          </span>
+                          points > 0 ? (
+                            <span className="inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-xs">
+                              Düzgün (+{points} İlkin Xal)
+                            </span>
+                          ) : points < 0 ? (
+                            <span className="inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200 shadow-xs">
+                              Səhv ({points} Cərimə)
+                            </span>
+                          ) : answerObj?.is_correct === false ? (
+                            <span className="inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200 shadow-xs">
+                              Səhv (0 Xal)
+                            </span>
+                          ) : isWritten && (answerObj?.is_correct === null || answerObj?.is_correct === undefined) ? (
+                            <span className="inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-bold border bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
+                              Yoxlanılmayıb
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-bold border bg-gray-50 text-gray-650 border-gray-150">
+                              Cavablandırılıb (0 Xal)
+                            </span>
+                          )
                         ) : (
                           <span className="inline-flex items-center rounded-md bg-gray-50 text-gray-400 px-2 py-0.5 text-[10px] font-bold border border-gray-150">
                             Boş buraxılıb
