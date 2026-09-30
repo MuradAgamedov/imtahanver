@@ -74,11 +74,19 @@ export default function GradeApplicantPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleGrade = async (questionId: number, isCorrect: boolean) => {
+  const isBuraxilis =
+    examSession.applicant_group?.identify?.toLowerCase().includes("burax") ||
+    examSession.applicant_group?.title?.toLowerCase().includes("burax");
+  const maxPossibleScore = examSession.applicant_max_score || (isBuraxilis ? 300 : 400);
+
+  const handleGrade = async (questionId: number, gradeVal: boolean | number) => {
     setGradingQuestionId(questionId);
     try {
       const isProd = typeof window !== "undefined" && window.location.hostname.endsWith("imtahanver.online");
       const apiBase = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
+      const points = typeof gradeVal === "number" ? gradeVal : (gradeVal ? 2.0 : 0.0);
+      const isCorrect = points > 0;
 
       const res = await fetch(`${apiBase}/api/adminapi/exam-results/${examSession.id}/grade`, {
         method: "POST",
@@ -89,6 +97,7 @@ export default function GradeApplicantPage() {
         },
         body: JSON.stringify({
           applicant_question_id: questionId,
+          points: points,
           is_correct: isCorrect,
         }),
       });
@@ -183,8 +192,11 @@ export default function GradeApplicantPage() {
               </svg>
             </Link>
             <div>
-              <span className="text-[10px] font-bold text-emerald-600 tracking-wider block uppercase leading-none mb-1">
-                Abituriyent İmtahanının Yoxlanılması
+              <span className={cn(
+                "text-[10px] font-bold tracking-wider block uppercase leading-none mb-1",
+                isBuraxilis ? "text-amber-600" : "text-emerald-600"
+              )}>
+                {isBuraxilis ? "Buraxılış İmtahanının Yoxlanılması (Maks. 300)" : "Abituriyent Qrup (Blok) İmtahanı (Maks. 400 Bal)"}
               </span>
               <h2 className="text-lg font-bold text-gray-900 leading-none">
                 {examSession.user?.first_name} {examSession.user?.last_name}
@@ -202,7 +214,10 @@ export default function GradeApplicantPage() {
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3 sm:self-center">
           <div>
             <span className="text-[10px] font-bold text-emerald-650 uppercase tracking-wider block">Yekun Bal</span>
-            <span className="text-2xl font-black text-emerald-800 leading-none">{examSession.score} <span className="text-sm font-semibold text-emerald-650">/ 400</span></span>
+            <span className="text-2xl font-black text-emerald-800 leading-none">
+              {examSession.score}{" "}
+              <span className="text-sm font-semibold text-emerald-650">/ {maxPossibleScore}</span>
+            </span>
           </div>
         </div>
       </div>
@@ -248,8 +263,16 @@ export default function GradeApplicantPage() {
                   
                   <div className="flex justify-between items-center text-[10px] w-full opacity-80 mt-1">
                     <span>Əmsal: {breakdown?.weight || 1.0}</span>
-                    <span className="font-extrabold">{breakdown?.subject_score || 0} / 100 Bal</span>
+                    <span className="font-extrabold">
+                      {breakdown?.weighted_score !== undefined ? breakdown.weighted_score : (breakdown?.subject_score || 0)} / {(breakdown?.weight || 1.0) * 100} Bal
+                    </span>
                   </div>
+                  {breakdown?.weight && breakdown.weight !== 1.0 && (
+                    <div className="text-[9px] opacity-75 flex justify-between w-full">
+                      <span>Nisbi bal:</span>
+                      <span>{breakdown.subject_score || 0} / 100</span>
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -575,11 +598,15 @@ export default function GradeApplicantPage() {
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 pt-3">
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-gray-500">Qiymət:</span>
-                              {answerObj?.is_correct === true ? (
+                              {points === 2 ? (
                                 <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-150">
-                                  Düzgün (+2 Bal)
+                                  Tam Düzgün (+2 Bal)
                                 </span>
-                              ) : answerObj?.is_correct === false ? (
+                              ) : points === 1 ? (
+                                <span className="inline-flex items-center rounded-md bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700 border border-sky-150">
+                                  Qismən Düzgün (+1 Bal)
+                                </span>
+                              ) : answerObj?.is_correct === false || (answerObj && points === 0) ? (
                                 <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-150">
                                   Səhv (0 Bal)
                                 </span>
@@ -594,29 +621,43 @@ export default function GradeApplicantPage() {
                               <button
                                 type="button"
                                 disabled={gradingQuestionId === q.id || !isAnswered}
-                                onClick={() => handleGrade(q.id, false)}
+                                onClick={() => handleGrade(q.id, 0)}
                                 className={cn(
-                                  "px-4 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
-                                  answerObj?.is_correct === false
+                                  "px-3 py-1.5 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
+                                  points === 0 && answerObj?.is_correct === false
                                     ? "bg-rose-50 border-rose-200 text-rose-700"
                                     : "bg-white border-gray-250 text-gray-700 hover:bg-slate-50"
                                 )}
                               >
-                                Səhv İşarələ (0 Bal)
+                                0 Bal (Səhv)
                               </button>
-                              
+
                               <button
                                 type="button"
                                 disabled={gradingQuestionId === q.id || !isAnswered}
-                                onClick={() => handleGrade(q.id, true)}
+                                onClick={() => handleGrade(q.id, 1)}
                                 className={cn(
-                                  "px-4 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
-                                  answerObj?.is_correct === true
-                                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                  "px-3 py-1.5 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
+                                  points === 1
+                                    ? "bg-sky-50 border-sky-200 text-sky-700 font-extrabold"
+                                    : "bg-white border-gray-250 text-gray-700 hover:bg-slate-50"
+                                )}
+                              >
+                                1 Bal (Qismən)
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={gradingQuestionId === q.id || !isAnswered}
+                                onClick={() => handleGrade(q.id, 2)}
+                                className={cn(
+                                  "px-3 py-1.5 text-xs font-bold rounded-xl border cursor-pointer transition-all disabled:opacity-50",
+                                  points === 2
+                                    ? "bg-emerald-50 border-emerald-200 text-emerald-700 font-extrabold"
                                     : "bg-emerald-600 border-transparent text-white hover:bg-emerald-700 shadow-sm"
                                 )}
                               >
-                                {gradingQuestionId === q.id ? "Yadda saxlanılır..." : "Düzgün İşarələ (+2 Bal)"}
+                                {gradingQuestionId === q.id ? "Yadda saxlanılır..." : "2 Bal (Düzgün)"}
                               </button>
                             </div>
                           </div>

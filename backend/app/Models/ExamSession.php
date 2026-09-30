@@ -43,7 +43,25 @@ class ExamSession extends Model
         'pedagogy_score',
         'passed',
         'applicant_breakdown',
+        'applicant_max_score',
     ];
+
+    public function getApplicantMaxScoreAttribute(): int
+    {
+        if (is_null($this->applicant_exampage_id)) {
+            return 100;
+        }
+
+        $group = $this->applicantGroup;
+        if (!$group) {
+            return 400;
+        }
+
+        $isBuraxilis = str_contains(strtolower($group->identify ?? ''), 'burax')
+            || str_contains(strtolower($group->title ?? ''), 'burax');
+
+        return $isBuraxilis ? 300 : 400;
+    }
 
     public function getSpecialtyScoreAttribute(): float
     {
@@ -123,6 +141,10 @@ class ExamSession extends Model
             return 0.0;
         }
 
+        $isBuraxilis = str_contains(strtolower($group->identify ?? ''), 'burax')
+            || str_contains(strtolower($group->title ?? ''), 'burax');
+        $penaltyRate = $isBuraxilis ? 0.0 : 0.25;
+
         $subjects = $group->subjects;
         $totalScore = 0.0;
 
@@ -154,7 +176,7 @@ class ExamSession extends Model
                             $ans->update(['is_correct' => true, 'points' => 1.0]);
                         } else {
                             $Yq++;
-                            $ans->update(['is_correct' => false, 'points' => -0.25]);
+                            $ans->update(['is_correct' => false, 'points' => -$penaltyRate]);
                         }
                     }
                 } elseif ($q->question_type == ApplicantQuestion::TYPE_CODEABLE) {
@@ -174,7 +196,6 @@ class ExamSession extends Model
                                 $ans->update(['is_correct' => false, 'points' => 0.0]);
                             }
                         } elseif (!is_null($ans->is_correct)) {
-                            // No correct option configured on the question: trust the admin's manual grade.
                             if ($ans->is_correct) {
                                 $Da_codeable++;
                                 $ans->update(['points' => 1.0]);
@@ -182,7 +203,6 @@ class ExamSession extends Model
                                 $ans->update(['points' => 0.0]);
                             }
                         }
-                        // else: no correct option and not yet manually graded — leave pending.
                     } else {
                         if ($ans) {
                             $ans->update(['is_correct' => false, 'points' => 0.0]);
@@ -194,25 +214,30 @@ class ExamSession extends Model
                         ->where('applicant_question_id', $q->id)
                         ->first();
                     if ($ans) {
-                        if ($ans->is_correct === true) {
+                        if (!is_null($ans->points)) {
+                            $Da_written += (float) $ans->points;
+                        } elseif ($ans->is_correct === true) {
                             $Da_written += 2.0;
                             $ans->update(['points' => 2.0]);
                         } elseif ($ans->is_correct === false) {
-                            $ans->update(['points' => 0.0]);
-                        } else {
                             $ans->update(['points' => 0.0]);
                         }
                     }
                 }
             }
 
-            $subjectRawScore = ($Dq - $Yq * 0.25) + $Da_codeable + $Da_written;
+            $subjectRawScore = max(0.0, ($Dq - $Yq * $penaltyRate) + $Da_codeable + $Da_written);
             $maxRawScore = ($closedCount * 1) + ($codeableCount * 1) + ($writtenCount * 2);
 
             $subjectRelativeScore = $maxRawScore > 0 ? max(0.0, ($subjectRawScore / $maxRawScore) * 100) : 0.0;
             $subjectRelativeScore = min(100.0, $subjectRelativeScore);
 
-            $weight = $this->getApplicantSubjectWeight($group->identify, $subj->identify);
+            $weight = $this->getApplicantSubjectWeight(
+                $group->identify ?? '',
+                $subj->identify ?? '',
+                $group->title ?? '',
+                $subj->title ?? ''
+            );
             $totalScore += $subjectRelativeScore * $weight;
         }
 
@@ -229,6 +254,10 @@ class ExamSession extends Model
         if (!$group) {
             return [];
         }
+
+        $isBuraxilis = str_contains(strtolower($group->identify ?? ''), 'burax')
+            || str_contains(strtolower($group->title ?? ''), 'burax');
+        $penaltyRate = $isBuraxilis ? 0.0 : 0.25;
 
         $subjects = $group->subjects;
         $breakdown = [];
@@ -286,7 +315,6 @@ class ExamSession extends Model
                                 $Y_codeable++;
                             }
                         } elseif (!is_null($ans->is_correct)) {
-                            // No correct option configured: trust the admin's manual grade.
                             if ($ans->is_correct) {
                                 $Da_codeable++;
                             } else {
@@ -304,7 +332,9 @@ class ExamSession extends Model
                         ->where('applicant_question_id', $q->id)
                         ->first();
                     if ($ans && !is_null($ans->written_answer) && $ans->written_answer !== '') {
-                        if ($ans->is_correct === true) {
+                        if (!is_null($ans->points)) {
+                            $Da_written += (float) $ans->points;
+                        } elseif ($ans->is_correct === true) {
                             $Da_written += 2.0;
                         } elseif (is_null($ans->is_correct)) {
                             $ungradedWrittenCount++;
@@ -315,13 +345,18 @@ class ExamSession extends Model
                 }
             }
 
-            $subjectRawScore = ($Dq - $Yq * 0.25) + $Da_codeable + $Da_written;
+            $subjectRawScore = max(0.0, ($Dq - $Yq * $penaltyRate) + $Da_codeable + $Da_written);
             $maxRawScore = ($closedCount * 1) + ($codeableCount * 1) + ($writtenCount * 2);
 
             $subjectRelativeScore = $maxRawScore > 0 ? max(0.0, ($subjectRawScore / $maxRawScore) * 100) : 0.0;
             $subjectRelativeScore = min(100.0, $subjectRelativeScore);
 
-            $weight = $this->getApplicantSubjectWeight($group->identify, $subj->identify);
+            $weight = $this->getApplicantSubjectWeight(
+                $group->identify ?? '',
+                $subj->identify ?? '',
+                $group->title ?? '',
+                $subj->title ?? ''
+            );
 
             $totalQuestions = $closedCount + $codeableCount + $writtenCount;
             $totalUnanswered = $unansweredClosed + $unansweredCodeable + $unansweredWritten;
@@ -340,7 +375,9 @@ class ExamSession extends Model
                 'written_ungraded' => $ungradedWrittenCount,
                 'written_unanswered' => $unansweredWritten,
                 'subject_score' => round($subjectRelativeScore, 2),
+                'max_subject_score' => 100,
                 'weighted_score' => round($subjectRelativeScore * $weight, 2),
+                'max_weighted_score' => round(100 * $weight, 2),
                 'total_questions' => $totalQuestions,
                 'answered_count' => $totalQuestions - $totalUnanswered,
             ];
@@ -349,40 +386,63 @@ class ExamSession extends Model
         return $breakdown;
     }
 
-    private function getApplicantSubjectWeight(string $groupIdentify, string $subjectIdentify): float
+    public function getApplicantSubjectWeight(string $groupIdentify, string $subjectIdentify, ?string $groupTitle = null, ?string $subjectTitle = null): float
     {
-        $groupIdentify = strtolower($groupIdentify);
-        $subjectIdentify = strtolower($subjectIdentify);
+        $gId = strtolower(trim($groupIdentify));
+        $gTitle = strtolower(trim($groupTitle ?? ''));
+        $sId = strtolower(trim($subjectIdentify));
+        $sTitle = strtolower(trim($subjectTitle ?? ''));
 
-        if ($groupIdentify === 'i-rk') {
-            if ($subjectIdentify === 'riyaziyyat') return 1.5;
-            if ($subjectIdentify === 'fizika') return 1.5;
-            if ($subjectIdentify === 'kimya') return 1.0;
+        $isSubj = function (array $keywords) use ($sId, $sTitle): bool {
+            foreach ($keywords as $kw) {
+                if (str_contains($sId, $kw) || str_contains($sTitle, $kw)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // I Qrup (RK)
+        if ($gId === 'i-qrup-rk' || $gId === 'i-rk' || (str_contains($gTitle, 'i') && str_contains($gTitle, 'rk'))) {
+            if ($isSubj(['riyaz'])) return 1.5;
+            if ($isSubj(['fizik'])) return 1.5;
+            if ($isSubj(['kimya'])) return 1.0;
         }
-        if ($groupIdentify === 'i-ri') {
-            if ($subjectIdentify === 'riyaziyyat') return 1.5;
-            if ($subjectIdentify === 'fizika') return 1.5;
-            if ($subjectIdentify === 'informatika') return 1.0;
+
+        // I Qrup (RI)
+        if ($gId === 'i-qrup-ri' || $gId === 'i-ri' || (str_contains($gTitle, 'i') && str_contains($gTitle, 'ri'))) {
+            if ($isSubj(['riyaz'])) return 1.5;
+            if ($isSubj(['fizik'])) return 1.5;
+            if ($isSubj(['informat'])) return 1.0;
         }
-        if ($groupIdentify === 'ii') {
-            if ($subjectIdentify === 'riyaziyyat') return 1.5;
-            if ($subjectIdentify === 'cografiya') return 1.5;
-            if ($subjectIdentify === 'tarix') return 1.0;
+
+        // II Qrup
+        if ($gId === 'ii-qrup' || $gId === 'ii' || str_contains($gTitle, 'ii') || str_contains($gTitle, '2-ci') || str_contains($gTitle, '2 ci')) {
+            if ($isSubj(['riyaz'])) return 1.5;
+            if ($isSubj(['cograf', 'coğraf'])) return 1.5;
+            if ($isSubj(['tarix'])) return 1.0;
         }
-        if ($groupIdentify === 'iii-dt') {
-            if ($subjectIdentify === 'azerb-dili' || $subjectIdentify === 'azerb-dili-ve-edebiyyat') return 1.5;
-            if ($subjectIdentify === 'tarix') return 1.5;
-            if ($subjectIdentify === 'edebiyyat') return 1.0;
+
+        // III Qrup (DT / DK)
+        if ($gId === 'iii-qrup-dk' || $gId === 'iii-qrup-dt' || $gId === 'iii-dt' || $gId === 'iii-dk' ||
+            (str_contains($gTitle, 'iii') && (str_contains($gTitle, 'dt') || str_contains($gTitle, 'dk')))) {
+            if ($isSubj(['azerb', 'azərb'])) return 1.5;
+            if ($isSubj(['tarix'])) return 1.5;
+            if ($isSubj(['edeb', 'ədəb'])) return 1.0;
         }
-        if ($groupIdentify === 'iii-tc') {
-            if ($subjectIdentify === 'azerb-dili' || $subjectIdentify === 'azerb-dili-ve-edebiyyat') return 1.5;
-            if ($subjectIdentify === 'cografiya') return 1.5;
-            if ($subjectIdentify === 'tarix') return 1.0;
+
+        // III Qrup (TC)
+        if ($gId === 'iii-qrup-tc' || $gId === 'iii-tc' || (str_contains($gTitle, 'iii') && str_contains($gTitle, 'tc'))) {
+            if ($isSubj(['azerb', 'azərb'])) return 1.5;
+            if ($isSubj(['tarix'])) return 1.5;
+            if ($isSubj(['cograf', 'coğraf'])) return 1.0;
         }
-        if ($groupIdentify === 'iv') {
-            if ($subjectIdentify === 'biologiya') return 1.5;
-            if ($subjectIdentify === 'kimya') return 1.5;
-            if ($subjectIdentify === 'fizika') return 1.0;
+
+        // IV Qrup
+        if ($gId === 'iv-cu-qrup' || $gId === 'iv-qrup' || $gId === 'iv' || str_contains($gTitle, 'iv') || str_contains($gTitle, '4-cü') || str_contains($gTitle, '4 cü')) {
+            if ($isSubj(['biolo'])) return 1.5;
+            if ($isSubj(['kimya'])) return 1.5;
+            if ($isSubj(['fizik'])) return 1.0;
         }
 
         return 1.0;

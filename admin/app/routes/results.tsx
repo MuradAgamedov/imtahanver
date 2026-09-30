@@ -214,7 +214,10 @@ export default function ResultsPage() {
                             {sess.applicant_breakdown?.map((b: any) => (
                               <div key={b.subject_id} className="flex justify-between gap-4 text-[10px] text-gray-500">
                                 <span>{b.subject_title}:</span>
-                                <span className="font-bold text-gray-800">{b.subject_score} bal</span>
+                                <span className="font-bold text-gray-800">
+                                  {b.weighted_score !== undefined ? `${b.weighted_score} bal` : `${b.subject_score} bal`}
+                                  {b.weight && b.weight !== 1.0 ? ` (${b.subject_score})` : ''}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -266,7 +269,15 @@ export default function ResultsPage() {
                               ? "bg-emerald-50 text-emerald-650 border-emerald-100"
                               : "bg-indigo-50 text-indigo-600 border-indigo-100"
                           )}>
-                            {sess.score} / {sess.applicant_exampage_id ? 400 : 100}
+                            {sess.score} / {
+                              sess.applicant_exampage_id
+                                ? (sess.applicant_max_score || (
+                                    (sess.applicant_group?.identify?.toLowerCase().includes("burax") || sess.applicant_group?.title?.toLowerCase().includes("burax"))
+                                      ? 300
+                                      : 400
+                                  ))
+                                : 100
+                            }
                           </span>
                           {sess.applicant_exampage_id && sess.applicant_breakdown && (
                             (() => {

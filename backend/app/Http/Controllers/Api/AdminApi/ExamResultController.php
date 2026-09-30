@@ -74,7 +74,8 @@ class ExamResultController extends Controller
     {
         $request->validate([
             'applicant_question_id' => 'required|exists:applicant_questions,id',
-            'is_correct' => 'required|boolean',
+            'is_correct' => 'nullable|boolean',
+            'points' => 'nullable|numeric|min:0|max:2',
         ]);
 
         $session = ExamSession::findOrFail($id);
@@ -94,10 +95,17 @@ class ExamResultController extends Controller
             ]);
         }
 
-        $isCorrect = (bool) $request->is_correct;
+        if ($request->has('points') && !is_null($request->points)) {
+            $points = (float) $request->points;
+            $isCorrect = $points > 0;
+        } else {
+            $isCorrect = (bool) $request->is_correct;
+            $points = $isCorrect ? 2.0 : 0.0;
+        }
+
         $writtenAnswer->update([
             'is_correct' => $isCorrect,
-            'points' => $isCorrect ? 2.0 : 0.0,
+            'points' => $points,
         ]);
 
         // Recalculate score

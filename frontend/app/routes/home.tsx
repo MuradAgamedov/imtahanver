@@ -748,7 +748,9 @@ export default function Home() {
                                   )}
                                 </td>
                                 <td className="px-6 py-4 text-right font-extrabold text-ink">
-                                  {isCompleted ? `${sess.score} / 400` : "-"}
+                                  {isCompleted
+                                    ? `${sess.score} / ${sess.applicant_max_score || ((sess.applicant_group?.identify?.toLowerCase().includes("burax") || sess.applicant_group?.title?.toLowerCase().includes("burax")) ? 300 : 400)}`
+                                    : "-"}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                   <Link
