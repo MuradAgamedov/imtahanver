@@ -353,12 +353,13 @@ class ExamSession extends Model
                         ->where('applicant_question_id', $q->id)
                         ->first();
                     if ($ans && !is_null($ans->written_answer) && $ans->written_answer !== '') {
-                        if (!is_null($ans->points)) {
+                        if (is_null($ans->is_correct) && (is_null($ans->points) || (float) $ans->points == 0.0)) {
+                            // Not graded by an admin yet (`points` defaults to 0.00, so it cannot be used to tell).
+                            $ungradedWrittenCount++;
+                        } elseif (!is_null($ans->points)) {
                             $Da_written += (float) $ans->points;
                         } elseif ($ans->is_correct === true) {
                             $Da_written += 2.0;
-                        } elseif (is_null($ans->is_correct)) {
-                            $ungradedWrittenCount++;
                         }
                     } else {
                         $unansweredWritten++;

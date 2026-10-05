@@ -238,13 +238,20 @@ export default function ResultsPage() {
                         sess.applicant_exampage_id ? (
                           (() => {
                             const ungraded = sess.applicant_breakdown?.reduce((acc: number, curr: any) => acc + (curr.written_ungraded || 0), 0) || 0;
-                            return ungraded > 0 ? (
-                              <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-150">
-                                Yoxla ({ungraded} sual)
+                            if (ungraded > 0) {
+                              return (
+                                <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-150">
+                                  Yoxla ({ungraded} sual)
+                                </span>
+                              );
+                            }
+                            return sess.grading_approved ? (
+                              <span className="inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700 border border-teal-150">
+                                Təsdiqlənib
                               </span>
                             ) : (
-                              <span className="inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700 border border-teal-150">
-                                Tam yoxlanılıb
+                              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-150">
+                                Təsdiq gözləyir
                               </span>
                             );
                           })()
