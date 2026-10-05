@@ -258,7 +258,8 @@ function DemoExampageCard({ ep, applicantSessions }: { ep: any; applicantSession
   let sessionBadgeClass = "";
 
   if (activeSession) {
-    href = `/exam/applicant/${ep.id}/${activeSession.applicant_group_id}/${activeSession.applicant_subject_id}?session_id=${activeSession.id}`;
+    // Same URL as the group picker: the exam page starts or resumes the active session itself.
+    href = `/exam/applicant/${ep.id}/${activeSession.applicant_group_id}`;
     sessionStatusLabel = "Davam edir";
     sessionBadgeClass = "bg-amber-50 text-amber-600 animate-pulse";
   }
