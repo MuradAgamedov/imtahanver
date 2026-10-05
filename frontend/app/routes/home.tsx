@@ -341,8 +341,12 @@ export default function Home() {
   const completedSessions = examSessions ? examSessions.filter((s: any) => s.status === 'completed') : [];
   const completedCount = completedSessions.length;
   const activeCount = examSessions ? examSessions.filter((s: any) => s.status === 'active').length : 0;
-  const averageScore = completedCount > 0 
-    ? (completedSessions.reduce((acc: number, curr: any) => acc + parseFloat(curr.score), 0) / completedCount).toFixed(1)
+  // Applicant exam scores stay hidden until an admin approves the grading.
+  const scoredSessions = completedSessions.filter(
+    (s: any) => !(s.applicant_exampage_id && s.grading_approved === false)
+  );
+  const averageScore = scoredSessions.length > 0 
+    ? (scoredSessions.reduce((acc: number, curr: any) => acc + parseFloat(curr.score), 0) / scoredSessions.length).toFixed(1)
     : "N/A";
 
   const actionData = useActionData() as any;
@@ -711,6 +715,7 @@ export default function Home() {
                           if (sess.applicant_exampage_id) {
                             const ungraded = sess.applicant_breakdown?.reduce((acc: number, curr: any) => acc + (curr.written_ungraded || 0), 0) || 0;
                             const isCompleted = sess.status === "completed";
+                            const awaitingApproval = isCompleted && sess.grading_approved === false;
 
                             return (
                               <tr key={sess.id} className="hover:bg-paper/50 transition-colors">
@@ -734,7 +739,11 @@ export default function Home() {
                                 </td>
                                 <td className="px-6 py-4">
                                   {isCompleted ? (
-                                    ungraded > 0 ? (
+                                    awaitingApproval ? (
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold">
+                                        Admin yoxlayır
+                                      </span>
+                                    ) : ungraded > 0 ? (
                                       <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold">
                                         Yoxlanılır ({ungraded} sual)
                                       </span>
@@ -748,7 +757,9 @@ export default function Home() {
                                   )}
                                 </td>
                                 <td className="px-6 py-4 text-right font-extrabold text-ink">
-                                  {isCompleted
+                                  {awaitingApproval
+                                    ? <span className="text-xs font-semibold text-ink-soft/70">Admin yoxlayır</span>
+                                    : isCompleted
                                     ? `${sess.score} / ${sess.applicant_max_score || ((sess.applicant_group?.identify?.toLowerCase().includes("burax") || sess.applicant_group?.title?.toLowerCase().includes("burax")) ? 300 : 400)}`
                                     : "-"}
                                 </td>

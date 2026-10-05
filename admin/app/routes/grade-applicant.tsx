@@ -67,6 +67,7 @@ export default function GradeApplicantPage() {
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [savingAnswerId, setSavingAnswerId] = useState<number | null>(null);
+  const [isApproving, setIsApproving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
@@ -114,6 +115,42 @@ export default function GradeApplicantPage() {
       showToast("İnternet və ya server xətası baş verdi.", "error");
     } finally {
       setGradingQuestionId(null);
+    }
+  };
+
+  const handleApproval = async (approve: boolean) => {
+    if (approve && !confirm("Bütün cavabları yoxladığınızı təsdiq edirsiniz? Bundan sonra bal tələbəyə görünəcək.")) {
+      return;
+    }
+    setIsApproving(true);
+    try {
+      const isProd = typeof window !== "undefined" && window.location.hostname.endsWith("imtahanver.online");
+      const apiBase = isProd ? "https://api.imtahanver.online" : "http://localhost:8000";
+
+      const res = await fetch(
+        `${apiBase}/api/adminapi/exam-results/${examSession.id}/${approve ? "approve-grading" : "revoke-grading"}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setExamSession(data.session);
+        showToast(data.message || (approve ? "Yoxlama təsdiqləndi." : "Təsdiq geri çəkildi."));
+      } else {
+        showToast(data.message || "Əməliyyat alınmadı.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("İnternet və ya server xətası baş verdi.", "error");
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -210,14 +247,47 @@ export default function GradeApplicantPage() {
           </p>
         </div>
 
-        {/* Global Total Score Box */}
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3 sm:self-center">
-          <div>
-            <span className="text-[10px] font-bold text-emerald-650 uppercase tracking-wider block">Yekun Bal</span>
-            <span className="text-2xl font-black text-emerald-800 leading-none">
-              {examSession.score}{" "}
-              <span className="text-sm font-semibold text-emerald-650">/ {maxPossibleScore}</span>
+        {/* Global Total Score Box + approval */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:self-center">
+          <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3">
+            <div>
+              <span className="text-[10px] font-bold text-emerald-650 uppercase tracking-wider block">Yekun Bal</span>
+              <span className="text-2xl font-black text-emerald-800 leading-none">
+                {examSession.score}{" "}
+                <span className="text-sm font-semibold text-emerald-650">/ {maxPossibleScore}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className={cn(
+            "flex flex-col gap-2 rounded-2xl border px-4 py-3",
+            examSession.grading_approved ? "bg-teal-50 border-teal-100" : "bg-amber-50 border-amber-100"
+          )}>
+            <span className={cn(
+              "text-[10px] font-bold uppercase tracking-wider",
+              examSession.grading_approved ? "text-teal-700" : "text-amber-700"
+            )}>
+              {examSession.grading_approved ? "Təsdiqlənib · tələbə balı görür" : "Təsdiqlənməyib · tələbə balı görmür"}
             </span>
+            {examSession.grading_approved ? (
+              <button
+                type="button"
+                disabled={isApproving}
+                onClick={() => handleApproval(false)}
+                className="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-bold text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+              >
+                {isApproving ? "..." : "Təsdiqi geri çək"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={isApproving}
+                onClick={() => handleApproval(true)}
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isApproving ? "..." : "Yoxladım və təsdiqlədim"}
+              </button>
+            )}
           </div>
         </div>
       </div>

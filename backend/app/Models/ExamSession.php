@@ -19,6 +19,8 @@ class ExamSession extends Model
         'status',
         'started_at',
         'completed_at',
+        'grading_approved_at',
+        'grading_approved_by',
         'duration_minutes',
         'score',
         'correct_specialty_count',
@@ -30,6 +32,7 @@ class ExamSession extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'grading_approved_at' => 'datetime',
         'score' => 'float',
         'duration_minutes' => 'integer',
         'correct_specialty_count' => 'integer',
@@ -44,6 +47,7 @@ class ExamSession extends Model
         'passed',
         'applicant_breakdown',
         'applicant_max_score',
+        'grading_approved',
     ];
 
     public function getApplicantMaxScoreAttribute(): int
@@ -123,6 +127,23 @@ class ExamSession extends Model
     public function applicantWrittenAnswers()
     {
         return $this->hasMany(ApplicantWrittenAnswer::class, 'exam_session_id');
+    }
+
+    public function getGradingApprovedAttribute(): bool
+    {
+        return ! is_null($this->grading_approved_at);
+    }
+
+    /**
+     * Applicant exam: hide score details from the student until an admin has approved the grading.
+     */
+    public function maskedForStudent(): static
+    {
+        if (! is_null($this->applicant_exampage_id) && ! $this->grading_approved) {
+            $this->makeHidden(['score', 'applicant_breakdown', 'applicant_max_score']);
+        }
+
+        return $this;
     }
 
     public function getApplicantBreakdownAttribute(): array

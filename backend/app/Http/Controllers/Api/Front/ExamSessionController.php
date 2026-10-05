@@ -39,7 +39,7 @@ class ExamSessionController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $sessions,
+            'data' => $sessions->each(fn (ExamSession $s) => $s->maskedForStudent()),
         ]);
     }
 
@@ -107,7 +107,7 @@ class ExamSessionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Bu imtahan vərəqinə artıq iştirak etmisiniz.',
-                'session' => $completedSession,
+                'session' => $completedSession->maskedForStudent(),
                 'remaining_seconds' => 0,
                 'answers' => $this->getFormattedAnswers($completedSession->id),
             ]);
@@ -139,7 +139,7 @@ class ExamSessionController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'İmtahan vaxtı bitdiyi üçün nəticə qeydə alındı.',
-                    'session' => $session,
+                    'session' => $session->maskedForStudent(),
                     'remaining_seconds' => 0,
                     'answers' => $this->getFormattedAnswers($session->id),
                 ]);
@@ -148,7 +148,7 @@ class ExamSessionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Aktiv imtahan sessiyası davam etdirilir.',
-                'session' => $session,
+                'session' => $session->maskedForStudent(),
                 'remaining_seconds' => $durationSeconds - $elapsedSeconds,
                 'answers' => $this->getFormattedAnswers($session->id),
             ]);
@@ -183,7 +183,7 @@ class ExamSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Yeni imtahan sessiyası başladıldı.',
-            'session' => $session,
+            'session' => $session->maskedForStudent(),
             'remaining_seconds' => $session->duration_minutes * 60,
             'answers' => [],
         ]);
@@ -222,7 +222,7 @@ class ExamSessionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'İmtahan vaxtı bitdiyi üçün cavab qeyd edilə bilmədi və imtahan yekunlaşdırıldı.',
-                'session' => $session,
+                'session' => $session->maskedForStudent(),
             ], 400);
         }
 
@@ -357,7 +357,7 @@ class ExamSessionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'İmtahan artıq bitib.',
-                'session' => $session,
+                'session' => $session->maskedForStudent(),
                 'answers' => $this->getFormattedAnswers($session->id),
             ]);
         }
@@ -367,7 +367,7 @@ class ExamSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'İmtahan uğurla yekunlaşdırıldı.',
-            'session' => $session,
+            'session' => $session->maskedForStudent(),
             'answers' => $this->getFormattedAnswers($session->id),
         ]);
     }
@@ -386,9 +386,50 @@ class ExamSessionController extends Controller
 
         return response()->json([
             'success' => true,
-            'session' => $session,
+            'session' => $session->maskedForStudent(),
             'answers' => $this->getFormattedAnswers($session->id),
+            'review' => $this->buildApplicantReview($session),
         ]);
+    }
+
+    /**
+     * Per-question correctness for a finished applicant exam. Empty until an admin approves the grading.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildApplicantReview(ExamSession $session): array
+    {
+        if (is_null($session->applicant_exampage_id) || ! $session->grading_approved) {
+            return [];
+        }
+
+        $review = [];
+
+        $closed = ExamAnswer::where('exam_session_id', $session->id)
+            ->whereNotNull('applicant_question_option_id')
+            ->get();
+
+        foreach ($closed as $answer) {
+            $review[$answer->applicant_question_id] = [
+                'type' => 'closed',
+                'is_correct' => (bool) $answer->is_correct,
+                'points' => (float) $answer->points,
+                'correct_option_id' => \App\Models\ApplicantQuestionOption::where('applicant_question_id', $answer->applicant_question_id)
+                    ->where('is_true', true)
+                    ->value('id'),
+            ];
+        }
+
+        foreach (\App\Models\ApplicantWrittenAnswer::where('exam_session_id', $session->id)->get() as $answer) {
+            $review[$answer->applicant_question_id] = [
+                'type' => 'open',
+                'graded' => ! is_null($answer->is_correct),
+                'is_correct' => (bool) $answer->is_correct,
+                'points' => (float) $answer->points,
+            ];
+        }
+
+        return $review;
     }
 
     private function calculateAndSubmit(ExamSession $session): ExamSession

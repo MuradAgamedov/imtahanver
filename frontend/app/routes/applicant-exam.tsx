@@ -66,6 +66,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     let examSessionData = null;
     let remainingSeconds = 0;
     let initialAnswers = {};
+    let review: Record<string, any> = {};
 
     if (sessionIdParam) {
       const resultsRes = await fetch(`${API_BASE}/api/front/exam-sessions/${sessionIdParam}/results`, {
@@ -78,6 +79,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       if (resultsData.success) {
         examSessionData = resultsData.session;
         initialAnswers = resultsData.answers || {};
+        review = resultsData.review || {};
         remainingSeconds = 0;
       }
     }
@@ -106,6 +108,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
           examSession: null,
           remainingSeconds: 0,
           initialAnswers: {},
+          review: {},
           token: session.token,
           exampageId,
           groupId,
@@ -125,6 +128,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       examSession: examSessionData,
       remainingSeconds,
       initialAnswers,
+      review,
       token: session.token,
       exampageId,
       groupId,
@@ -138,6 +142,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       examSession: null,
       remainingSeconds: 0,
       initialAnswers: {},
+      review: {},
       token: session.token,
       exampageId,
       groupId,
@@ -182,6 +187,7 @@ export default function ApplicantExam() {
     examSession,
     remainingSeconds,
     initialAnswers,
+    review,
     token,
     exampageId,
     groupId,
@@ -405,6 +411,8 @@ export default function ApplicantExam() {
       }
     }).length;
     const unansweredCount = questions.length - answeredCount;
+    const gradingApproved = completedSession?.grading_approved !== false;
+    const reviewMap: Record<string, any> = (review as Record<string, any>) || {};
 
     return (
       <div className="min-h-screen bg-paper text-ink font-sans pb-16">
@@ -440,6 +448,23 @@ export default function ApplicantExam() {
               <p className="text-xs text-ink-soft/70 mt-1">
                 {exampage.title}
               </p>
+
+              {gradingApproved ? (
+                completedSession?.score !== undefined && completedSession?.score !== null && (
+                  <div className="mt-6 inline-flex flex-col items-center rounded-2xl bg-emerald-50 border border-emerald-100 px-8 py-4">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Yekun bal</span>
+                    <span className="text-3xl font-extrabold text-emerald-800">
+                      {completedSession.score}{" "}
+                      <span className="text-base font-semibold text-emerald-700">/ {completedSession.applicant_max_score ?? 400}</span>
+                    </span>
+                  </div>
+                )
+              ) : (
+                <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-100 px-5 py-4 text-sm text-amber-800">
+                  <strong className="block mb-1">Cavablarınız admin tərəfindən yoxlanılır</strong>
+                  Bal və düzgün/yanlış nəticələr yoxlama təsdiqləndikdən sonra bu səhifədə görünəcək.
+                </div>
+              )}
 
               <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-ink/10 py-6">
                 <div>
@@ -484,11 +509,35 @@ export default function ApplicantExam() {
                             />
                           </div>
 
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            isAnswered ? "bg-emerald-50 text-emerald-700" : "bg-paper-2 text-ink-soft"
-                          }`}>
-                            {isAnswered ? "Cavablandırılıb" : "Boş"}
-                          </span>
+                          {(() => {
+                            const rv = gradingApproved ? reviewMap[String(q.id)] : undefined;
+                            if (rv && isAnswered) {
+                              if (rv.type === "open" && !rv.graded) {
+                                return (
+                                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-paper-2 text-ink-soft">
+                                    Yoxlanılmayıb
+                                  </span>
+                                );
+                              }
+                              const pts = Number(rv.points) || 0;
+                              const full = rv.is_correct && (rv.type !== "open" || pts >= 2);
+                              const partial = rv.type === "open" && pts > 0 && pts < 2;
+                              return (
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  full ? "bg-emerald-50 text-emerald-700" : partial ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
+                                }`}>
+                                  {full ? "✓ Düzgün" : partial ? `Qismən (${pts})` : "✗ Səhv"}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                isAnswered ? "bg-emerald-50 text-emerald-700" : "bg-paper-2 text-ink-soft"
+                              }`}>
+                                {isAnswered ? "Cavablandırılıb" : "Boş"}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         {q.image_url && (
@@ -501,7 +550,14 @@ export default function ApplicantExam() {
                           <div className="space-y-2">
                             {q.options.map((opt: any, oIdx: number) => {
                               const isSelected = userSelectedOptionId === opt.id;
-                              let styles = isSelected
+                              const rv = gradingApproved ? reviewMap[String(q.id)] : undefined;
+                              const isCorrectOption = !!rv && rv.correct_option_id === opt.id;
+                              const isWrongSelected = !!rv && isSelected && !isCorrectOption;
+                              let styles = isCorrectOption
+                                ? "border-emerald-500 bg-emerald-50/60 text-emerald-800 font-semibold"
+                                : isWrongSelected
+                                ? "border-red-400 bg-red-50/60 text-red-700 font-semibold"
+                                : isSelected
                                 ? "border-emerald-500 bg-emerald-50/40 text-emerald-800 font-semibold"
                                 : "border-ink/10 bg-paper-2/40";
 

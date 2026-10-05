@@ -131,6 +131,52 @@ class ExamResultController extends Controller
         ]);
     }
 
+    public function approveGrading(Request $request, int $id): JsonResponse
+    {
+        return $this->setGradingApproval($request, $id, true);
+    }
+
+    public function revokeGrading(Request $request, int $id): JsonResponse
+    {
+        return $this->setGradingApproval($request, $id, false);
+    }
+
+    private function setGradingApproval(Request $request, int $id, bool $approved): JsonResponse
+    {
+        $session = ExamSession::findOrFail($id);
+
+        if (is_null($session->applicant_exampage_id)) {
+            return response()->json(['success' => false, 'message' => 'Bu MİQ imtahanıdır, təsdiq tələb olunmur.'], 400);
+        }
+
+        if ($session->status !== 'completed') {
+            return response()->json(['success' => false, 'message' => 'İmtahan hələ bitməyib.'], 400);
+        }
+
+        $session->forceFill([
+            'grading_approved_at' => $approved ? now() : null,
+            'grading_approved_by' => $approved ? optional($request->user())->id : null,
+        ])->save();
+
+        $session->load([
+            'user',
+            'exampage',
+            'subject',
+            'applicantExampage',
+            'applicantGroup',
+            'applicantSubject',
+            'answers.applicantQuestion',
+            'answers.applicantOption',
+            'applicantWrittenAnswers.question',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $approved ? 'Yoxlama təsdiqləndi, nəticə tələbəyə göstəriləcək.' : 'Təsdiq geri çəkildi, nəticə tələbədən gizlədildi.',
+            'session' => $session,
+        ]);
+    }
+
     public function updateWrittenAnswer(Request $request, int $id): JsonResponse
     {
         $request->validate([
