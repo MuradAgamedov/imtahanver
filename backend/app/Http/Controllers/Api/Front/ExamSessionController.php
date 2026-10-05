@@ -32,6 +32,7 @@ class ExamSessionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        ExamSession::finalizeExpired($user->id);
         $sessions = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
@@ -384,6 +385,10 @@ class ExamSessionController extends Controller
             return response()->json(['success' => false, 'message' => 'Nəticə tapılmadı.'], 404);
         }
 
+        if ($session->isExpired()) {
+            $session->finalize($session->deadline());
+        }
+
         return response()->json([
             'success' => true,
             'session' => $session->maskedForStudent(),
@@ -434,61 +439,7 @@ class ExamSessionController extends Controller
 
     private function calculateAndSubmit(ExamSession $session): ExamSession
     {
-        $isApplicant = !is_null($session->applicant_exampage_id);
-
-        if ($isApplicant) {
-            $session->status = 'completed';
-            $session->completed_at = now();
-            $session->score = $session->calculateApplicantScore();
-            $session->save();
-
-            return $session;
-        } else {
-            // MIQ
-            $answers = ExamAnswer::where('exam_session_id', $session->id)
-                ->whereNotNull('miq_question_option_id')
-                ->get();
-
-            $correctSpecialty = 0;
-            $incorrectSpecialty = 0;
-            $correctPedagogy = 0;
-            $incorrectPedagogy = 0;
-            $rawScore = 0;
-
-            foreach ($answers as $ans) {
-                if ($ans->question_type_identify === 'fenn-proqramlari') {
-                    if ($ans->is_correct) {
-                        $correctSpecialty++;
-                        $rawScore += 2.0;
-                    } else {
-                        $incorrectSpecialty++;
-                        $rawScore -= 0.5;
-                    }
-                } else {
-                    if ($ans->is_correct) {
-                        $correctPedagogy++;
-                        $rawScore += 1.0;
-                    } else {
-                        $incorrectPedagogy++;
-                        $rawScore -= 0.25;
-                    }
-                }
-            }
-
-            $finalScore = max(0.0, min(100.0, $rawScore));
-
-            $session->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-                'score' => $finalScore,
-                'correct_specialty_count' => $correctSpecialty,
-                'incorrect_specialty_count' => $incorrectSpecialty,
-                'correct_pedagogy_count' => $correctPedagogy,
-                'incorrect_pedagogy_count' => $incorrectPedagogy,
-            ]);
-
-            return $session;
-        }
+        return $session->finalize();
     }
 
     private function getFormattedAnswers(int $sessionId): array

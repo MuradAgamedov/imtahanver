@@ -129,6 +129,110 @@ class ExamSession extends Model
         return $this->hasMany(ApplicantWrittenAnswer::class, 'exam_session_id');
     }
 
+    public function deadline(): ?\Illuminate\Support\Carbon
+    {
+        if (! $this->started_at || ! $this->duration_minutes) {
+            return null;
+        }
+
+        return $this->started_at->copy()->addMinutes($this->duration_minutes);
+    }
+
+    public function isExpired(): bool
+    {
+        $deadline = $this->deadline();
+
+        return $this->status === 'active' && $deadline !== null && now()->gte($deadline);
+    }
+
+    /**
+     * Close every active session whose time is over (all users, or one user).
+     */
+    public static function finalizeExpired(?int $userId = null): int
+    {
+        $closed = 0;
+
+        static::where('status', 'active')
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->get()
+            ->each(function (self $session) use (&$closed) {
+                if ($session->isExpired()) {
+                    $session->finalize($session->deadline());
+                    $closed++;
+                }
+            });
+
+        return $closed;
+    }
+
+    /**
+     * Score the session and mark it completed (same rules as submitting the exam).
+     */
+    public function finalize(?\Illuminate\Support\Carbon $completedAt = null): static
+    {
+        if ($this->status !== 'active') {
+            return $this;
+        }
+
+        $completedAt ??= now();
+
+        $isApplicant = !is_null($this->applicant_exampage_id);
+
+        if ($isApplicant) {
+            $this->status = 'completed';
+            $this->completed_at = $completedAt;
+            $this->score = $this->calculateApplicantScore();
+            $this->save();
+
+            return $this;
+        } else {
+            // MIQ
+            $answers = ExamAnswer::where('exam_session_id', $this->id)
+                ->whereNotNull('miq_question_option_id')
+                ->get();
+
+            $correctSpecialty = 0;
+            $incorrectSpecialty = 0;
+            $correctPedagogy = 0;
+            $incorrectPedagogy = 0;
+            $rawScore = 0;
+
+            foreach ($answers as $ans) {
+                if ($ans->question_type_identify === 'fenn-proqramlari') {
+                    if ($ans->is_correct) {
+                        $correctSpecialty++;
+                        $rawScore += 2.0;
+                    } else {
+                        $incorrectSpecialty++;
+                        $rawScore -= 0.5;
+                    }
+                } else {
+                    if ($ans->is_correct) {
+                        $correctPedagogy++;
+                        $rawScore += 1.0;
+                    } else {
+                        $incorrectPedagogy++;
+                        $rawScore -= 0.25;
+                    }
+                }
+            }
+
+            $finalScore = max(0.0, min(100.0, $rawScore));
+
+            $this->update([
+                'status' => 'completed',
+                'completed_at' => $completedAt,
+                'score' => $finalScore,
+                'correct_specialty_count' => $correctSpecialty,
+                'incorrect_specialty_count' => $incorrectSpecialty,
+                'correct_pedagogy_count' => $correctPedagogy,
+                'incorrect_pedagogy_count' => $incorrectPedagogy,
+            ]);
+
+            return $this;
+        }
+    }
+
     public function getGradingApprovedAttribute(): bool
     {
         return ! is_null($this->grading_approved_at);

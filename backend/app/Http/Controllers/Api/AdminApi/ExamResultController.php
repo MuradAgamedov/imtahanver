@@ -11,6 +11,8 @@ class ExamResultController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        ExamSession::finalizeExpired();
+
         $query = ExamSession::with(['user', 'exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
             ->orderBy('created_at', 'desc');
 

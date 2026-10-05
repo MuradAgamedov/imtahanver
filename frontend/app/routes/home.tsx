@@ -765,7 +765,9 @@ export default function Home() {
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                   <Link
-                                    to={`/exam/applicant/${sess.applicant_exampage_id}/${sess.applicant_group_id}?session_id=${sess.id}`}
+                                    to={isCompleted
+                                      ? `/exam/applicant/${sess.applicant_exampage_id}/${sess.applicant_group_id}?session_id=${sess.id}`
+                                      : `/exam/applicant/${sess.applicant_exampage_id}/${sess.applicant_group_id}`}
                                     className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
  isCompleted
    ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 "
