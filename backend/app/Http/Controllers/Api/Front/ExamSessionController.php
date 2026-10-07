@@ -398,7 +398,8 @@ class ExamSessionController extends Controller
     }
 
     /**
-     * Per-question correctness for a finished applicant exam. Empty until an admin approves the grading.
+     * Per-question review for a finished applicant exam: the student's result and the correct answer for
+     * every question of the exam (also the ones left blank). Empty until an admin approves the grading.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -408,29 +409,48 @@ class ExamSessionController extends Controller
             return [];
         }
 
-        $review = [];
-
-        $closed = ExamAnswer::where('exam_session_id', $session->id)
+        $closedAnswers = ExamAnswer::where('exam_session_id', $session->id)
             ->whereNotNull('applicant_question_option_id')
+            ->get()
+            ->keyBy('applicant_question_id');
+
+        $writtenAnswers = \App\Models\ApplicantWrittenAnswer::where('exam_session_id', $session->id)
+            ->get()
+            ->keyBy('applicant_question_id');
+
+        $questions = \App\Models\ApplicantQuestion::with('options')
+            ->where('applicant_exampage_id', $session->applicant_exampage_id)
+            ->where('applicant_group_id', $session->applicant_group_id)
             ->get();
 
-        foreach ($closed as $answer) {
-            $review[$answer->applicant_question_id] = [
-                'type' => 'closed',
-                'is_correct' => (bool) $answer->is_correct,
-                'points' => (float) $answer->points,
-                'correct_option_id' => \App\Models\ApplicantQuestionOption::where('applicant_question_id', $answer->applicant_question_id)
-                    ->where('is_true', true)
-                    ->value('id'),
-            ];
-        }
+        $review = [];
 
-        foreach (\App\Models\ApplicantWrittenAnswer::where('exam_session_id', $session->id)->get() as $answer) {
-            $review[$answer->applicant_question_id] = [
-                'type' => 'open',
-                'graded' => ! is_null($answer->is_correct),
-                'is_correct' => (bool) $answer->is_correct,
-                'points' => (float) $answer->points,
+        foreach ($questions as $question) {
+            $correctOption = $question->options->firstWhere('is_true', true);
+
+            if ($question->question_type == \App\Models\ApplicantQuestion::TYPE_CLOSED) {
+                $answer = $closedAnswers->get($question->id);
+
+                $review[$question->id] = [
+                    'type' => 'closed',
+                    'answered' => $answer !== null,
+                    'is_correct' => $answer ? (bool) $answer->is_correct : false,
+                    'points' => $answer ? (float) $answer->points : 0.0,
+                    'correct_option_id' => $correctOption?->id,
+                ];
+
+                continue;
+            }
+
+            $answer = $writtenAnswers->get($question->id);
+
+            $review[$question->id] = [
+                'type' => $question->question_type == \App\Models\ApplicantQuestion::TYPE_CODEABLE ? 'codeable' : 'open',
+                'answered' => $answer !== null && trim((string) $answer->written_answer) !== '',
+                'graded' => $answer !== null && ! is_null($answer->is_correct),
+                'is_correct' => $answer ? (bool) $answer->is_correct : false,
+                'points' => $answer ? (float) $answer->points : 0.0,
+                'correct_answer' => $correctOption && trim((string) $correctOption->text) !== '' ? $correctOption->text : null,
             ];
         }
 

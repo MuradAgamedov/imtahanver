@@ -511,6 +511,13 @@ export default function ApplicantExam() {
 
                           {(() => {
                             const rv = gradingApproved ? reviewMap[String(q.id)] : undefined;
+                            if (rv && !isAnswered) {
+                              return (
+                                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700">
+                                  ✗ Cavab verilməyib
+                                </span>
+                              );
+                            }
                             if (rv && isAnswered) {
                               if (rv.type === "open" && !rv.graded) {
                                 return (
@@ -569,6 +576,11 @@ export default function ApplicantExam() {
                                     {OPTION_LABELS[oIdx] ?? oIdx + 1}
                                   </span>
                                   <div className="flex-1">
+                                    {isCorrectOption && (
+                                      <span className="mb-1 inline-block rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                        ✓ Düzgün cavab
+                                      </span>
+                                    )}
                                     {opt.text && <div dangerouslySetInnerHTML={{ __html: opt.text }} />}
                                     {opt.image && (
                                       <img
@@ -590,6 +602,14 @@ export default function ApplicantExam() {
                                 {userTextAns || "—"}
                               </strong>
                             </p>
+                            {gradingApproved && reviewMap[String(q.id)]?.correct_answer && (
+                              <p>
+                                <span className="text-ink-soft/70 block mb-0.5">Düzgün cavab:</span>
+                                <strong className="text-emerald-700 text-sm font-bold">
+                                  {reviewMap[String(q.id)].correct_answer}
+                                </strong>
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
