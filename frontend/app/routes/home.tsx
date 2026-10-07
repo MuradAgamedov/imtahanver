@@ -741,7 +741,7 @@ export default function Home() {
                                   {isCompleted ? (
                                     awaitingApproval ? (
                                       <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold">
-                                        Admin yoxlayır
+                                        Müəllim yoxlayır
                                       </span>
                                     ) : ungraded > 0 ? (
                                       <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold">
@@ -758,7 +758,7 @@ export default function Home() {
                                 </td>
                                 <td className="px-6 py-4 text-right font-extrabold text-ink">
                                   {awaitingApproval
-                                    ? <span className="text-xs font-semibold text-ink-soft/70">Admin yoxlayır</span>
+                                    ? <span className="text-xs font-semibold text-ink-soft/70">Müəllim yoxlayır</span>
                                     : isCompleted
                                     ? `${sess.score} / ${sess.applicant_max_score || ((sess.applicant_group?.identify?.toLowerCase().includes("burax") || sess.applicant_group?.title?.toLowerCase().includes("burax")) ? 300 : 400)}`
                                     : "-"}

@@ -461,7 +461,7 @@ export default function ApplicantExam() {
                 )
               ) : (
                 <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-100 px-5 py-4 text-sm text-amber-800">
-                  <strong className="block mb-1">Cavablarınız admin tərəfindən yoxlanılır</strong>
+                  <strong className="block mb-1">Suallarınız müəllim tərəfindən yoxlanılır</strong>
                   Bal və düzgün/yanlış nəticələr yoxlama təsdiqləndikdən sonra bu səhifədə görünəcək.
                 </div>
               )}
