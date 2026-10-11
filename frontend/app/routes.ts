@@ -16,6 +16,8 @@ export default [
   route("exam/applicant/:exampageId/:groupId", "routes/applicant-exam.tsx"),
   route("magistratura-exampages", "routes/magistratura-exampages.tsx"),
   route("exam/magistratura/:exampageId/:groupId?", "routes/magistratura-exam.tsx"),
+  route("buraxilis-exampages", "routes/buraxilis-exampages.tsx"),
+  route("exam/buraxilis/:exampageId/:groupId?", "routes/buraxilis-exam.tsx"),
   route("odenis/:registrationId", "routes/odenis.tsx"),
   route("api/exam-questions", "routes/api.exam-questions.ts"),
 ] satisfies RouteConfig;

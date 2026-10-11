@@ -87,7 +87,7 @@ const EXAM_TYPES = [
   },
   {
     key: "buraxilis",
-    href: null,
+    href: "/buraxilis-exampages",
     title: "Buraxılış İmtahanı",
     desc: "11-ci sinif şagirdləri üçün dövlət buraxılış imtahanına hazırlıq sınaqları.",
     icon: (
@@ -101,7 +101,7 @@ const EXAM_TYPES = [
     textColor: "text-rose-600",
     badge: "11-ci sinif",
     badgeBg: "bg-rose-100 text-rose-700",
-    active: false,
+    active: true,
   },
 ];
 

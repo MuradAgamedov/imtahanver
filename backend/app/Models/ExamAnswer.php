@@ -17,6 +17,8 @@ class ExamAnswer extends Model
         'applicant_question_option_id',
         'magistratura_question_id',
         'magistratura_question_option_id',
+        'buraxilis_question_id',
+        'buraxilis_question_option_id',
         'written_answer',
         'is_correct',
         'points',
@@ -61,6 +63,16 @@ class ExamAnswer extends Model
     public function magistraturaOption()
     {
         return $this->belongsTo(MagistraturaQuestionOption::class, 'magistratura_question_option_id');
+    }
+
+    public function buraxilisQuestion()
+    {
+        return $this->belongsTo(BuraxilisQuestion::class, 'buraxilis_question_id');
+    }
+
+    public function buraxilisOption()
+    {
+        return $this->belongsTo(BuraxilisQuestionOption::class, 'buraxilis_question_option_id');
     }
 }
 

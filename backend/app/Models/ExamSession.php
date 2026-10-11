@@ -17,6 +17,8 @@ class ExamSession extends Model
         'applicant_group_id',
         'applicant_subject_id',
         'magistratura_exampage_id',
+        'buraxilis_exampage_id',
+        'buraxilis_subject_id',
         'status',
         'started_at',
         'completed_at',
@@ -49,6 +51,7 @@ class ExamSession extends Model
         'applicant_breakdown',
         'applicant_max_score',
         'magistratura_breakdown',
+        'buraxilis_breakdown',
         'grading_approved',
     ];
 
@@ -141,6 +144,21 @@ class ExamSession extends Model
         return $this->hasMany(MagistraturaWrittenAnswer::class, 'exam_session_id');
     }
 
+    public function buraxilisExampage()
+    {
+        return $this->belongsTo(BuraxilisExampage::class, 'buraxilis_exampage_id');
+    }
+
+    public function buraxilisSubject()
+    {
+        return $this->belongsTo(BuraxilisSubject::class, 'buraxilis_subject_id');
+    }
+
+    public function buraxilisWrittenAnswers()
+    {
+        return $this->hasMany(BuraxilisWrittenAnswer::class, 'exam_session_id');
+    }
+
     public function deadline(): ?\Illuminate\Support\Carbon
     {
         if (! $this->started_at || ! $this->duration_minutes) {
@@ -190,8 +208,16 @@ class ExamSession extends Model
 
         $isApplicant = !is_null($this->applicant_exampage_id);
         $isMagistratura = !is_null($this->magistratura_exampage_id);
+        $isBuraxilis = !is_null($this->buraxilis_exampage_id);
 
-        if ($isMagistratura) {
+        if ($isBuraxilis) {
+            $this->status = 'completed';
+            $this->completed_at = $completedAt;
+            $this->score = $this->calculateBuraxilisScore();
+            $this->save();
+
+            return $this;
+        } elseif ($isMagistratura) {
             $this->status = 'completed';
             $this->completed_at = $completedAt;
             $this->score = $this->calculateMagistraturaScore();
@@ -742,6 +768,150 @@ class ExamSession extends Model
         }
 
         return $breakdown;
+    }
+
+    // ---------------------------------------------------------------------
+    // Buraxılış scoring (DİM: 3 fənn, hər biri 100 bal; cəmi 300 bal).
+    // ---------------------------------------------------------------------
+
+    public function getBuraxilisBreakdownAttribute(): array
+    {
+        return $this->getBuraxilisBreakdown();
+    }
+
+    public function calculateBuraxilisScore(): float
+    {
+        if (is_null($this->buraxilis_exampage_id)) {
+            return 0.0;
+        }
+        $ep = $this->buraxilisExampage;
+        if (!$ep) {
+            return 0.0;
+        }
+
+        $totalScore = 0.0;
+        foreach ($ep->subjects as $subj) {
+            $s = $this->buraxilisSubjectStats($subj);
+            $totalScore += $s['subject_score'];
+        }
+
+        return round(min(300.0, max(0.0, $totalScore)), 2);
+    }
+
+    public function getBuraxilisBreakdown(): array
+    {
+        if (is_null($this->buraxilis_exampage_id)) {
+            return [];
+        }
+        $ep = $this->buraxilisExampage;
+        if (!$ep) {
+            return [];
+        }
+
+        $breakdown = [];
+        foreach ($ep->subjects as $subj) {
+            $s = $this->buraxilisSubjectStats($subj);
+            $breakdown[] = [
+                'subject_id' => $subj->id,
+                'subject_title' => $subj->title,
+                'correct' => $s['correct'],
+                'incorrect' => $s['incorrect'],
+                'unanswered' => $s['unanswered'],
+                'ungraded' => $s['ungraded'],
+                'raw_earned' => round($s['earned'], 2),
+                'raw_max' => round($s['max'], 2),
+                'earned' => round($s['subject_score'], 2),
+                'max' => 100.0,
+                'subject_score' => round($s['subject_score'], 2),
+                'total_questions' => $s['total_questions'],
+            ];
+        }
+
+        return $breakdown;
+    }
+
+    private function buraxilisSubjectStats(BuraxilisSubject $subj): array
+    {
+        $questions = BuraxilisQuestion::where('buraxilis_exampage_id', $this->buraxilis_exampage_id)
+            ->where('buraxilis_subject_id', $subj->id)
+            ->get();
+
+        $earned = 0.0;
+        $max = 0.0;
+        $correct = 0;
+        $incorrect = 0;
+        $unanswered = 0;
+        $ungraded = 0;
+
+        foreach ($questions as $q) {
+            if ($q->question_type == BuraxilisQuestion::TYPE_CLOSED) {
+                $max += 1.0;
+                $ans = ExamAnswer::where('exam_session_id', $this->id)
+                    ->where('buraxilis_question_id', $q->id)
+                    ->first();
+                if ($ans && !is_null($ans->buraxilis_question_option_id)) {
+                    $correctOpt = $q->options()->where('is_true', true)->first();
+                    if ($correctOpt && $ans->buraxilis_question_option_id == $correctOpt->id) {
+                        $earned += 1.0;
+                        $correct++;
+                        $ans->update(['is_correct' => true, 'points' => 1.0]);
+                    } else {
+                        $incorrect++;
+                        $ans->update(['is_correct' => false, 'points' => 0.0]);
+                    }
+                } else {
+                    $unanswered++;
+                }
+            } elseif ($q->question_type == BuraxilisQuestion::TYPE_CODEABLE) {
+                $max += 1.0;
+                $ans = BuraxilisWrittenAnswer::where('exam_session_id', $this->id)
+                    ->where('buraxilis_question_id', $q->id)
+                    ->first();
+                if ($ans && !is_null($ans->written_answer) && trim($ans->written_answer) !== '') {
+                    $correctOpt = $q->options()->where('is_true', true)->first();
+                    if ($correctOpt && trim(strtolower($ans->written_answer)) === trim(strtolower((string) $correctOpt->text))) {
+                        $earned += 1.0;
+                        $correct++;
+                        $ans->update(['is_correct' => true, 'points' => 1.0]);
+                    } elseif ($correctOpt) {
+                        $incorrect++;
+                        $ans->update(['is_correct' => false, 'points' => 0.0]);
+                    } elseif (!is_null($ans->is_correct)) {
+                        if ($ans->is_correct) { $earned += 1.0; $correct++; } else { $incorrect++; }
+                    } else {
+                        $ungraded++;
+                    }
+                } else {
+                    $unanswered++;
+                }
+            } elseif ($q->question_type == BuraxilisQuestion::TYPE_WRITTEN) {
+                $max += 2.0; // DİM həlli tələb olunan suallar
+                $ans = BuraxilisWrittenAnswer::where('exam_session_id', $this->id)
+                    ->where('buraxilis_question_id', $q->id)
+                    ->first();
+                if ($ans && !is_null($ans->written_answer) && trim($ans->written_answer) !== '') {
+                    if (!is_null($ans->points) && (float) $ans->points != 0.0) {
+                        $earned += (float) $ans->points;
+                        $correct++;
+                    } elseif (is_null($ans->is_correct)) {
+                        $ungraded++;
+                    } elseif ($ans->is_correct === true) {
+                        $earned += 2.0;
+                        $correct++;
+                    } else {
+                        $incorrect++;
+                    }
+                } else {
+                    $unanswered++;
+                }
+            }
+        }
+
+        $subjectScore = $max > 0 ? min(100.0, max(0.0, ($earned / $max) * 100)) : 0.0;
+
+        return compact('earned', 'max', 'correct', 'incorrect', 'unanswered', 'ungraded', 'subjectScore') + [
+            'total_questions' => $questions->count(),
+        ];
     }
 }
 

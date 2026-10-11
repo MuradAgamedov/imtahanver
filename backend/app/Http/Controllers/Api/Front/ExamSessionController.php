@@ -20,6 +20,11 @@ use App\Models\MagistraturaSubject;
 use App\Models\MagistraturaQuestion;
 use App\Models\MagistraturaQuestionOption;
 use App\Models\MagistraturaWrittenAnswer;
+use App\Models\BuraxilisExampage;
+use App\Models\BuraxilisSubject;
+use App\Models\BuraxilisQuestion;
+use App\Models\BuraxilisQuestionOption;
+use App\Models\BuraxilisWrittenAnswer;
 use App\Services\Contracts\ExamRegistrationServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,14 +63,24 @@ class ExamSessionController extends Controller
             'applicant_group_id' => 'required_with:applicant_exampage_id|exists:applicant_groups,id',
             'applicant_subject_id' => 'nullable|exists:applicant_subjects,id',
             'magistratura_exampage_id' => 'nullable|exists:magistratura_exampages,id',
+            'buraxilis_exampage_id' => 'nullable|exists:buraxilis_exampages,id',
         ]);
 
         $user = $request->user();
+        $isBuraxilis = $request->has('buraxilis_exampage_id');
         $isMagistratura = $request->has('magistratura_exampage_id');
         $isApplicant = $request->has('applicant_exampage_id');
         $groupId = null;
 
-        if ($isMagistratura) {
+        if ($isBuraxilis) {
+            $exampageId = $request->buraxilis_exampage_id;
+            $subjectId = $request->buraxilis_subject_id;
+
+            $completedSession = ExamSession::where('user_id', $user->id)
+                ->where('buraxilis_exampage_id', $exampageId)
+                ->where('status', 'completed')
+                ->first();
+        } elseif ($isMagistratura) {
             $exampageId = $request->magistratura_exampage_id;
             $subjectId = $request->magistratura_subject_id;
 
@@ -96,13 +111,15 @@ class ExamSessionController extends Controller
         }
 
         // Paid/scheduled exam gate — demo papers skip this entirely.
-        $exampage = $isMagistratura
-            ? MagistraturaExampage::find($exampageId)
-            : ($isApplicant ? ApplicantExampage::find($exampageId) : MiqExampage::find($exampageId));
+        $exampage = $isBuraxilis
+            ? BuraxilisExampage::find($exampageId)
+            : ($isMagistratura
+                ? MagistraturaExampage::find($exampageId)
+                : ($isApplicant ? ApplicantExampage::find($exampageId) : MiqExampage::find($exampageId)));
         if ($exampage && $exampage->is_demo === false) {
             $isRegistered = $this->registrationService->isRegisteredAndPaid(
                 $user->id,
-                $isMagistratura ? 'magistratura' : ($isApplicant ? 'applicant' : 'miq'),
+                $isBuraxilis ? 'buraxilis' : ($isMagistratura ? 'magistratura' : ($isApplicant ? 'applicant' : 'miq')),
                 $exampageId
             );
 
@@ -133,7 +150,12 @@ class ExamSessionController extends Controller
         }
 
         // Resume active session
-        if ($isMagistratura) {
+        if ($isBuraxilis) {
+            $session = ExamSession::where('user_id', $user->id)
+                ->where('buraxilis_exampage_id', $exampageId)
+                ->where('status', 'active')
+                ->first();
+        } elseif ($isMagistratura) {
             $session = ExamSession::where('user_id', $user->id)
                 ->where('magistratura_exampage_id', $exampageId)
                 ->where('status', 'active')
@@ -179,7 +201,18 @@ class ExamSessionController extends Controller
         }
 
         // Start new session
-        if ($isMagistratura) {
+        if ($isBuraxilis) {
+            $exampage = BuraxilisExampage::find($exampageId);
+            $session = ExamSession::create([
+                'user_id' => $user->id,
+                'buraxilis_exampage_id' => $exampageId,
+                'buraxilis_subject_id' => $subjectId ?: null,
+                'status' => 'active',
+                'started_at' => now(),
+                'duration_minutes' => $exampage->exam_duration ?? 180,
+                'score' => 0,
+            ]);
+        } elseif ($isMagistratura) {
             $exampage = MagistraturaExampage::find($exampageId);
             $session = ExamSession::create([
                 'user_id' => $user->id,
@@ -233,6 +266,8 @@ class ExamSessionController extends Controller
             'applicant_question_option_id' => 'nullable|exists:applicant_question_options,id',
             'magistratura_question_id' => 'nullable|exists:magistratura_questions,id',
             'magistratura_question_option_id' => 'nullable|exists:magistratura_question_options,id',
+            'buraxilis_question_id' => 'nullable|exists:buraxilis_questions,id',
+            'buraxilis_question_option_id' => 'nullable|exists:buraxilis_question_options,id',
             'written_answer' => 'nullable|string',
         ]);
 
@@ -263,10 +298,59 @@ class ExamSessionController extends Controller
             ], 400);
         }
 
+        $isBuraxilis = !is_null($session->buraxilis_exampage_id);
         $isMagistratura = !is_null($session->magistratura_exampage_id);
         $isApplicant = !is_null($session->applicant_exampage_id);
 
-        if ($isMagistratura) {
+        if ($isBuraxilis) {
+            $questionId = $request->buraxilis_question_id;
+            $optionId = $request->buraxilis_question_option_id;
+            $writtenAnswer = $request->written_answer;
+
+            $question = BuraxilisQuestion::findOrFail($questionId);
+
+            if ($question->question_type == 1) {
+                if (is_null($optionId)) {
+                    ExamAnswer::where('exam_session_id', $session->id)
+                        ->where('buraxilis_question_id', $questionId)
+                        ->delete();
+
+                    return response()->json(['success' => true, 'message' => 'Cavab təmizləndi.']);
+                }
+
+                ExamAnswer::updateOrCreate(
+                    [
+                        'exam_session_id' => $session->id,
+                        'buraxilis_question_id' => $questionId,
+                    ],
+                    [
+                        'buraxilis_question_option_id' => $optionId,
+                        'is_correct' => null,
+                        'points' => 0.0,
+                    ]
+                );
+            } else {
+                if (is_null($writtenAnswer) || $writtenAnswer === '') {
+                    BuraxilisWrittenAnswer::where('exam_session_id', $session->id)
+                        ->where('buraxilis_question_id', $questionId)
+                        ->delete();
+
+                    return response()->json(['success' => true, 'message' => 'Cavab təmizləndi.']);
+                }
+
+                BuraxilisWrittenAnswer::updateOrCreate(
+                    [
+                        'exam_session_id' => $session->id,
+                        'buraxilis_question_id' => $questionId,
+                    ],
+                    [
+                        'written_answer' => $writtenAnswer,
+                    ]
+                );
+            }
+
+            return response()->json(['success' => true, 'message' => 'Cavab yadda saxlanıldı.']);
+        } elseif ($isMagistratura) {
             $questionId = $request->magistratura_question_id;
             $optionId = $request->magistratura_question_option_id;
             $writtenAnswer = $request->written_answer;
@@ -461,7 +545,7 @@ class ExamSessionController extends Controller
     public function getResults(Request $request, int $sessionId): JsonResponse
     {
         $user = $request->user();
-        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage'])
+        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'buraxilisExampage'])
             ->where('id', $sessionId)
             ->where('user_id', $user->id)
             ->first();
@@ -479,6 +563,8 @@ class ExamSessionController extends Controller
             $review = $this->buildApplicantReview($session);
         } elseif (! is_null($session->magistratura_exampage_id)) {
             $review = $this->buildMagistraturaReview($session);
+        } elseif (! is_null($session->buraxilis_exampage_id)) {
+            $review = $this->buildBuraxilisReview($session);
         }
 
         return response()->json([
@@ -607,6 +693,64 @@ class ExamSessionController extends Controller
         return $review;
     }
 
+    /**
+     * Per-question review for a finished buraxilis exam.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildBuraxilisReview(ExamSession $session): array
+    {
+        if (is_null($session->buraxilis_exampage_id) || ! $session->grading_approved) {
+            return [];
+        }
+
+        $closedAnswers = ExamAnswer::where('exam_session_id', $session->id)
+            ->whereNotNull('buraxilis_question_option_id')
+            ->get()
+            ->keyBy('buraxilis_question_id');
+
+        $writtenAnswers = BuraxilisWrittenAnswer::where('exam_session_id', $session->id)
+            ->get()
+            ->keyBy('buraxilis_question_id');
+
+        $questions = BuraxilisQuestion::with('options')
+            ->where('buraxilis_exampage_id', $session->buraxilis_exampage_id)
+            ->get();
+
+        $review = [];
+
+        foreach ($questions as $question) {
+            $correctOption = $question->options->firstWhere('is_true', true);
+
+            if ($question->question_type == BuraxilisQuestion::TYPE_CLOSED) {
+                $answer = $closedAnswers->get($question->id);
+
+                $review[$question->id] = [
+                    'type' => 'closed',
+                    'answered' => $answer !== null,
+                    'is_correct' => $answer ? (bool) $answer->is_correct : false,
+                    'points' => $answer ? (float) $answer->points : 0.0,
+                    'correct_option_id' => $correctOption?->id,
+                ];
+
+                continue;
+            }
+
+            $answer = $writtenAnswers->get($question->id);
+
+            $review[$question->id] = [
+                'type' => $question->question_type == BuraxilisQuestion::TYPE_CODEABLE ? 'codeable' : 'open',
+                'answered' => $answer !== null && trim((string) $answer->written_answer) !== '',
+                'graded' => $answer !== null && ! is_null($answer->is_correct),
+                'is_correct' => $answer ? (bool) $answer->is_correct : false,
+                'points' => $answer ? (float) $answer->points : 0.0,
+                'correct_answer' => $correctOption && trim((string) $correctOption->text) !== '' ? $correctOption->text : null,
+            ];
+        }
+
+        return $review;
+    }
+
     private function calculateAndSubmit(ExamSession $session): ExamSession
     {
         return $session->finalize();
@@ -617,10 +761,25 @@ class ExamSessionController extends Controller
         $session = ExamSession::find($sessionId);
         if (!$session) return [];
 
+        $isBuraxilis = !is_null($session->buraxilis_exampage_id);
         $isMagistratura = !is_null($session->magistratura_exampage_id);
         $isApplicant = !is_null($session->applicant_exampage_id);
 
-        if ($isMagistratura) {
+        if ($isBuraxilis) {
+            $closedAnswers = ExamAnswer::where('exam_session_id', $sessionId)
+                ->whereNotNull('buraxilis_question_option_id')
+                ->get();
+            $openAnswers = BuraxilisWrittenAnswer::where('exam_session_id', $sessionId)->get();
+
+            $formatted = [];
+            foreach ($closedAnswers as $ans) {
+                $formatted["option_{$ans->buraxilis_question_id}"] = (int) $ans->buraxilis_question_option_id;
+            }
+            foreach ($openAnswers as $ans) {
+                $formatted["text_{$ans->buraxilis_question_id}"] = $ans->written_answer;
+            }
+            return $formatted;
+        } elseif ($isMagistratura) {
             $closedAnswers = ExamAnswer::where('exam_session_id', $sessionId)
                 ->whereNotNull('magistratura_question_option_id')
                 ->get();

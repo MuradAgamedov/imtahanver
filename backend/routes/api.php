@@ -34,6 +34,12 @@ Route::prefix('front')->group(function () {
     Route::get('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'subjectQuestions']);
     Route::get('magistratura-exampages/{exampageId}/questions', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'exampageQuestions']);
 
+    // ----- Buraxilis (front) -----
+    Route::get('buraxilis-exampages', [\App\Http\Controllers\Api\Front\BuraxilisFrontQuestionsController::class, 'exampages']);
+    Route::get('buraxilis-exampages/{id}/subjects', [\App\Http\Controllers\Api\Front\BuraxilisFrontQuestionsController::class, 'subjects']);
+    Route::get('buraxilis-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\BuraxilisFrontQuestionsController::class, 'subjectQuestions']);
+    Route::get('buraxilis-exampages/{exampageId}/questions', [\App\Http\Controllers\Api\Front\BuraxilisFrontQuestionsController::class, 'exampageQuestions']);
+
 
     // Authenticated routes
     Route::middleware(JwtAuthMiddleware::class)->group(function () {
@@ -262,6 +268,46 @@ Route::prefix('adminapi')->group(function () {
         Route::put('magistratura-questions/{questionId}/options/reorder', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'reorderOptions']);
         Route::put('magistratura-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'updateOption']);
         Route::delete('magistratura-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'destroyOption']);
+
+        // ----- Buraxilis (admin) -----
+        // Buraxilis Subjects
+        Route::get('buraxilis-subjects', [\App\Http\Controllers\Api\AdminApi\BuraxilisSubjectController::class, 'index']);
+        Route::post('buraxilis-subjects', [\App\Http\Controllers\Api\AdminApi\BuraxilisSubjectController::class, 'store']);
+        Route::put('buraxilis-subjects/reorder', [\App\Http\Controllers\Api\AdminApi\BuraxilisSubjectController::class, 'reorder']);
+        Route::put('buraxilis-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisSubjectController::class, 'update']);
+        Route::delete('buraxilis-subjects/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisSubjectController::class, 'destroy']);
+
+        // Buraxilis Exampages
+        Route::get('buraxilis-exampages', [\App\Http\Controllers\Api\AdminApi\BuraxilisExampageController::class, 'index']);
+        Route::post('buraxilis-exampages', [\App\Http\Controllers\Api\AdminApi\BuraxilisExampageController::class, 'store']);
+        Route::put('buraxilis-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisExampageController::class, 'update']);
+        Route::delete('buraxilis-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisExampageController::class, 'destroy']);
+        Route::put('buraxilis-exampages/{id}/subjects', [\App\Http\Controllers\Api\AdminApi\BuraxilisExampageController::class, 'syncSubjects']);
+        Route::get('buraxilis-exampages/{id}/subjects', [\App\Http\Controllers\Api\AdminApi\BuraxilisExampageController::class, 'listSubjects']);
+
+        // Buraxilis Questions
+        Route::get('buraxilis-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'index']);
+        Route::post('buraxilis-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'store']);
+        Route::put('buraxilis-exampages/{exampageId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'reorder']);
+        Route::post('buraxilis-exampages/{exampageId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'update']);
+        Route::delete('buraxilis-exampages/{exampageId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'destroy']);
+
+        // Buraxilis Question Image/Audio Upload
+        Route::post('buraxilis-questions/upload-image', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'uploadImage']);
+        Route::post('buraxilis-questions/upload-audio', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'uploadAudio']);
+
+        // Buraxilis Question Passages
+        Route::get('buraxilis-exampages/{exampageId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionPassageController::class, 'index']);
+        Route::post('buraxilis-exampages/{exampageId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionPassageController::class, 'store']);
+        Route::put('buraxilis-exampages/{exampageId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionPassageController::class, 'update']);
+        Route::delete('buraxilis-exampages/{exampageId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionPassageController::class, 'destroy']);
+
+        // Buraxilis Question Options
+        Route::get('buraxilis-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'indexOptions']);
+        Route::post('buraxilis-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'storeOption']);
+        Route::put('buraxilis-questions/{questionId}/options/reorder', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'reorderOptions']);
+        Route::put('buraxilis-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'updateOption']);
+        Route::delete('buraxilis-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'destroyOption']);
 
         // Magistratura Groups
 

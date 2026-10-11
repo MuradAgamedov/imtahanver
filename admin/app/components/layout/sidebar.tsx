@@ -83,6 +83,8 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const [isApplicantOpen, setIsApplicantOpen] = useState(isApplicantPath);
   const isMagistraturaPath = location.pathname.startsWith("/magistratura");
   const [isMagistraturaOpen, setIsMagistraturaOpen] = useState(isMagistraturaPath);
+  const isBuraxilisPath = location.pathname.startsWith("/buraxilis");
+  const [isBuraxilisOpen, setIsBuraxilisOpen] = useState(isBuraxilisPath);
 
   const isHomePath = location.pathname.startsWith("/home-") || location.pathname.startsWith("/site-texts");
   const [isHomeOpen, setIsHomeOpen] = useState(isHomePath);
@@ -567,6 +569,77 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                       }
                     >
                       Magistratura Vərəqləri
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* Buraxılış İmtahanı Dropdown */}
+            <li>
+              <button
+                onClick={() => setIsBuraxilisOpen(!isBuraxilisOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer text-slate-400 hover:bg-slate-800 hover:text-white",
+                  isBuraxilisPath && "text-white bg-slate-800/40"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
+                  <span>Buraxılış İmtahanı</span>
+                </div>
+                <svg
+                  className={cn("h-4 w-4 transform transition-transform duration-200", isBuraxilisOpen && "rotate-90")}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {isBuraxilisOpen && (
+                <ul className="mt-1 pl-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                  <li>
+                    <NavLink
+                      to="/buraxilis-subjects"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Buraxılış Fənləri
+                    </NavLink>
+                  </li>
+                  
+                  <li>
+                    <NavLink
+                      to="/buraxilis-exampages"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Buraxılış Vərəqləri
                     </NavLink>
                   </li>
                 </ul>

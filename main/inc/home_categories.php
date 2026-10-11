@@ -8,8 +8,8 @@ function home_categories_fetch(): array {
     $fallback = [
         ['title' => 'MİQ İmtahanı — sınaq testlərinə başla', 'badge' => 'Aktivdir', 'color' => 'red', 'icon' => 'rocket', 'href' => 'https://panel.imtahanver.online/register', 'active' => 1],
         ['title' => 'Abituriyent İmtahanı — DİM formatında hazırlıq', 'badge' => 'Aktivdir', 'color' => 'blue', 'icon' => 'cap', 'href' => 'https://panel.imtahanver.online/register', 'active' => 1],
-        ['title' => 'Magistr İmtahanı — qəbul sınaqlarına hazırlıq', 'badge' => 'Tezliklə', 'color' => 'navy', 'icon' => 'building', 'href' => null, 'active' => 0],
-        ['title' => 'Buraxılış İmtahanı — IX/XI sinif sınaqları', 'badge' => 'Tezliklə', 'color' => 'teal', 'icon' => 'flag', 'href' => null, 'active' => 0],
+        ['title' => 'Magistr İmtahanı — qəbul sınaqlarına hazırlıq', 'badge' => 'Aktivdir', 'color' => 'navy', 'icon' => 'building', 'href' => 'https://panel.imtahanver.online/magistratura-exampages', 'active' => 1],
+        ['title' => 'Buraxılış İmtahanı — IX/XI sinif sınaqları', 'badge' => 'Aktivdir', 'color' => 'teal', 'icon' => 'flag', 'href' => 'https://panel.imtahanver.online/buraxilis-exampages', 'active' => 1],
     ];
 
     try {
