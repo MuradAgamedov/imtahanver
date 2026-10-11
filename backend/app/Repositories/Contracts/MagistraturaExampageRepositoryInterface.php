@@ -12,5 +12,5 @@ interface MagistraturaExampageRepositoryInterface
     public function create(array $data): MagistraturaExampage;
     public function update(MagistraturaExampage $exampage, array $data): MagistraturaExampage;
     public function delete(MagistraturaExampage $exampage): bool;
-    public function syncGroups(MagistraturaExampage $exampage, array $groupIds): void;
+    public function syncSubjects(MagistraturaExampage $exampage, array $subjectIds): void;
 }

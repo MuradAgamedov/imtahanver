@@ -17,8 +17,6 @@ class ExamSession extends Model
         'applicant_group_id',
         'applicant_subject_id',
         'magistratura_exampage_id',
-        'magistratura_group_id',
-        'magistratura_subject_id',
         'status',
         'started_at',
         'completed_at',
@@ -136,16 +134,6 @@ class ExamSession extends Model
     public function magistraturaExampage()
     {
         return $this->belongsTo(MagistraturaExampage::class, 'magistratura_exampage_id');
-    }
-
-    public function magistraturaGroup()
-    {
-        return $this->belongsTo(MagistraturaGroup::class, 'magistratura_group_id');
-    }
-
-    public function magistraturaSubject()
-    {
-        return $this->belongsTo(MagistraturaSubject::class, 'magistratura_subject_id');
     }
 
     public function magistraturaWrittenAnswers()
@@ -626,7 +614,6 @@ class ExamSession extends Model
     private function magistraturaSubjectStats(MagistraturaSubject $subj): array
     {
         $questions = MagistraturaQuestion::where('magistratura_exampage_id', $this->magistratura_exampage_id)
-            ->where('magistratura_group_id', $this->magistratura_group_id)
             ->where('magistratura_subject_id', $subj->id)
             ->get();
 
@@ -711,15 +698,15 @@ class ExamSession extends Model
         if (is_null($this->magistratura_exampage_id)) {
             return 0.0;
         }
-        $group = $this->magistraturaGroup;
-        if (!$group) {
+        $ep = $this->magistraturaExampage;
+        if (!$ep) {
             return 0.0;
         }
 
         // DİM magistratura: hər düzgün test 1 bal, səhv cavab bal çıxmır (cəza yoxdur),
         // yazılı/esse admin balı; maksimum nəticə 100 bal (mütləq, nisbi deyil).
         $earned = 0.0;
-        foreach ($group->subjects as $subj) {
+        foreach ($ep->subjects as $subj) {
             $s = $this->magistraturaSubjectStats($subj);
             $earned += $s['earned'];
         }
@@ -732,13 +719,13 @@ class ExamSession extends Model
         if (is_null($this->magistratura_exampage_id)) {
             return [];
         }
-        $group = $this->magistraturaGroup;
-        if (!$group) {
+        $ep = $this->magistraturaExampage;
+        if (!$ep) {
             return [];
         }
 
         $breakdown = [];
-        foreach ($group->subjects as $subj) {
+        foreach ($ep->subjects as $subj) {
             $s = $this->magistraturaSubjectStats($subj);
             $breakdown[] = [
                 'subject_id' => $subj->id,

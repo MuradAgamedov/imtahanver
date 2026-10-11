@@ -40,18 +40,24 @@ class MagistraturaExampageController extends Controller
         return response()->json($result, $result['status_code']);
     }
 
-    public function syncGroups(Request $request, int $id): JsonResponse
+    public function syncSubjects(Request $request, int $id): JsonResponse
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'group_ids'   => 'required|array',
-            'group_ids.*' => 'integer|exists:magistratura_groups,id',
+            'subject_ids'   => 'required|array',
+            'subject_ids.*' => 'integer|exists:magistratura_subjects,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $result = $this->exampageService->syncGroups($id, $request->get('group_ids'));
+        $result = $this->exampageService->syncSubjects($id, $request->get('subject_ids'));
+        return response()->json($result, $result['status_code']);
+    }
+
+    public function listSubjects(int $id): JsonResponse
+    {
+        $result = $this->exampageService->listSubjects($id);
         return response()->json($result, $result['status_code']);
     }
 }

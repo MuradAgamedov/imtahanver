@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLoaderData, redirect, useBlocker } from "react-router";
-import type { Route } from "./+types/magistratura-exam";
 import { sessionCookie, type UserSession } from "../lib/session";
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E"];
@@ -22,15 +21,15 @@ function withImageUrl(questions: any[]): any[] {
   }));
 }
 
-export function meta({ data }: Route.MetaArgs) {
-  const group = (data as any)?.group;
+export function meta({ data }: any) {
+  const ep = (data as any)?.exampage;
   return [
-    { title: group ? `${group.title} — Magistratura İmtahanı` : "İmtahan — İmtahanVer" },
+    { title: ep ? `${ep.title} — Magistratura İmtahanı` : "Magistratura İmtahanı — İmtahanVer" },
   ];
 }
 
-export async function loader({ request, params }: Route.LoaderArgs) {
-  const { exampageId, groupId } = params;
+export async function loader({ request, params }: any) {
+  const { exampageId } = params;
 
   const cookieHeader = request.headers.get("Cookie");
   const session = (await sessionCookie.parse(cookieHeader)) as UserSession | null;
@@ -40,15 +39,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   try {
-    const [exampagesRes, groupsRes, questionsRes] = await Promise.all([
+    const [exampagesRes, subjectsRes, questionsRes] = await Promise.all([
       fetch(`${API_BASE}/api/front/magistratura-exampages`),
-      fetch(`${API_BASE}/api/front/magistratura-exampages/${exampageId}/groups`),
-      fetch(`${API_BASE}/api/front/magistratura-exampages/${exampageId}/groups/${groupId}/questions`),
+      fetch(`${API_BASE}/api/front/magistratura-exampages/${exampageId}/subjects`),
+      fetch(`${API_BASE}/api/front/magistratura-exampages/${exampageId}/questions`),
     ]);
 
-    const [exampagesData, groupsData, questionsData] = await Promise.all([
+    const [exampagesData, subjectsData, questionsData] = await Promise.all([
       exampagesRes.json(),
-      groupsRes.json(),
+      subjectsRes.json(),
       questionsRes.json(),
     ]);
 
@@ -56,9 +55,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       ? exampagesData.data.find((e: any) => e.id === Number(exampageId)) ?? null
       : null;
 
-    const group = groupsData.success
-      ? groupsData.data.find((g: any) => g.id === Number(groupId)) ?? null
-      : null;
+    const subjects = subjectsData.success ? subjectsData.data : [];
 
     const url = new URL(request.url);
     const sessionIdParam = url.searchParams.get("session_id");
@@ -94,8 +91,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         },
         body: JSON.stringify({
           magistratura_exampage_id: Number(exampageId),
-          magistratura_group_id: Number(groupId),
-          magistratura_subject_id: null,
         }),
       });
       const sessionData = await sessionRes.json();
@@ -103,7 +98,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       if (!sessionData.success) {
         return {
           exampage: null,
-          group: null,
+          subjects: [],
           questions: [],
           examSession: null,
           remainingSeconds: 0,
@@ -111,7 +106,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
           review: {},
           token: session.token,
           exampageId,
-          groupId,
           errorMessage: sessionData.message || "Sessiya yaradılmadı.",
         };
       }
@@ -123,7 +117,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
     return {
       exampage,
-      group,
+      subjects,
       questions: questionsData.success ? withImageUrl(questionsData.data) : [],
       examSession: examSessionData,
       remainingSeconds,
@@ -131,13 +125,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       review,
       token: session.token,
       exampageId,
-      groupId,
     };
-  } catch (err) {
-    console.error("Magistratura exam loader error:", err);
+  } catch {
     return {
       exampage: null,
-      group: null,
+      subjects: [],
       questions: [],
       examSession: null,
       remainingSeconds: 0,
@@ -145,7 +137,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       review: {},
       token: session.token,
       exampageId,
-      groupId,
     };
   }
 }
@@ -171,18 +162,21 @@ function useCountdown(totalSeconds: number, onExpired?: () => void) {
     return () => clearInterval(id);
   }, [totalSeconds]);
 
-  const minutes = Math.max(0, Math.floor(remaining / 60));
-  const seconds = Math.max(0, remaining % 60);
+  const hours = Math.floor(remaining / 3600);
+  const minutes = Math.floor((remaining % 3600) / 60);
+  const seconds = remaining % 60;
   const isLow = remaining <= 300;
   const isDone = remaining <= 0;
-  const formatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const formatted = hours > 0
+    ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   return { formatted, isLow, isDone };
 }
 
 export default function MagistraturaExam() {
   const {
     exampage,
-    group,
+    subjects,
     questions,
     examSession,
     remainingSeconds,
@@ -190,9 +184,8 @@ export default function MagistraturaExam() {
     review,
     token,
     exampageId,
-    groupId,
     errorMessage,
-  } = useLoaderData<typeof loader>();
+  } = useLoaderData<any>();
 
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, any>>(initialAnswers || {});
   const openAnswerTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -202,14 +195,16 @@ export default function MagistraturaExam() {
     examSession?.status === "completed" ? examSession : null
   );
 
+  const [activeSubjectId, setActiveSubjectId] = useState<number | null>(() => {
+    return subjects?.[0]?.id || null;
+  });
+
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Block back navigation if exam is in progress
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      !completedSession &&
-      currentLocation.pathname !== nextLocation.pathname
+      !completedSession && currentLocation.pathname !== nextLocation.pathname
   );
 
   useEffect(() => {
@@ -238,7 +233,7 @@ export default function MagistraturaExam() {
     }));
 
     try {
-      const res = await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/answer`, {
+      await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/answers`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -250,23 +245,12 @@ export default function MagistraturaExam() {
           magistratura_question_option_id: optionId,
         }),
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.session && data.session.status === "completed") {
-          setCompletedSession(data.session);
-          showToast(data.message || "İmtahan artıq başa çatıb.");
-        } else {
-          showToast(data.message || "Cavab yadda saxlanılmadı.");
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("İnternet xətası baş verdi.");
+    } catch {
+      showToast("Cavab sinxronlaşdırıla bilmədi.");
     }
   };
 
-  const handleSaveOpen = async (questionId: number, text: string) => {
+  const handleOpenAnswerChange = (questionId: number, text: string) => {
     if (completedSession) return;
 
     setSelectedAnswers((prev) => ({
@@ -274,109 +258,57 @@ export default function MagistraturaExam() {
       [`text_${questionId}`]: text,
     }));
 
-    try {
-      const res = await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/answer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          magistratura_question_id: questionId,
-          written_answer: text,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.message || "Cavab yadda saxlanılmadı.");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("İnternet xətası baş verdi.");
-    }
-  };
-
-  const scheduleSaveOpen = (questionId: number, text: string) => {
     if (openAnswerTimers.current[questionId]) {
       clearTimeout(openAnswerTimers.current[questionId]);
     }
-    openAnswerTimers.current[questionId] = setTimeout(() => {
-      delete openAnswerTimers.current[questionId];
-      handleSaveOpen(questionId, text);
-    }, 800);
-  };
 
-  const flushPendingOpenAnswers = async () => {
-    const pending = Object.entries(openAnswerTimers.current);
-    openAnswerTimers.current = {};
-    await Promise.all(
-      pending.map(([questionId, timer]) => {
-        clearTimeout(timer);
-        return handleSaveOpen(Number(questionId), selectedAnswers[`text_${questionId}`] ?? "");
-      })
-    );
-  };
-
-  const handleClearAnswer = async (questionId: number, type: number) => {
-    if (completedSession) return;
-
-    setSelectedAnswers((prev) => {
-      const copy = { ...prev };
-      delete copy[`option_${questionId}`];
-      delete copy[`text_${questionId}`];
-      return copy;
-    });
-
-    try {
-      const res = await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/answer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          magistratura_question_id: questionId,
-          magistratura_question_option_id: null,
-          written_answer: null,
-        }),
-      });
-    } catch (err) {
-      console.error(err);
-    }
+    openAnswerTimers.current[questionId] = setTimeout(async () => {
+      try {
+        await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/written-answers`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "Accept": "application/json",
+          },
+          body: JSON.stringify({
+            magistratura_question_id: questionId,
+            written_answer: text,
+          }),
+        });
+      } catch {
+        showToast("Yazılı cavab yadda saxlanılmadı.");
+      }
+    }, 600);
   };
 
   const handleTimeExpired = async () => {
     if (completedSession) return;
-    showToast("İmtahan vaxtı bitdi. Cavablarınız sonlandırılır...");
+    showToast("İmtahan vaxtınız bitdi! Nəticəniz yekunlaşdırılır...");
     await finishExam();
   };
 
   const finishExam = async () => {
+    if (isSubmitting || completedSession) return;
     setIsSubmitting(true);
+
     try {
-      await flushPendingOpenAnswers();
       const res = await fetch(`${CLIENT_API_BASE}/api/front/exam-sessions/${sessionState.id}/submit`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
           "Accept": "application/json",
         },
       });
-
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setCompletedSession(data.session);
         setSessionState(data.session);
       } else {
-        showToast(data.message || "Xəta baş verdi.");
+        showToast(data.message || "İmtahanı bitirmək mümkün olmadı.");
       }
-    } catch (err) {
-      console.error(err);
-      showToast("Gözlənilməz xəta baş verdi.");
+    } catch {
+      showToast("Şəbəkə xətası baş verdi.");
     } finally {
       setIsSubmitting(false);
       setShowSubmitConfirm(false);
@@ -388,12 +320,12 @@ export default function MagistraturaExam() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  if (!exampage || !group || !sessionState) {
+  if (!exampage || !sessionState) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-paper">
         <div className="text-center p-8 bg-paper rounded-2xl shadow-sm border border-ink/10">
           <p className="text-red-500 font-semibold">{errorMessage || "Məlumatlar yüklənə bilmədi."}</p>
-          <Link to="/magistratura-exampages" className="mt-4 inline-block text-xs font-bold text-amber-brand-deep hover:underline">
+          <Link to="/magistratura-exampages" className="mt-4 inline-block text-xs font-bold text-emerald-600 hover:underline">
             Geri qayıt
           </Link>
         </div>
@@ -401,233 +333,161 @@ export default function MagistraturaExam() {
     );
   }
 
+  // Filter questions by active subject if subjects exist
+  const displayedQuestions = activeSubjectId
+    ? questions.filter((q: any) => q.magistratura_subject_id === activeSubjectId)
+    : questions;
+
   // ─── RENDER RESULTS PAGE ────────────────────────────────────────────────────
   if (completedSession) {
-    const answeredCount = questions.filter((q) => {
-      if (q.question_type === 1) {
-        return !!selectedAnswers[`option_${q.id}`];
-      } else {
-        return !!selectedAnswers[`text_${q.id}`];
-      }
+    const answeredCount = questions.filter((q: any) => {
+      if (q.question_type === 1) return !!selectedAnswers[`option_${q.id}`];
+      return !!selectedAnswers[`text_${q.id}`];
     }).length;
     const unansweredCount = questions.length - answeredCount;
     const gradingApproved = completedSession?.grading_approved !== false;
     const reviewMap: Record<string, any> = (review as Record<string, any>) || {};
+    const breakdown: any[] = completedSession?.magistratura_breakdown || [];
 
     return (
       <div className="min-h-screen bg-paper text-ink font-sans pb-16">
         <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-paper/80 border-b border-ink/10">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link
-              to={`/magistratura-exampages/${exampageId}/groups`}
+              to="/magistratura-exampages"
               className="flex items-center gap-1.5 text-sm font-semibold text-ink-soft hover:text-emerald-600 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
               </svg>
-              Qruplara Qayıt
+              İmtahan Vərəqlərinə Qayıt
             </Link>
-            <span className="text-xs font-bold text-ink-soft/70 bg-paper-2 px-3 py-1 rounded-full">
-              Sınaq Bitib
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              İmtahan Başa Çatdı
             </span>
           </div>
         </header>
 
-        <main className="mx-auto max-w-3xl px-4 sm:px-6 mt-8">
-          <div className="bg-paper border border-ink/10 rounded-3xl p-8 shadow-xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 h-40 w-40 bg-emerald-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 h-40 w-40 bg-teal-500/5 rounded-full blur-3xl"></div>
+        <main className="mx-auto max-w-3xl px-4 sm:px-6 mt-8 space-y-6">
+          <div className="bg-paper border border-ink/10 rounded-3xl p-8 shadow-xl text-center relative overflow-hidden">
+            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+              MAGİSTRATURA İMTAHANI (DİM)
+            </span>
+            <h2 className="text-2xl font-extrabold text-ink sm:text-3xl">
+              {exampage.title}
+            </h2>
+            <p className="text-xs text-ink-soft mt-1">Maksimum nəticə: 100 bal</p>
 
-            <div className="text-center relative z-10">
-              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 text-xs font-bold px-3 py-1 rounded-full mb-3">
-                ABİTURİYENT İMTAHANI
-              </span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-                {group.title}
-              </h2>
-              <p className="text-xs text-ink-soft/70 mt-1">
-                {exampage.title}
-              </p>
-
-              {gradingApproved ? (
-                completedSession?.score !== undefined && completedSession?.score !== null && (
-                  <div className="mt-6 inline-flex flex-col items-center rounded-2xl bg-emerald-50 border border-emerald-100 px-8 py-4">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Yekun bal</span>
-                    <span className="text-3xl font-extrabold text-emerald-800">
-                      {completedSession.score}{" "}
-                      <span className="text-base font-semibold text-emerald-700">/ {completedSession.magistratura_max_score ?? 400}</span>
-                    </span>
-                  </div>
-                )
-              ) : (
-                <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-100 px-5 py-4 text-sm text-amber-800">
-                  <strong className="block mb-1">Suallarınız müəllim tərəfindən yoxlanılır</strong>
-                  Bal və düzgün/yanlış nəticələr yoxlama təsdiqləndikdən sonra bu səhifədə görünəcək.
-                </div>
-              )}
-
-              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-ink/10 py-6">
-                <div>
-                  <span className="text-xs text-ink-soft/70 block">Sual sayı</span>
-                  <span className="text-lg font-bold text-ink">{questions.length}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-ink-soft/70 block">Cavablandırılan</span>
-                  <span className="text-lg font-bold text-ink">{answeredCount}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-ink-soft/70 block">Boş buraxılan</span>
-                  <span className="text-lg font-bold text-ink">{unansweredCount}</span>
-                </div>
+            {gradingApproved ? (
+              <div className="mt-6 inline-flex flex-col items-center rounded-2xl bg-emerald-50 border border-emerald-200 px-8 py-5">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Yekun Balınız</span>
+                <span className="text-4xl font-extrabold text-emerald-800 mt-1">
+                  {completedSession.score ?? 0}{" "}
+                  <span className="text-lg font-semibold text-emerald-600">/ 100 bal</span>
+                </span>
               </div>
-
-              <div className="mt-12 text-left">
-                <h4 className="text-lg font-bold text-ink mb-4">
-                  Suallara verilmiş cavablar
-                </h4>
-
-                <div className="space-y-6">
-                  {questions.map((q: any, idx: number) => {
-                    const isClosed = q.question_type === 1;
-                    const userSelectedOptionId = selectedAnswers[`option_${q.id}`];
-                    const userTextAns = selectedAnswers[`text_${q.id}`];
-                    const isAnswered = isClosed ? !!userSelectedOptionId : !!userTextAns;
-
-                    return (
-                      <div
-                        key={q.id}
-                        className="rounded-2xl border bg-paper p-6 shadow-sm border-ink/10"
-                      >
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                          <div className="flex gap-3">
-                            <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold bg-paper-2 text-ink-soft">
-                              {idx + 1}
-                            </span>
-                            <div
-                              className="text-sm font-medium text-ink leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: q.title ?? "" }}
-                            />
-                          </div>
-
-                          {(() => {
-                            const rv = gradingApproved ? reviewMap[String(q.id)] : undefined;
-                            if (rv && !isAnswered) {
-                              return (
-                                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700">
-                                  ✗ Cavab verilməyib
-                                </span>
-                              );
-                            }
-                            if (rv && isAnswered) {
-                              if (rv.type === "open" && !rv.graded) {
-                                return (
-                                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-paper-2 text-ink-soft">
-                                    Yoxlanılmayıb
-                                  </span>
-                                );
-                              }
-                              const pts = Number(rv.points) || 0;
-                              const full = rv.is_correct && (rv.type !== "open" || pts >= 2);
-                              const partial = rv.type === "open" && pts > 0 && pts < 2;
-                              return (
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                  full ? "bg-emerald-50 text-emerald-700" : partial ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
-                                }`}>
-                                  {full ? "✓ Düzgün" : partial ? `Qismən (${pts})` : "✗ Səhv"}
-                                </span>
-                              );
-                            }
-                            return (
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                isAnswered ? "bg-emerald-50 text-emerald-700" : "bg-paper-2 text-ink-soft"
-                              }`}>
-                                {isAnswered ? "Cavablandırılıb" : "Boş"}
-                              </span>
-                            );
-                          })()}
-                        </div>
-
-                        {q.image_url && (
-                          <div className="mb-4 rounded-xl overflow-hidden border border-ink/10">
-                            <img src={q.image_url} alt="" className="w-full max-h-72 object-contain" />
-                          </div>
-                        )}
-
-                        {isClosed ? (
-                          <div className="space-y-2">
-                            {q.options.map((opt: any, oIdx: number) => {
-                              const isSelected = userSelectedOptionId === opt.id;
-                              const rv = gradingApproved ? reviewMap[String(q.id)] : undefined;
-                              const isCorrectOption = !!rv && rv.correct_option_id === opt.id;
-                              const isWrongSelected = !!rv && isSelected && !isCorrectOption;
-                              let styles = isCorrectOption
-                                ? "border-emerald-500 bg-emerald-50/60 text-emerald-800 font-semibold"
-                                : isWrongSelected
-                                ? "border-red-400 bg-red-50/60 text-red-700 font-semibold"
-                                : isSelected
-                                ? "border-emerald-500 bg-emerald-50/40 text-emerald-800 font-semibold"
-                                : "border-ink/10 bg-paper-2/40";
-
-                              return (
-                                <div key={opt.id} className={`flex items-start gap-3 px-4 py-2.5 rounded-xl border text-xs ${styles}`}>
-                                  <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
-                                    isSelected ? "bg-emerald-500 text-white border-emerald-500" : "border-ink/20 text-ink-soft"
-                                  }`}>
-                                    {OPTION_LABELS[oIdx] ?? oIdx + 1}
-                                  </span>
-                                  <div className="flex-1">
-                                    {isCorrectOption && (
-                                      <span className="mb-1 inline-block rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                                        ✓ Düzgün cavab
-                                      </span>
-                                    )}
-                                    {opt.text && <div dangerouslySetInnerHTML={{ __html: opt.text }} />}
-                                    {opt.image && (
-                                      <img
-                                        src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
-                                        alt="Variant şəkli"
-                                        className="mt-2 max-h-24 rounded-lg border border-ink/10 object-contain bg-paper"
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="p-4 bg-paper-2 rounded-xl space-y-2 text-xs">
-                            <p>
-                              <span className="text-ink-soft/70 block mb-0.5">Sizin cavabınız:</span>
-                              <strong className={isAnswered ? "text-emerald-600 text-sm font-bold" : "text-ink-soft text-sm font-semibold"}>
-                                {userTextAns || "—"}
-                              </strong>
-                            </p>
-                            {gradingApproved && reviewMap[String(q.id)]?.correct_answer && (
-                              <p>
-                                <span className="text-ink-soft/70 block mb-0.5">Düzgün cavab:</span>
-                                <strong className="text-emerald-700 text-sm font-bold">
-                                  {reviewMap[String(q.id)].correct_answer}
-                                </strong>
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            ) : (
+              <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800">
+                <strong>Yazılı cavablarınız yoxlanılır.</strong> Müəllim qiymətləndirməsindən sonra yekun balınız görünəcək.
               </div>
+            )}
 
-              <div className="mt-8">
-                <Link
-                  to="/magistratura-exampages"
-                  className="w-full inline-block py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-all cursor-pointer text-center"
-                >
-                  Sınaq Vərəqlərinə Qayıt
-                </Link>
+            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-b border-ink/10 py-5">
+              <div>
+                <span className="text-xs text-ink-soft block">Ümumi Sual</span>
+                <span className="text-lg font-bold text-ink">{questions.length}</span>
               </div>
-
+              <div>
+                <span className="text-xs text-ink-soft block">Cavablandırılan</span>
+                <span className="text-lg font-bold text-emerald-600">{answeredCount}</span>
+              </div>
+              <div>
+                <span className="text-xs text-ink-soft block">Boş Buraxılan</span>
+                <span className="text-lg font-bold text-ink-soft">{unansweredCount}</span>
+              </div>
             </div>
+
+            {/* Fənlər üzrə bal bölgüsü (Breakdown) */}
+            {breakdown.length > 0 && (
+              <div className="mt-6 text-left">
+                <h4 className="text-xs font-bold text-ink uppercase tracking-wider mb-3">Fənlər üzrə nəticələr:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {breakdown.map((b: any) => (
+                    <div key={b.subject_id} className="p-3.5 rounded-2xl bg-paper-2 border border-ink/5 space-y-1">
+                      <p className="text-xs font-bold text-ink truncate">{b.subject_title}</p>
+                      <p className="text-lg font-extrabold text-emerald-700">
+                        {b.earned} <span className="text-xs font-normal text-ink-soft">/ {b.max} bal</span>
+                      </p>
+                      <div className="text-[11px] text-ink-soft flex justify-between pt-1 border-t border-ink/5">
+                        <span>Düzgün: {b.correct}</span>
+                        <span>Səhv: {b.incorrect}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sualların ətraflı icmalı */}
+          <div className="bg-paper border border-ink/10 rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="text-base font-bold text-ink">Sualların Ətraflı İcmalı</h3>
+            <div className="space-y-4">
+              {questions.map((q: any, idx: number) => {
+                const isClosed = q.question_type === 1;
+                const userOptId = selectedAnswers[`option_${q.id}`];
+                const userTextAns = selectedAnswers[`text_${q.id}`];
+                const isAnswered = isClosed ? !!userOptId : !!userTextAns;
+
+                return (
+                  <div key={q.id} className="p-4 rounded-2xl border border-ink/10 bg-paper-2/40 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 text-xs text-ink font-medium">
+                        <div dangerouslySetInnerHTML={{ __html: q.title || "(Başlıq yoxdur)" }} />
+                        {q.image_url && <img src={q.image_url} alt="Sual" className="mt-2 max-h-36 rounded-lg object-contain bg-white border" />}
+                        {q.audio_url && <audio controls src={q.audio_url} className="mt-2 h-8 w-full max-w-sm" />}
+                      </div>
+                    </div>
+
+                    {isClosed ? (
+                      <div className="space-y-1.5 pl-9">
+                        {q.options?.map((opt: any, oIdx: number) => {
+                          const isSelected = userOptId === opt.id;
+                          return (
+                            <div
+                              key={opt.id}
+                              className={`p-2 rounded-xl border text-xs flex items-center gap-2 ${
+                                isSelected ? "border-emerald-500 bg-emerald-50/70 font-bold text-emerald-950" : "border-ink/5 bg-white text-ink-soft"
+                              }`}
+                            >
+                              <span className="w-5 h-5 rounded-full bg-paper-2 flex items-center justify-center font-bold text-[11px]">
+                                {OPTION_LABELS[oIdx] || oIdx + 1}
+                              </span>
+                              <span>{opt.text}</span>
+                              {isSelected && <span className="text-[10px] ml-auto text-emerald-700 font-bold">(Sizin cavabınız)</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="pl-9 text-xs">
+                        <p className="text-ink-soft">Sizin cavabınız: <strong className="text-ink">{userTextAns || "—"}</strong></p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <Link
+              to="/magistratura-exampages"
+              className="mt-6 block w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl text-center transition-colors"
+            >
+              Sınaq Vərəqlərinə Qayıt
+            </Link>
           </div>
         </main>
       </div>
@@ -638,32 +498,29 @@ export default function MagistraturaExam() {
   return (
     <div className="min-h-screen bg-paper text-ink font-sans pb-16">
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-5 py-3.5 rounded-xl border bg-board text-white shadow-lg border-board-deep animate-in fade-in slide-in-from-bottom-5">
-          <svg className="w-5 h-5 text-emerald-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-sm font-semibold">{toastMessage}</span>
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-xl">
+          {toastMessage}
         </div>
       )}
 
       {showSubmitConfirm && (
-        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-paper border border-ink/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-ink">İmtahanı bitirmək istəyirsiniz?</h3>
-            <p className="text-xs text-ink-soft mt-2">
-              Hazırkı cavablarınız yadda saxlanılacaq və sınaq nəticələriniz dərhal hesablanacaq. Bu əməliyyat geri qaytarılmır.
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-gray-900">İmtahanı bitirmək istəyirsiniz?</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Cavablarınız yadda saxlanılacaq və nəticəniz yekunlaşacaq. Əminsiniz?
             </p>
-            <div className="mt-6 flex gap-3">
+            <div className="flex gap-2 justify-end pt-2">
               <button
                 onClick={() => setShowSubmitConfirm(false)}
-                className="flex-1 py-2.5 px-4 border border-ink/10 hover:bg-paper-2 text-ink text-xs font-bold rounded-xl cursor-pointer"
+                className="flex-1 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
               >
-                İmtahana davam et
+                Davam et
               </button>
               <button
                 onClick={finishExam}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow cursor-pointer"
+                className="flex-1 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "Bitirilir..." : "Bəli, Bitir"}
               </button>
@@ -672,234 +529,219 @@ export default function MagistraturaExam() {
         </div>
       )}
 
-      {blocker.state === "blocked" && (
-        <div className="fixed inset-0 z-[60] bg-ink/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-paper border border-ink/10 rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-5">
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-
-            <h3 className="text-xl font-extrabold text-ink leading-snug">
-              İmtahandan çıxmaq istəyirsiniz?
-            </h3>
-            <p className="text-sm text-ink-soft mt-3 leading-relaxed">
-              İmtahanı yarımçıq qoysanız, seçdiyiniz cavablar üzrə nəticələr <strong className="text-ink">avtomatik yekunlaşacaq</strong>.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={() => blocker.reset()}
-                className="flex-1 py-3 px-4 border border-ink/10 hover:bg-paper-2 text-ink text-xs font-bold rounded-xl cursor-pointer"
-              >
-                İmtahana qayıt
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await finishExam();
-                  blocker.proceed();
-                }}
-                className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow cursor-pointer"
-              >
-                Bəli, nəticəni qeyd et və çıx
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full bg-paper border-b border-ink/10 shadow-sm">
+      <header className="sticky top-0 z-40 w-full bg-paper border-b border-ink/10 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold text-emerald-600 tracking-wider block leading-none mb-1">
-              ABİTURİYENT İMTAHANI
+            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block leading-none mb-1">
+              MAGİSTRATURA İMTAHANI (DİM)
             </span>
-            <h1 className="text-sm font-bold text-ink leading-none">
-              {group.title} · <span className="text-xs font-medium text-ink-soft/70">{exampage.title}</span>
-            </h1>
+            <h1 className="text-sm font-bold text-ink leading-none">{exampage.title}</h1>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Timer */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-ink/10 bg-paper-2">
-              <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono text-xs font-bold ${
+              isLow ? "bg-red-50 text-red-600 border-red-200 animate-pulse" : "bg-paper-2 text-ink border-ink/10"
+            }`}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm font-extrabold text-ink tabular-nums">
-                {timerDisplay}
-              </span>
+              <span>{timerDisplay}</span>
             </div>
 
             <button
+              type="button"
               onClick={() => setShowSubmitConfirm(true)}
-              className="py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
             >
-              Bitir
+              İmtahanı Bitir
             </button>
           </div>
         </div>
+
+        {/* Fənn Tabs */}
+        {subjects.length > 0 && (
+          <div className="border-t border-ink/5 bg-paper-2/50">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 flex items-center gap-2 overflow-x-auto py-2">
+              <button
+                type="button"
+                onClick={() => setActiveSubjectId(null)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSubjectId === null ? "bg-emerald-600 text-white shadow-sm" : "text-ink-soft hover:bg-paper"
+                }`}
+              >
+                Bütün Fənlər ({questions.length})
+              </button>
+              {subjects.map((s: any) => {
+                const count = questions.filter((q: any) => q.magistratura_subject_id === s.id).length;
+                const isAct = activeSubjectId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setActiveSubjectId(s.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      isAct ? "bg-emerald-600 text-white shadow-sm" : "text-ink-soft hover:bg-paper"
+                    }`}
+                  >
+                    {s.title} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* Main content grid */}
-      <main className="mx-auto max-w-4xl px-4 sm:px-6 mt-8 space-y-10">
-          {questions.map((q: any, idx: number) => {
-            const userTextAns = selectedAnswers[`text_${q.id}`] || "";
-            const prevPassageId = idx > 0 ? questions[idx - 1].magistratura_question_passage_id : null;
-            const showPassageHeader = q.passage && q.magistratura_question_passage_id !== prevPassageId;
-            return (
-              <Fragment key={q.id}>
-              {showPassageHeader && (
-                <div className="bg-paper-2/60 border border-ink/10 rounded-3xl p-6 md:p-8 space-y-3">
-                  <p className="text-base text-ink leading-relaxed whitespace-pre-line">{q.passage.text}</p>
-                  {q.passage.audio_url && (
-                    <audio controls src={q.passage.audio_url} className="w-full max-w-md" />
-                  )}
-                </div>
-              )}
-              <div
-                id={`question-card-${q.id}`}
-                className="bg-paper border border-ink/10 rounded-3xl p-6 md:p-8 shadow-sm scroll-mt-24"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 text-sm font-bold">
-                    {idx + 1}
-                  </span>
-                  <span className="text-xs font-semibold text-ink-soft/70">
-                    {q.question_type === 1 ? "Qapalı sual" : q.question_type === 2 ? "Kodlaşdırıla bilən açıq sual" : "Yazılı açıq sual"}
-                  </span>
-                </div>
+      {/* Main Container */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 mt-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Suallar siyahısı */}
+        <div className="lg:col-span-3 space-y-4">
+          {displayedQuestions.length === 0 ? (
+            <div className="bg-paper border border-ink/10 rounded-2xl p-8 text-center text-xs text-ink-soft">
+              Bu fənn üzrə sual yoxdur.
+            </div>
+          ) : (
+            displayedQuestions.map((q: any, idx: number) => {
+              const isClosed = q.question_type === 1;
+              const globalIdx = questions.findIndex((item: any) => item.id === q.id);
+              const qNum = globalIdx !== -1 ? globalIdx + 1 : idx + 1;
+              const selectedOptId = selectedAnswers[`option_${q.id}`];
+              const textVal = selectedAnswers[`text_${q.id}`] ?? "";
 
-                {/* Title / Question text */}
+              return (
                 <div
-                  className="text-base font-medium text-ink leading-relaxed mb-6 whitespace-pre-line"
-                  dangerouslySetInnerHTML={{ __html: q.title ?? "" }}
-                />
+                  key={q.id}
+                  id={`q-${q.id}`}
+                  className="bg-paper border border-ink/10 rounded-2xl p-6 shadow-sm space-y-4 hover:border-emerald-200 transition-colors"
+                >
+                  {/* Keçid mətni / audiosu varsa */}
+                  {q.passage && (
+                    <div className="p-4 rounded-xl bg-paper-2 border border-ink/5 space-y-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Ümumi Mətn / Dinləmə</span>
+                      {q.passage.text && (
+                        <div className="text-xs text-ink font-serif leading-relaxed" dangerouslySetInnerHTML={{ __html: q.passage.text }} />
+                      )}
+                      {q.passage.audio_url && (
+                        <audio controls src={q.passage.audio_url} className="mt-2 h-8 w-full max-w-sm" />
+                      )}
+                    </div>
+                  )}
 
-                {/* Question Image if exists */}
-                {q.image_url && (
-                  <div className="mb-6 rounded-2xl overflow-hidden border border-ink/10">
-                    <img src={q.image_url} alt="" className="w-full max-h-80 object-contain bg-paper-2" />
+                  {/* Sual Başlığı */}
+                  <div className="flex items-start gap-3">
+                    <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center shrink-0">
+                      {qNum}
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <div className="text-sm text-ink font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: q.title || "(Başlıq yoxdur)" }} />
+                      {q.image_url && (
+                        <img src={q.image_url} alt="Sual" className="max-h-48 rounded-xl object-contain bg-white border" />
+                      )}
+                      {q.audio_url && (
+                        <audio controls src={q.audio_url} className="h-8 w-full max-w-sm" />
+                      )}
+                    </div>
                   </div>
-                )}
 
-                {q.audio_url && (
-                  <audio controls src={q.audio_url} className="w-full mb-6" />
-                )}
-
-                {/* Answers Input Area */}
-                <div className="border-t border-ink/10 pt-6">
-                  {q.question_type === 1 ? (
-                    // Closed Options (A, B, C, D, E)
-                    <div className="space-y-3">
-                      {q.options.map((opt: any, oIdx: number) => {
-                        const isSelected = selectedAnswers[`option_${q.id}`] === opt.id;
+                  {/* Sual Cavab Bölməsi */}
+                  {isClosed ? (
+                    <div className="space-y-2 pl-10">
+                      {q.options?.map((opt: any, oIdx: number) => {
+                        const isChosen = selectedOptId === opt.id;
                         return (
                           <button
                             key={opt.id}
+                            type="button"
                             onClick={() => handleSelectClosed(q.id, opt.id)}
-                            className={`w-full flex items-start gap-3 px-5 py-4 rounded-2xl border text-left text-sm transition-all cursor-pointer ${
-                              isSelected
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-800 font-semibold"
-                                : "border-ink/10 hover:bg-paper-2/50 text-ink"
+                            className={`w-full text-left p-3 rounded-xl border text-xs flex items-center gap-3 transition-all cursor-pointer ${
+                              isChosen
+                                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-950 shadow-sm"
+                                : "border-ink/10 bg-paper hover:bg-paper-2 text-ink"
                             }`}
                           >
-                            <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${
-                              isSelected ? "bg-emerald-500 border-emerald-500 text-white" : "border-ink/20 text-ink-soft"
+                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                              isChosen ? "bg-emerald-600 text-white" : "bg-paper-2 text-ink-soft"
                             }`}>
-                              {OPTION_LABELS[oIdx] ?? oIdx + 1}
+                              {OPTION_LABELS[oIdx] || oIdx + 1}
                             </span>
-                            <div className="flex-1">
-                              {opt.text && <div dangerouslySetInnerHTML={{ __html: opt.text }} />}
-                              {opt.image && (
-                                <img
-                                  src={`${STORAGE_BASE}/${opt.image.replace(/^\/+/, "")}`}
-                                  alt="Variant şəkli"
-                                  className="mt-2 max-h-24 rounded-lg border border-ink/10 object-contain bg-paper"
-                                />
-                              )}
-                            </div>
+                            <span className="flex-1">{opt.text}</span>
                           </button>
                         );
                       })}
                     </div>
-                  ) : q.question_type === 2 ? (
-                    // Codeable open question (textarea instead of input text)
-                    <div>
-                      <label className="text-xs font-bold text-ink-soft/70 block mb-2">
-                        Riyazi/Hərfi cavabı daxil edin:
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={userTextAns}
-                        onChange={(e) => {
-                          const newVal = e.target.value;
-                          setSelectedAnswers((prev) => ({
-                            ...prev,
-                            [`text_${q.id}`]: newVal,
-                          }));
-                          scheduleSaveOpen(q.id, newVal);
-                        }}
-                        onBlur={(e) => {
-                          if (openAnswerTimers.current[q.id]) {
-                            clearTimeout(openAnswerTimers.current[q.id]);
-                            delete openAnswerTimers.current[q.id];
-                          }
-                          handleSaveOpen(q.id, e.target.value);
-                        }}
-                        placeholder="Məs. 12,5"
-                        className="w-full px-4 py-3 rounded-2xl border border-ink/10 bg-paper-2/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm font-semibold"
-                      />
-                    </div>
                   ) : (
-                    // Written open question (textarea)
-                    <div>
-                      <label className="text-xs font-bold text-ink-soft/70 block mb-2">
-                        Açıq yazılı cavabınızı daxil edin:
+                    <div className="pl-10 space-y-2">
+                      <label className="block text-[11px] font-bold text-ink-soft uppercase tracking-wider">
+                        Cavabınızı daxil edin (Açıq sual):
                       </label>
-                      <textarea
-                        rows={4}
-                        value={userTextAns}
-                        onChange={(e) => {
-                          const newVal = e.target.value;
-                          setSelectedAnswers((prev) => ({
-                            ...prev,
-                            [`text_${q.id}`]: newVal,
-                          }));
-                          scheduleSaveOpen(q.id, newVal);
-                        }}
-                        onBlur={(e) => {
-                          if (openAnswerTimers.current[q.id]) {
-                            clearTimeout(openAnswerTimers.current[q.id]);
-                            delete openAnswerTimers.current[q.id];
-                          }
-                          handleSaveOpen(q.id, e.target.value);
-                        }}
-                        placeholder="Buraya qeyd edin..."
-                        className="w-full px-4 py-3 rounded-2xl border border-ink/10 bg-paper-2/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-sm"
+                      <input
+                        type="text"
+                        value={textVal}
+                        onChange={(e) => handleOpenAnswerChange(q.id, e.target.value)}
+                        placeholder="Cavabı yazın..."
+                        className="w-full p-3 rounded-xl border border-ink/15 bg-paper text-xs text-ink outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
                       />
                     </div>
                   )}
                 </div>
+              );
+            })
+          )}
+        </div>
 
-                {/* Bottom Card Navigation */}
-                <div className="mt-8 pt-6 border-t border-ink/10 flex justify-between items-center">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleClearAnswer(q.id, q.question_type)}
-                      className="py-2.5 px-4 text-xs font-bold text-ink-soft hover:text-red-500 transition-colors cursor-pointer border border-transparent hover:border-red-200 rounded-xl"
-                    >
-                      Cavabı Sil
-                    </button>
-                  </div>
-                </div>
+        {/* Sual Naviqatoru (Sağ panel) */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-28 bg-paper border border-ink/10 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Sual Xəritəsi</h4>
+              <span className="text-[11px] font-bold text-emerald-600">
+                {Object.keys(selectedAnswers).length} / {questions.length}
+              </span>
+            </div>
 
+            <div className="grid grid-cols-5 gap-1.5 max-h-96 overflow-y-auto pr-1">
+              {questions.map((q: any, i: number) => {
+                const isAnswered = q.question_type === 1
+                  ? !!selectedAnswers[`option_${q.id}`]
+                  : !!selectedAnswers[`text_${q.id}`];
+                return (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => {
+                      if (activeSubjectId && q.magistratura_subject_id !== activeSubjectId) {
+                        setActiveSubjectId(q.magistratura_subject_id);
+                      }
+                      setTimeout(() => {
+                        const el = document.getElementById(`q-${q.id}`);
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 50);
+                    }}
+                    className={`h-8 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                      isAnswered
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "bg-paper-2 text-ink-soft hover:bg-emerald-50 hover:text-emerald-700"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-ink/10 flex items-center justify-between text-[11px] text-ink-soft">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-emerald-600" />
+                <span>Cavablanıb</span>
               </div>
-              </Fragment>
-            );
-          })}
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-paper-2 border border-ink/10" />
+                <span>Boşdur</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

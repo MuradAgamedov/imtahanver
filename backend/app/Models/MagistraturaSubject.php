@@ -53,15 +53,6 @@ class MagistraturaSubject extends Model
         return Str::slug($title);
     }
 
-    public function groups()
-    {
-        return $this->belongsToMany(
-            MagistraturaGroup::class,
-            'magistratura_group_subject',
-            'magistratura_subject_id',
-            'magistratura_group_id'
-        )->withTimestamps();
-    }
 
     public function toSearchArray(): array
     {

@@ -13,11 +13,10 @@ class MagistraturaQuestionController extends Controller
 {
     // ─── Questions ───────────────────────────────────────────────────────────
 
-    public function index(int $exampageId, int $groupId, int $subjectId): JsonResponse
+    public function index(int $exampageId, int $subjectId): JsonResponse
     {
         $questions = MagistraturaQuestion::with(['options', 'passage'])
             ->where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->orderBy('question_type')
             ->orderBy(DB::raw('COALESCE(magistratura_question_passage_id, id)'))
@@ -39,7 +38,7 @@ class MagistraturaQuestionController extends Controller
         ]);
     }
 
-    public function store(Request $request, int $exampageId, int $groupId, int $subjectId): JsonResponse
+    public function store(Request $request, int $exampageId, int $subjectId): JsonResponse
     {
         $request->validate([
             'question_type'                  => 'required|integer|in:1,2,3',
@@ -50,7 +49,6 @@ class MagistraturaQuestionController extends Controller
         if ($request->magistratura_question_passage_id) {
             $passageBelongs = \App\Models\MagistraturaQuestionPassage::where('id', $request->magistratura_question_passage_id)
                 ->where('magistratura_exampage_id', $exampageId)
-                ->where('magistratura_group_id', $groupId)
                 ->where('magistratura_subject_id', $subjectId)
                 ->exists();
 
@@ -63,7 +61,6 @@ class MagistraturaQuestionController extends Controller
         $limit = MagistraturaQuestion::TYPE_LIMITS[$type];
 
         $existingCount = MagistraturaQuestion::where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->where('question_type', $type)
             ->count();
@@ -76,14 +73,12 @@ class MagistraturaQuestionController extends Controller
         }
 
         $maxOrder = MagistraturaQuestion::where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->where('question_type', $type)
             ->max('order') ?? -1;
 
         $question = MagistraturaQuestion::create([
             'magistratura_exampage_id'          => $exampageId,
-            'magistratura_group_id'             => $groupId,
             'magistratura_subject_id'           => $subjectId,
             'magistratura_question_passage_id'  => $request->magistratura_question_passage_id ?? null,
             'question_type'                  => $type,
@@ -100,11 +95,10 @@ class MagistraturaQuestionController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, int $exampageId, int $groupId, int $subjectId, int $id): JsonResponse
+    public function update(Request $request, int $exampageId, int $subjectId, int $id): JsonResponse
     {
         $question = MagistraturaQuestion::where('id', $id)
             ->where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->first();
 
@@ -120,7 +114,6 @@ class MagistraturaQuestionController extends Controller
         if ($request->filled('magistratura_question_passage_id')) {
             $passageBelongs = \App\Models\MagistraturaQuestionPassage::where('id', $request->magistratura_question_passage_id)
                 ->where('magistratura_exampage_id', $exampageId)
-                ->where('magistratura_group_id', $groupId)
                 ->where('magistratura_subject_id', $subjectId)
                 ->exists();
 
@@ -145,11 +138,10 @@ class MagistraturaQuestionController extends Controller
         ]);
     }
 
-    public function destroy(int $exampageId, int $groupId, int $subjectId, int $id): JsonResponse
+    public function destroy(int $exampageId, int $subjectId, int $id): JsonResponse
     {
         $question = MagistraturaQuestion::where('id', $id)
             ->where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->first();
 
@@ -162,7 +154,7 @@ class MagistraturaQuestionController extends Controller
         return response()->json(['success' => true, 'message' => 'Sual silindi.']);
     }
 
-    public function reorder(Request $request, int $exampageId, int $groupId, int $subjectId): JsonResponse
+    public function reorder(Request $request, int $exampageId, int $subjectId): JsonResponse
     {
         $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
 

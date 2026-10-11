@@ -8,7 +8,6 @@ class MagistraturaQuestionPassage extends Model
 {
     protected $fillable = [
         'magistratura_exampage_id',
-        'magistratura_group_id',
         'magistratura_subject_id',
         'text',
         'audio',
@@ -21,7 +20,6 @@ class MagistraturaQuestionPassage extends Model
 
     public function group()
     {
-        return $this->belongsTo(MagistraturaGroup::class, 'magistratura_group_id');
     }
 
     public function subject()

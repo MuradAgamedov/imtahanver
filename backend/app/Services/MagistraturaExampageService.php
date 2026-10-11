@@ -79,19 +79,33 @@ class MagistraturaExampageService implements MagistraturaExampageServiceInterfac
         return ['success' => true, 'message' => 'İmtahan vərəqi silindi.', 'status_code' => 200];
     }
 
-    public function syncGroups(int $id, array $groupIds): array
+    public function syncSubjects(int $id, array $subjectIds): array
     {
         $exampage = $this->exampageRepository->findById($id);
         if (!$exampage) {
             return ['success' => false, 'message' => 'İmtahan vərəqi tapılmadı.', 'status_code' => 404];
         }
 
-        $this->exampageRepository->syncGroups($exampage, $groupIds);
+        $this->exampageRepository->syncSubjects($exampage, $subjectIds);
 
         return [
             'success'     => true,
-            'message'     => 'Qruplar uğurla yeniləndi.',
-            'data'        => $exampage->fresh()->load('groups'),
+            'message'     => 'Fənlər uğurla yeniləndi.',
+            'data'        => $exampage->fresh()->load('subjects'),
+            'status_code' => 200,
+        ];
+    }
+
+    public function listSubjects(int $id): array
+    {
+        $exampage = $this->exampageRepository->findById($id);
+        if (!$exampage) {
+            return ['success' => false, 'message' => 'İmtahan vərəqi tapılmadı.', 'status_code' => 404];
+        }
+
+        return [
+            'success'     => true,
+            'data'        => $exampage->subjects()->orderBy('magistratura_exampage_subject.order')->get(),
             'status_code' => 200,
         ];
     }

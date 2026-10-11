@@ -9,11 +9,10 @@ use Illuminate\Http\Request;
 
 class MagistraturaQuestionPassageController extends Controller
 {
-    public function index(int $exampageId, int $groupId, int $subjectId): JsonResponse
+    public function index(int $exampageId, int $subjectId): JsonResponse
     {
         $passages = MagistraturaQuestionPassage::withCount('questions')
             ->where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->orderBy('id')
             ->get();
@@ -21,7 +20,7 @@ class MagistraturaQuestionPassageController extends Controller
         return response()->json(['success' => true, 'data' => $passages]);
     }
 
-    public function store(Request $request, int $exampageId, int $groupId, int $subjectId): JsonResponse
+    public function store(Request $request, int $exampageId, int $subjectId): JsonResponse
     {
         $request->validate([
             'text'  => 'required|string',
@@ -30,7 +29,6 @@ class MagistraturaQuestionPassageController extends Controller
 
         $passage = MagistraturaQuestionPassage::create([
             'magistratura_exampage_id' => $exampageId,
-            'magistratura_group_id'    => $groupId,
             'magistratura_subject_id'  => $subjectId,
             'text'                  => $request->text,
             'audio'                 => $request->audio ?? null,
@@ -39,11 +37,10 @@ class MagistraturaQuestionPassageController extends Controller
         return response()->json(['success' => true, 'message' => 'Keçid əlavə edildi.', 'data' => $passage], 201);
     }
 
-    public function update(Request $request, int $exampageId, int $groupId, int $subjectId, int $id): JsonResponse
+    public function update(Request $request, int $exampageId, int $subjectId, int $id): JsonResponse
     {
         $passage = MagistraturaQuestionPassage::where('id', $id)
             ->where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->first();
 
@@ -64,11 +61,10 @@ class MagistraturaQuestionPassageController extends Controller
         return response()->json(['success' => true, 'message' => 'Keçid yeniləndi.', 'data' => $passage->fresh()]);
     }
 
-    public function destroy(int $exampageId, int $groupId, int $subjectId, int $id): JsonResponse
+    public function destroy(int $exampageId, int $subjectId, int $id): JsonResponse
     {
         $passage = MagistraturaQuestionPassage::where('id', $id)
             ->where('magistratura_exampage_id', $exampageId)
-            ->where('magistratura_group_id', $groupId)
             ->where('magistratura_subject_id', $subjectId)
             ->first();
 

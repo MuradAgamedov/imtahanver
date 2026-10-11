@@ -31,14 +31,14 @@ class MagistraturaExampage extends Model
         });
     }
 
-    public function groups()
+    public function subjects()
     {
         return $this->belongsToMany(
-            MagistraturaGroup::class,
-            'magistratura_exampage_group',
+            MagistraturaSubject::class,
+            'magistratura_exampage_subject',
             'magistratura_exampage_id',
-            'magistratura_group_id'
-        )->withTimestamps();
+            'magistratura_subject_id'
+        )->withPivot('order')->withTimestamps();
     }
 
     public function toSearchArray(): array

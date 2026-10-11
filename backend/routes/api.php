@@ -30,10 +30,9 @@ Route::prefix('front')->group(function () {
 
     // ----- Magistratura (front) -----
     Route::get('magistratura-exampages', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'exampages']);
-    Route::get('magistratura-exampages/{id}/groups', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'groups']);
-    Route::get('magistratura-exampages/{id}/groups/{groupId}/subjects', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'subjects']);
-    Route::get('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'subjectQuestions']);
-    Route::get('magistratura-exampages/{exampageId}/groups/{groupId}/questions', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'groupQuestions']);
+    Route::get('magistratura-exampages/{id}/subjects', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'subjects']);
+    Route::get('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'subjectQuestions']);
+    Route::get('magistratura-exampages/{exampageId}/questions', [\App\Http\Controllers\Api\Front\MagistraturaFrontQuestionsController::class, 'exampageQuestions']);
 
 
     // Authenticated routes
@@ -237,24 +236,25 @@ Route::prefix('adminapi')->group(function () {
         Route::post('magistratura-exampages', [\App\Http\Controllers\Api\AdminApi\MagistraturaExampageController::class, 'store']);
         Route::put('magistratura-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaExampageController::class, 'update']);
         Route::delete('magistratura-exampages/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaExampageController::class, 'destroy']);
-        Route::put('magistratura-exampages/{id}/groups', [\App\Http\Controllers\Api\AdminApi\MagistraturaExampageController::class, 'syncGroups']);
+        Route::put('magistratura-exampages/{id}/subjects', [\App\Http\Controllers\Api\AdminApi\MagistraturaExampageController::class, 'syncSubjects']);
+        Route::get('magistratura-exampages/{id}/subjects', [\App\Http\Controllers\Api\AdminApi\MagistraturaExampageController::class, 'listSubjects']);
 
         // Magistratura Questions
-        Route::get('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'index']);
-        Route::post('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'store']);
-        Route::put('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'reorder']);
-        Route::post('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'update']);
-        Route::delete('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'destroy']);
+        Route::get('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'index']);
+        Route::post('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'store']);
+        Route::put('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions/reorder', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'reorder']);
+        Route::post('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'update']);
+        Route::delete('magistratura-exampages/{exampageId}/subjects/{subjectId}/questions/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'destroy']);
 
         // Magistratura Question Image/Audio Upload
         Route::post('magistratura-questions/upload-image', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'uploadImage']);
         Route::post('magistratura-questions/upload-audio', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'uploadAudio']);
 
         // Magistratura Question Passages (keçidlər — shared text/audio linked to several questions)
-        Route::get('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'index']);
-        Route::post('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'store']);
-        Route::put('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'update']);
-        Route::delete('magistratura-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'destroy']);
+        Route::get('magistratura-exampages/{exampageId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'index']);
+        Route::post('magistratura-exampages/{exampageId}/subjects/{subjectId}/passages', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'store']);
+        Route::put('magistratura-exampages/{exampageId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'update']);
+        Route::delete('magistratura-exampages/{exampageId}/subjects/{subjectId}/passages/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionPassageController::class, 'destroy']);
 
         // Magistratura Question Options
         Route::get('magistratura-questions/{questionId}/options', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'indexOptions']);
@@ -264,12 +264,6 @@ Route::prefix('adminapi')->group(function () {
         Route::delete('magistratura-questions/{questionId}/options/{optionId}', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'destroyOption']);
 
         // Magistratura Groups
-        Route::get('magistratura-groups', [\App\Http\Controllers\Api\AdminApi\MagistraturaGroupController::class, 'index']);
-        Route::post('magistratura-groups', [\App\Http\Controllers\Api\AdminApi\MagistraturaGroupController::class, 'store']);
-        Route::put('magistratura-groups/reorder', [\App\Http\Controllers\Api\AdminApi\MagistraturaGroupController::class, 'reorder']);
-        Route::put('magistratura-groups/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaGroupController::class, 'update']);
-        Route::delete('magistratura-groups/{id}', [\App\Http\Controllers\Api\AdminApi\MagistraturaGroupController::class, 'destroy']);
-        Route::put('magistratura-groups/{id}/subjects', [\App\Http\Controllers\Api\AdminApi\MagistraturaGroupController::class, 'syncSubjects']);
 
         // Admin Exam Results Route
         Route::get('exam-results', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'index']);

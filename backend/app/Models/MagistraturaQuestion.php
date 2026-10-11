@@ -9,14 +9,14 @@ class MagistraturaQuestion extends Model
 {
     use HasFactory;
 
-    const TYPE_CLOSED      = 1; // Qapalı (with options, max 22)
-    const TYPE_CODEABLE    = 2; // Kodlaşdırıla bilən açıq (max 5)
-    const TYPE_WRITTEN     = 3; // Yazılı açıq (max 3)
+    const TYPE_CLOSED      = 1; // Qapalı (with options, DİM: Məntiq 45, İnformatika 20, Xarici dil 20)
+    const TYPE_CODEABLE    = 2; // Kodlaşdırıla bilən açıq (DİM: Məntiq 5, İnformatika 5, Xarici dil 5)
+    const TYPE_WRITTEN     = 3; // Yazılı açıq / Esse (Xarici dil esse və ya yazılı)
 
     const TYPE_LIMITS = [
-        self::TYPE_CLOSED   => 22,
-        self::TYPE_CODEABLE => 5,
-        self::TYPE_WRITTEN  => 3,
+        self::TYPE_CLOSED   => 50,
+        self::TYPE_CODEABLE => 10,
+        self::TYPE_WRITTEN  => 5,
     ];
 
     const TYPE_LABELS = [
@@ -25,9 +25,8 @@ class MagistraturaQuestion extends Model
         self::TYPE_WRITTEN  => 'Yazılı açıq tipli',
     ];
 
-    protected $fillable = [
+    protected  = [
         'magistratura_exampage_id',
-        'magistratura_group_id',
         'magistratura_subject_id',
         'magistratura_question_passage_id',
         'question_type',
@@ -37,7 +36,7 @@ class MagistraturaQuestion extends Model
         'order',
     ];
 
-    protected $casts = [
+    protected  = [
         'question_type' => 'integer',
         'order'         => 'integer',
         'is_true'       => 'boolean',
@@ -45,26 +44,21 @@ class MagistraturaQuestion extends Model
 
     public function options()
     {
-        return $this->hasMany(MagistraturaQuestionOption::class, 'magistratura_question_id')->orderBy('order');
+        return ->hasMany(MagistraturaQuestionOption::class, 'magistratura_question_id')->orderBy('order');
     }
 
     public function exampage()
     {
-        return $this->belongsTo(MagistraturaExampage::class, 'magistratura_exampage_id');
-    }
-
-    public function group()
-    {
-        return $this->belongsTo(MagistraturaGroup::class, 'magistratura_group_id');
+        return ->belongsTo(MagistraturaExampage::class, 'magistratura_exampage_id');
     }
 
     public function subject()
     {
-        return $this->belongsTo(MagistraturaSubject::class, 'magistratura_subject_id');
+        return ->belongsTo(MagistraturaSubject::class, 'magistratura_subject_id');
     }
 
     public function passage()
     {
-        return $this->belongsTo(MagistraturaQuestionPassage::class, 'magistratura_question_passage_id');
+        return ->belongsTo(MagistraturaQuestionPassage::class, 'magistratura_question_passage_id');
     }
 }

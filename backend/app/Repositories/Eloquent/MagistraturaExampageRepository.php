@@ -11,7 +11,7 @@ class MagistraturaExampageRepository implements MagistraturaExampageRepositoryIn
     public function all(?string $search = null): Collection
     {
         if (empty($search)) {
-            return MagistraturaExampage::with('groups.subjects')->orderBy('id', 'desc')->get();
+            return MagistraturaExampage::with('subjects')->orderBy('id', 'desc')->get();
         }
 
         try {
@@ -67,7 +67,7 @@ class MagistraturaExampageRepository implements MagistraturaExampageRepositoryIn
                 return new Collection();
             }
 
-            return MagistraturaExampage::with('groups.subjects')
+            return MagistraturaExampage::with('subjects')
                 ->whereIn('id', $ids)
                 ->orderByRaw('FIELD(id, ' . implode(',', $ids) . ')')
                 ->get();
@@ -75,7 +75,7 @@ class MagistraturaExampageRepository implements MagistraturaExampageRepositoryIn
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Elasticsearch magistratura_exampages search error: ' . $e->getMessage());
 
-            return MagistraturaExampage::with('groups.subjects')->orderBy('id', 'desc')
+            return MagistraturaExampage::with('subjects')->orderBy('id', 'desc')
                 ->where('title', 'like', '%' . $search . '%')
                 ->get();
         }
@@ -83,7 +83,7 @@ class MagistraturaExampageRepository implements MagistraturaExampageRepositoryIn
 
     public function findById(int $id): ?MagistraturaExampage
     {
-        return MagistraturaExampage::with('groups.subjects')->find($id);
+        return MagistraturaExampage::with('subjects')->find($id);
     }
 
     public function create(array $data): MagistraturaExampage
@@ -102,8 +102,8 @@ class MagistraturaExampageRepository implements MagistraturaExampageRepositoryIn
         return $exampage->delete();
     }
 
-    public function syncGroups(MagistraturaExampage $exampage, array $groupIds): void
+    public function syncSubjects(MagistraturaExampage $exampage, array $subjectIds): void
     {
-        $exampage->groups()->sync($groupIds);
+        $exampage->subjects()->sync($subjectIds);
     }
 }

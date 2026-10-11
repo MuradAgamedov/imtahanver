@@ -260,7 +260,7 @@ function UpcomingRegistrationRow({ registration }: { registration: any }) {
   const canStart = !exampage?.starts_at || countdown.isReady;
   const canCancel = !exampage?.starts_at || countdown.remaining > CANCELLATION_CUTOFF_SECONDS;
   const href = registration.magistratura_exampage_id
-    ? `/magistratura-exampages/${registration.magistratura_exampage_id}/groups`
+    ? `/exam/magistratura/${registration.magistratura_exampage_id}`
     : registration.applicant_exampage_id
     ? `/applicant-exampages/${registration.applicant_exampage_id}/groups`
     : `/miq-exampages/${registration.miq_exampage_id}/subjects`;
@@ -793,7 +793,7 @@ export default function Home() {
                                 <td className="px-6 py-4">
                                   <div>
                                     <p className="font-semibold text-ink">{sess.magistratura_exampage?.title}</p>
-                                    <p className="text-xs text-emerald-600 font-medium mt-0.5">Qrup: {sess.magistratura_group?.title}</p>
+                                    <p className="text-xs text-emerald-600 font-medium mt-0.5">Magistratura İmtahanı</p>
                                   </div>
                                 </td>
                                 <td className="px-6 py-4">
@@ -837,8 +837,8 @@ export default function Home() {
                                 <td className="px-6 py-4 text-right">
                                   <Link
                                     to={isCompleted
-                                      ? `/exam/magistratura/${sess.magistratura_exampage_id}/${sess.magistratura_group_id}?session_id=${sess.id}`
-                                      : `/exam/magistratura/${sess.magistratura_exampage_id}/${sess.magistratura_group_id}`}
+                                      ? `/exam/magistratura/${sess.magistratura_exampage_id}?session_id=${sess.id}`
+                                      : `/exam/magistratura/${sess.magistratura_exampage_id}`}
                                     className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
  isCompleted
    ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 "

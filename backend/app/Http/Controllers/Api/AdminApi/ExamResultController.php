@@ -13,7 +13,7 @@ class ExamResultController extends Controller
     {
         ExamSession::finalizeExpired();
 
-        $query = ExamSession::with(['user', 'exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'magistraturaGroup', 'magistraturaSubject'])
+        $query = ExamSession::with(['user', 'exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage'])
             ->orderBy('created_at', 'desc');
 
         // Optional filtering by user name or email
@@ -49,8 +49,6 @@ class ExamResultController extends Controller
             'applicantGroup',
             'applicantSubject',
             'magistraturaExampage',
-            'magistraturaGroup',
-            'magistraturaSubject',
             'answers.applicantQuestion',
             'answers.applicantOption',
             'answers.magistraturaQuestion',
@@ -72,7 +70,6 @@ class ExamResultController extends Controller
         } elseif (!is_null($session->magistratura_exampage_id)) {
             $questions = \App\Models\MagistraturaQuestion::with(['options', 'passage'])
                 ->where('magistratura_exampage_id', $session->magistratura_exampage_id)
-                ->where('magistratura_group_id', $session->magistratura_group_id)
                 ->orderBy('magistratura_subject_id')
                 ->orderBy('question_type')
                 ->orderBy(\Illuminate\Support\Facades\DB::raw('COALESCE(magistratura_question_passage_id, id)'))

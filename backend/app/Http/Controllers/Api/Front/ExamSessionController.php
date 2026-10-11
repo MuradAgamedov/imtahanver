@@ -16,7 +16,6 @@ use App\Models\ApplicantQuestion;
 use App\Models\ApplicantQuestionOption;
 use App\Models\ApplicantWrittenAnswer;
 use App\Models\MagistraturaExampage;
-use App\Models\MagistraturaGroup;
 use App\Models\MagistraturaSubject;
 use App\Models\MagistraturaQuestion;
 use App\Models\MagistraturaQuestionOption;
@@ -39,7 +38,7 @@ class ExamSessionController extends Controller
     {
         $user = $request->user();
         ExamSession::finalizeExpired($user->id);
-        $sessions = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'magistraturaGroup', 'magistraturaSubject'])
+        $sessions = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -59,8 +58,6 @@ class ExamSessionController extends Controller
             'applicant_group_id' => 'required_with:applicant_exampage_id|exists:applicant_groups,id',
             'applicant_subject_id' => 'nullable|exists:applicant_subjects,id',
             'magistratura_exampage_id' => 'nullable|exists:magistratura_exampages,id',
-            'magistratura_group_id' => 'required_with:magistratura_exampage_id|exists:magistratura_groups,id',
-            'magistratura_subject_id' => 'nullable|exists:magistratura_subjects,id',
         ]);
 
         $user = $request->user();
@@ -70,12 +67,10 @@ class ExamSessionController extends Controller
 
         if ($isMagistratura) {
             $exampageId = $request->magistratura_exampage_id;
-            $groupId = $request->magistratura_group_id;
             $subjectId = $request->magistratura_subject_id;
 
             $completedSession = ExamSession::where('user_id', $user->id)
                 ->where('magistratura_exampage_id', $exampageId)
-                ->where('magistratura_group_id', $groupId)
                 ->where('status', 'completed')
                 ->first();
         } elseif ($isApplicant) {
@@ -141,7 +136,6 @@ class ExamSessionController extends Controller
         if ($isMagistratura) {
             $session = ExamSession::where('user_id', $user->id)
                 ->where('magistratura_exampage_id', $exampageId)
-                ->where('magistratura_group_id', $groupId)
                 ->where('status', 'active')
                 ->first();
         } elseif ($isApplicant) {
@@ -190,7 +184,6 @@ class ExamSessionController extends Controller
             $session = ExamSession::create([
                 'user_id' => $user->id,
                 'magistratura_exampage_id' => $exampageId,
-                'magistratura_group_id' => $groupId,
                 'magistratura_subject_id' => $subjectId ?: null,
                 'status' => 'active',
                 'started_at' => now(),
@@ -468,7 +461,7 @@ class ExamSessionController extends Controller
     public function getResults(Request $request, int $sessionId): JsonResponse
     {
         $user = $request->user();
-        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'magistraturaGroup', 'magistraturaSubject'])
+        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage'])
             ->where('id', $sessionId)
             ->where('user_id', $user->id)
             ->first();
@@ -578,7 +571,6 @@ class ExamSessionController extends Controller
 
         $questions = \App\Models\MagistraturaQuestion::with('options')
             ->where('magistratura_exampage_id', $session->magistratura_exampage_id)
-            ->where('magistratura_group_id', $session->magistratura_group_id)
             ->get();
 
         $review = [];
