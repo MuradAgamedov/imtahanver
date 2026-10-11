@@ -69,7 +69,7 @@ const EXAM_TYPES = [
   },
   {
     key: "magistr",
-    href: null,
+    href: "/magistratura-exampages",
     title: "Magistr İmtahanı",
     desc: "Magistraturaya qəbul imtahanına hazırlıq. Məntiq, ixtisas fənni və xarici dil sınaqları.",
     icon: (
@@ -83,7 +83,7 @@ const EXAM_TYPES = [
     textColor: "text-orange-600",
     badge: "Magistr",
     badgeBg: "bg-orange-100 text-orange-700",
-    active: false,
+    active: true,
   },
   {
     key: "buraxilis",

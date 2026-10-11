@@ -343,7 +343,7 @@ export default function Home() {
   const activeCount = examSessions ? examSessions.filter((s: any) => s.status === 'active').length : 0;
   // Applicant exam scores stay hidden until an admin approves the grading.
   const scoredSessions = completedSessions.filter(
-    (s: any) => !(s.applicant_exampage_id && s.grading_approved === false)
+    (s: any) => !((s.applicant_exampage_id || s.magistratura_exampage_id) && s.grading_approved === false)
   );
   const averageScore = scoredSessions.length > 0 
     ? (scoredSessions.reduce((acc: number, curr: any) => acc + parseFloat(curr.score), 0) / scoredSessions.length).toFixed(1)

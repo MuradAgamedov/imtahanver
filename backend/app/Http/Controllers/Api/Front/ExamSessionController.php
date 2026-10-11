@@ -15,6 +15,12 @@ use App\Models\ApplicantSubject;
 use App\Models\ApplicantQuestion;
 use App\Models\ApplicantQuestionOption;
 use App\Models\ApplicantWrittenAnswer;
+use App\Models\MagistraturaExampage;
+use App\Models\MagistraturaGroup;
+use App\Models\MagistraturaSubject;
+use App\Models\MagistraturaQuestion;
+use App\Models\MagistraturaQuestionOption;
+use App\Models\MagistraturaWrittenAnswer;
 use App\Services\Contracts\ExamRegistrationServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,7 +39,7 @@ class ExamSessionController extends Controller
     {
         $user = $request->user();
         ExamSession::finalizeExpired($user->id);
-        $sessions = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
+        $sessions = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'magistraturaGroup', 'magistraturaSubject'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -47,17 +53,32 @@ class ExamSessionController extends Controller
     public function startOrResume(Request $request): JsonResponse
     {
         $request->validate([
-            'miq_exampage_id' => 'required_without:applicant_exampage_id|exists:miq_exampages,id',
-            'miq_subject_id' => 'required_without:applicant_exampage_id|exists:miq_subjects,id',
-            'applicant_exampage_id' => 'required_without:miq_exampage_id|exists:applicant_exampages,id',
+            'miq_exampage_id' => 'nullable|exists:miq_exampages,id',
+            'miq_subject_id' => 'nullable|exists:miq_subjects,id',
+            'applicant_exampage_id' => 'nullable|exists:applicant_exampages,id',
             'applicant_group_id' => 'required_with:applicant_exampage_id|exists:applicant_groups,id',
             'applicant_subject_id' => 'nullable|exists:applicant_subjects,id',
+            'magistratura_exampage_id' => 'nullable|exists:magistratura_exampages,id',
+            'magistratura_group_id' => 'required_with:magistratura_exampage_id|exists:magistratura_groups,id',
+            'magistratura_subject_id' => 'nullable|exists:magistratura_subjects,id',
         ]);
 
         $user = $request->user();
+        $isMagistratura = $request->has('magistratura_exampage_id');
         $isApplicant = $request->has('applicant_exampage_id');
+        $groupId = null;
 
-        if ($isApplicant) {
+        if ($isMagistratura) {
+            $exampageId = $request->magistratura_exampage_id;
+            $groupId = $request->magistratura_group_id;
+            $subjectId = $request->magistratura_subject_id;
+
+            $completedSession = ExamSession::where('user_id', $user->id)
+                ->where('magistratura_exampage_id', $exampageId)
+                ->where('magistratura_group_id', $groupId)
+                ->where('status', 'completed')
+                ->first();
+        } elseif ($isApplicant) {
             $exampageId = $request->applicant_exampage_id;
             $groupId = $request->applicant_group_id;
             $subjectId = $request->applicant_subject_id;
@@ -80,11 +101,13 @@ class ExamSessionController extends Controller
         }
 
         // Paid/scheduled exam gate — demo papers skip this entirely.
-        $exampage = $isApplicant ? ApplicantExampage::find($exampageId) : MiqExampage::find($exampageId);
+        $exampage = $isMagistratura
+            ? MagistraturaExampage::find($exampageId)
+            : ($isApplicant ? ApplicantExampage::find($exampageId) : MiqExampage::find($exampageId));
         if ($exampage && $exampage->is_demo === false) {
             $isRegistered = $this->registrationService->isRegisteredAndPaid(
                 $user->id,
-                $isApplicant ? 'applicant' : 'miq',
+                $isMagistratura ? 'magistratura' : ($isApplicant ? 'applicant' : 'miq'),
                 $exampageId
             );
 
@@ -115,7 +138,13 @@ class ExamSessionController extends Controller
         }
 
         // Resume active session
-        if ($isApplicant) {
+        if ($isMagistratura) {
+            $session = ExamSession::where('user_id', $user->id)
+                ->where('magistratura_exampage_id', $exampageId)
+                ->where('magistratura_group_id', $groupId)
+                ->where('status', 'active')
+                ->first();
+        } elseif ($isApplicant) {
             $session = ExamSession::where('user_id', $user->id)
                 ->where('applicant_exampage_id', $exampageId)
                 ->where('applicant_group_id', $groupId)
@@ -156,7 +185,19 @@ class ExamSessionController extends Controller
         }
 
         // Start new session
-        if ($isApplicant) {
+        if ($isMagistratura) {
+            $exampage = MagistraturaExampage::find($exampageId);
+            $session = ExamSession::create([
+                'user_id' => $user->id,
+                'magistratura_exampage_id' => $exampageId,
+                'magistratura_group_id' => $groupId,
+                'magistratura_subject_id' => $subjectId ?: null,
+                'status' => 'active',
+                'started_at' => now(),
+                'duration_minutes' => $exampage->exam_duration ?? 90,
+                'score' => 0,
+            ]);
+        } elseif ($isApplicant) {
             $exampage = ApplicantExampage::find($exampageId);
             $session = ExamSession::create([
                 'user_id' => $user->id,
@@ -193,10 +234,12 @@ class ExamSessionController extends Controller
     public function saveAnswer(Request $request, int $sessionId): JsonResponse
     {
         $request->validate([
-            'miq_question_id' => 'nullable|required_without:applicant_question_id|exists:miq_questions,id',
+            'miq_question_id' => 'nullable|exists:miq_questions,id',
             'miq_question_option_id' => 'nullable|exists:miq_question_options,id',
-            'applicant_question_id' => 'nullable|required_without:miq_question_id|exists:applicant_questions,id',
+            'applicant_question_id' => 'nullable|exists:applicant_questions,id',
             'applicant_question_option_id' => 'nullable|exists:applicant_question_options,id',
+            'magistratura_question_id' => 'nullable|exists:magistratura_questions,id',
+            'magistratura_question_option_id' => 'nullable|exists:magistratura_question_options,id',
             'written_answer' => 'nullable|string',
         ]);
 
@@ -227,9 +270,58 @@ class ExamSessionController extends Controller
             ], 400);
         }
 
+        $isMagistratura = !is_null($session->magistratura_exampage_id);
         $isApplicant = !is_null($session->applicant_exampage_id);
 
-        if ($isApplicant) {
+        if ($isMagistratura) {
+            $questionId = $request->magistratura_question_id;
+            $optionId = $request->magistratura_question_option_id;
+            $writtenAnswer = $request->written_answer;
+
+            $question = MagistraturaQuestion::findOrFail($questionId);
+
+            if ($question->question_type == 1) {
+                if (is_null($optionId)) {
+                    ExamAnswer::where('exam_session_id', $session->id)
+                        ->where('magistratura_question_id', $questionId)
+                        ->delete();
+
+                    return response()->json(['success' => true, 'message' => 'Cavab təmizləndi.']);
+                }
+
+                ExamAnswer::updateOrCreate(
+                    [
+                        'exam_session_id' => $session->id,
+                        'magistratura_question_id' => $questionId,
+                    ],
+                    [
+                        'magistratura_question_option_id' => $optionId,
+                        'is_correct' => null,
+                        'points' => 0.0,
+                    ]
+                );
+            } else {
+                if (is_null($writtenAnswer) || $writtenAnswer === '') {
+                    MagistraturaWrittenAnswer::where('exam_session_id', $session->id)
+                        ->where('magistratura_question_id', $questionId)
+                        ->delete();
+
+                    return response()->json(['success' => true, 'message' => 'Cavab təmizləndi.']);
+                }
+
+                MagistraturaWrittenAnswer::updateOrCreate(
+                    [
+                        'exam_session_id' => $session->id,
+                        'magistratura_question_id' => $questionId,
+                    ],
+                    [
+                        'written_answer' => $writtenAnswer,
+                    ]
+                );
+            }
+
+            return response()->json(['success' => true, 'message' => 'Cavab yadda saxlanıldı.']);
+        } elseif ($isApplicant) {
             $questionId = $request->applicant_question_id;
             $optionId = $request->applicant_question_option_id;
             $writtenAnswer = $request->written_answer;
@@ -376,7 +468,7 @@ class ExamSessionController extends Controller
     public function getResults(Request $request, int $sessionId): JsonResponse
     {
         $user = $request->user();
-        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
+        $session = ExamSession::with(['exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'magistraturaGroup', 'magistraturaSubject'])
             ->where('id', $sessionId)
             ->where('user_id', $user->id)
             ->first();
@@ -389,11 +481,18 @@ class ExamSessionController extends Controller
             $session->finalize($session->deadline());
         }
 
+        $review = [];
+        if (! is_null($session->applicant_exampage_id)) {
+            $review = $this->buildApplicantReview($session);
+        } elseif (! is_null($session->magistratura_exampage_id)) {
+            $review = $this->buildMagistraturaReview($session);
+        }
+
         return response()->json([
             'success' => true,
             'session' => $session->maskedForStudent(),
             'answers' => $this->getFormattedAnswers($session->id),
-            'review' => $this->buildApplicantReview($session),
+            'review' => $review,
         ]);
     }
 
@@ -457,6 +556,65 @@ class ExamSessionController extends Controller
         return $review;
     }
 
+    /**
+     * Per-question review for a finished magistratura exam (mirrors the applicant review).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildMagistraturaReview(ExamSession $session): array
+    {
+        if (is_null($session->magistratura_exampage_id) || ! $session->grading_approved) {
+            return [];
+        }
+
+        $closedAnswers = ExamAnswer::where('exam_session_id', $session->id)
+            ->whereNotNull('magistratura_question_option_id')
+            ->get()
+            ->keyBy('magistratura_question_id');
+
+        $writtenAnswers = \App\Models\MagistraturaWrittenAnswer::where('exam_session_id', $session->id)
+            ->get()
+            ->keyBy('magistratura_question_id');
+
+        $questions = \App\Models\MagistraturaQuestion::with('options')
+            ->where('magistratura_exampage_id', $session->magistratura_exampage_id)
+            ->where('magistratura_group_id', $session->magistratura_group_id)
+            ->get();
+
+        $review = [];
+
+        foreach ($questions as $question) {
+            $correctOption = $question->options->firstWhere('is_true', true);
+
+            if ($question->question_type == \App\Models\MagistraturaQuestion::TYPE_CLOSED) {
+                $answer = $closedAnswers->get($question->id);
+
+                $review[$question->id] = [
+                    'type' => 'closed',
+                    'answered' => $answer !== null,
+                    'is_correct' => $answer ? (bool) $answer->is_correct : false,
+                    'points' => $answer ? (float) $answer->points : 0.0,
+                    'correct_option_id' => $correctOption?->id,
+                ];
+
+                continue;
+            }
+
+            $answer = $writtenAnswers->get($question->id);
+
+            $review[$question->id] = [
+                'type' => $question->question_type == \App\Models\MagistraturaQuestion::TYPE_CODEABLE ? 'codeable' : 'open',
+                'answered' => $answer !== null && trim((string) $answer->written_answer) !== '',
+                'graded' => $answer !== null && ! is_null($answer->is_correct),
+                'is_correct' => $answer ? (bool) $answer->is_correct : false,
+                'points' => $answer ? (float) $answer->points : 0.0,
+                'correct_answer' => $correctOption && trim((string) $correctOption->text) !== '' ? $correctOption->text : null,
+            ];
+        }
+
+        return $review;
+    }
+
     private function calculateAndSubmit(ExamSession $session): ExamSession
     {
         return $session->finalize();
@@ -467,9 +625,24 @@ class ExamSessionController extends Controller
         $session = ExamSession::find($sessionId);
         if (!$session) return [];
 
+        $isMagistratura = !is_null($session->magistratura_exampage_id);
         $isApplicant = !is_null($session->applicant_exampage_id);
 
-        if ($isApplicant) {
+        if ($isMagistratura) {
+            $closedAnswers = ExamAnswer::where('exam_session_id', $sessionId)
+                ->whereNotNull('magistratura_question_option_id')
+                ->get();
+            $openAnswers = MagistraturaWrittenAnswer::where('exam_session_id', $sessionId)->get();
+
+            $formatted = [];
+            foreach ($closedAnswers as $ans) {
+                $formatted["option_{$ans->magistratura_question_id}"] = (int) $ans->magistratura_question_option_id;
+            }
+            foreach ($openAnswers as $ans) {
+                $formatted["text_{$ans->magistratura_question_id}"] = $ans->written_answer;
+            }
+            return $formatted;
+        } elseif ($isApplicant) {
             $closedAnswers = ExamAnswer::where('exam_session_id', $sessionId)
                 ->whereNotNull('applicant_question_option_id')
                 ->get();

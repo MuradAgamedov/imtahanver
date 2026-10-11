@@ -15,6 +15,8 @@ class ExamAnswer extends Model
         'miq_question_option_id',
         'applicant_question_id',
         'applicant_question_option_id',
+        'magistratura_question_id',
+        'magistratura_question_option_id',
         'written_answer',
         'is_correct',
         'points',
@@ -49,6 +51,16 @@ class ExamAnswer extends Model
     public function applicantOption()
     {
         return $this->belongsTo(ApplicantQuestionOption::class, 'applicant_question_option_id');
+    }
+
+    public function magistraturaQuestion()
+    {
+        return $this->belongsTo(MagistraturaQuestion::class, 'magistratura_question_id');
+    }
+
+    public function magistraturaOption()
+    {
+        return $this->belongsTo(MagistraturaQuestionOption::class, 'magistratura_question_option_id');
     }
 }
 

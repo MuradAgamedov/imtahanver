@@ -13,7 +13,7 @@ class ExamResultController extends Controller
     {
         ExamSession::finalizeExpired();
 
-        $query = ExamSession::with(['user', 'exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject'])
+        $query = ExamSession::with(['user', 'exampage', 'subject', 'applicantExampage', 'applicantGroup', 'applicantSubject', 'magistraturaExampage', 'magistraturaGroup', 'magistraturaSubject'])
             ->orderBy('created_at', 'desc');
 
         // Optional filtering by user name or email
@@ -48,9 +48,15 @@ class ExamResultController extends Controller
             'applicantExampage',
             'applicantGroup',
             'applicantSubject',
+            'magistraturaExampage',
+            'magistraturaGroup',
+            'magistraturaSubject',
             'answers.applicantQuestion',
             'answers.applicantOption',
-            'applicantWrittenAnswers.question'
+            'answers.magistraturaQuestion',
+            'answers.magistraturaOption',
+            'applicantWrittenAnswers.question',
+            'magistraturaWrittenAnswers.question',
         ])->findOrFail($id);
 
         $questions = [];
@@ -61,6 +67,15 @@ class ExamResultController extends Controller
                 ->orderBy('applicant_subject_id')
                 ->orderBy('question_type')
                 ->orderBy(\Illuminate\Support\Facades\DB::raw('COALESCE(applicant_question_passage_id, id)'))
+                ->orderBy('order')
+                ->get();
+        } elseif (!is_null($session->magistratura_exampage_id)) {
+            $questions = \App\Models\MagistraturaQuestion::with(['options', 'passage'])
+                ->where('magistratura_exampage_id', $session->magistratura_exampage_id)
+                ->where('magistratura_group_id', $session->magistratura_group_id)
+                ->orderBy('magistratura_subject_id')
+                ->orderBy('question_type')
+                ->orderBy(\Illuminate\Support\Facades\DB::raw('COALESCE(magistratura_question_passage_id, id)'))
                 ->orderBy('order')
                 ->get();
         }
@@ -75,26 +90,17 @@ class ExamResultController extends Controller
     public function grade(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'applicant_question_id' => 'required|exists:applicant_questions,id',
+            'applicant_question_id' => 'nullable|exists:applicant_questions,id',
+            'magistratura_question_id' => 'nullable|exists:magistratura_questions,id',
             'is_correct' => 'nullable|boolean',
             'points' => 'nullable|numeric|min:0|max:2',
         ]);
 
         $session = ExamSession::findOrFail($id);
-        if (is_null($session->applicant_exampage_id)) {
+        $isMagistratura = !is_null($session->magistratura_exampage_id);
+
+        if (is_null($session->applicant_exampage_id) && !$isMagistratura) {
             return response()->json(['success' => false, 'message' => 'Bu MİQ imtahanıdır, əl ilə yoxlama dəstəklənmir.'], 400);
-        }
-
-        $writtenAnswer = \App\Models\ApplicantWrittenAnswer::where('exam_session_id', $session->id)
-            ->where('applicant_question_id', $request->applicant_question_id)
-            ->first();
-
-        if (!$writtenAnswer) {
-            $writtenAnswer = \App\Models\ApplicantWrittenAnswer::create([
-                'exam_session_id' => $session->id,
-                'applicant_question_id' => $request->applicant_question_id,
-                'written_answer' => '',
-            ]);
         }
 
         if ($request->has('points') && !is_null($request->points)) {
@@ -105,13 +111,21 @@ class ExamResultController extends Controller
             $points = $isCorrect ? 2.0 : 0.0;
         }
 
-        $writtenAnswer->update([
-            'is_correct' => $isCorrect,
-            'points' => $points,
-        ]);
-
-        // Recalculate score
-        $session->score = $session->calculateApplicantScore();
+        if ($isMagistratura) {
+            $writtenAnswer = \App\Models\MagistraturaWrittenAnswer::firstOrCreate(
+                ['exam_session_id' => $session->id, 'magistratura_question_id' => $request->magistratura_question_id],
+                ['written_answer' => '']
+            );
+            $writtenAnswer->update(['is_correct' => $isCorrect, 'points' => $points]);
+            $session->score = $session->calculateMagistraturaScore();
+        } else {
+            $writtenAnswer = \App\Models\ApplicantWrittenAnswer::firstOrCreate(
+                ['exam_session_id' => $session->id, 'applicant_question_id' => $request->applicant_question_id],
+                ['written_answer' => '']
+            );
+            $writtenAnswer->update(['is_correct' => $isCorrect, 'points' => $points]);
+            $session->score = $session->calculateApplicantScore();
+        }
         $session->save();
 
         $session->load([
@@ -147,7 +161,7 @@ class ExamResultController extends Controller
     {
         $session = ExamSession::findOrFail($id);
 
-        if (is_null($session->applicant_exampage_id)) {
+        if (is_null($session->applicant_exampage_id) && is_null($session->magistratura_exampage_id)) {
             return response()->json(['success' => false, 'message' => 'Bu MİQ imtahanıdır, təsdiq tələb olunmur.'], 400);
         }
 
@@ -182,33 +196,31 @@ class ExamResultController extends Controller
     public function updateWrittenAnswer(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'applicant_question_id' => 'required|exists:applicant_questions,id',
+            'applicant_question_id' => 'nullable|exists:applicant_questions,id',
+            'magistratura_question_id' => 'nullable|exists:magistratura_questions,id',
             'written_answer' => 'nullable|string',
         ]);
 
         $session = ExamSession::findOrFail($id);
-        if (is_null($session->applicant_exampage_id)) {
+        $isMagistratura = !is_null($session->magistratura_exampage_id);
+
+        if (is_null($session->applicant_exampage_id) && !$isMagistratura) {
             return response()->json(['success' => false, 'message' => 'Bu MİQ imtahanıdır, əl ilə redaktə dəstəklənmir.'], 400);
         }
 
-        $writtenAnswer = \App\Models\ApplicantWrittenAnswer::where('exam_session_id', $session->id)
-            ->where('applicant_question_id', $request->applicant_question_id)
-            ->first();
-
-        if (!$writtenAnswer) {
-            $writtenAnswer = \App\Models\ApplicantWrittenAnswer::create([
-                'exam_session_id' => $session->id,
-                'applicant_question_id' => $request->applicant_question_id,
-                'written_answer' => $request->written_answer ?? '',
-            ]);
+        if ($isMagistratura) {
+            \App\Models\MagistraturaWrittenAnswer::updateOrCreate(
+                ['exam_session_id' => $session->id, 'magistratura_question_id' => $request->magistratura_question_id],
+                ['written_answer' => $request->written_answer ?? '']
+            );
+            $session->score = $session->calculateMagistraturaScore();
         } else {
-            $writtenAnswer->update([
-                'written_answer' => $request->written_answer ?? '',
-            ]);
+            \App\Models\ApplicantWrittenAnswer::updateOrCreate(
+                ['exam_session_id' => $session->id, 'applicant_question_id' => $request->applicant_question_id],
+                ['written_answer' => $request->written_answer ?? '']
+            );
+            $session->score = $session->calculateApplicantScore();
         }
-
-        // Recalculate score (codeable answers are auto-graded against written_answer)
-        $session->score = $session->calculateApplicantScore();
         $session->save();
 
         $session->load([

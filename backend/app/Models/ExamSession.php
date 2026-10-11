@@ -16,6 +16,9 @@ class ExamSession extends Model
         'applicant_exampage_id',
         'applicant_group_id',
         'applicant_subject_id',
+        'magistratura_exampage_id',
+        'magistratura_group_id',
+        'magistratura_subject_id',
         'status',
         'started_at',
         'completed_at',
@@ -47,6 +50,7 @@ class ExamSession extends Model
         'passed',
         'applicant_breakdown',
         'applicant_max_score',
+        'magistratura_breakdown',
         'grading_approved',
     ];
 
@@ -82,8 +86,8 @@ class ExamSession extends Model
         if ($this->status !== 'completed') {
             return false;
         }
-        if (!is_null($this->applicant_exampage_id)) {
-            // For applicant/abituriyent, there is no pass limit specified in core, let's return true on completion
+        if (!is_null($this->applicant_exampage_id) || !is_null($this->magistratura_exampage_id)) {
+            // For applicant/abituriyent and magistratura there is no fixed pass limit; return true on completion
             return true;
         }
         return $this->specialty_score >= 34.0 && $this->pedagogy_score >= 6.0 && $this->score >= 40.0;
@@ -127,6 +131,26 @@ class ExamSession extends Model
     public function applicantWrittenAnswers()
     {
         return $this->hasMany(ApplicantWrittenAnswer::class, 'exam_session_id');
+    }
+
+    public function magistraturaExampage()
+    {
+        return $this->belongsTo(MagistraturaExampage::class, 'magistratura_exampage_id');
+    }
+
+    public function magistraturaGroup()
+    {
+        return $this->belongsTo(MagistraturaGroup::class, 'magistratura_group_id');
+    }
+
+    public function magistraturaSubject()
+    {
+        return $this->belongsTo(MagistraturaSubject::class, 'magistratura_subject_id');
+    }
+
+    public function magistraturaWrittenAnswers()
+    {
+        return $this->hasMany(MagistraturaWrittenAnswer::class, 'exam_session_id');
     }
 
     public function deadline(): ?\Illuminate\Support\Carbon
@@ -177,8 +201,16 @@ class ExamSession extends Model
         $completedAt ??= now();
 
         $isApplicant = !is_null($this->applicant_exampage_id);
+        $isMagistratura = !is_null($this->magistratura_exampage_id);
 
-        if ($isApplicant) {
+        if ($isMagistratura) {
+            $this->status = 'completed';
+            $this->completed_at = $completedAt;
+            $this->score = $this->calculateMagistraturaScore();
+            $this->save();
+
+            return $this;
+        } elseif ($isApplicant) {
             $this->status = 'completed';
             $this->completed_at = $completedAt;
             $this->score = $this->calculateApplicantScore();
@@ -245,6 +277,10 @@ class ExamSession extends Model
     {
         if (! is_null($this->applicant_exampage_id) && ! $this->grading_approved) {
             $this->makeHidden(['score', 'applicant_breakdown', 'applicant_max_score']);
+        }
+
+        if (! is_null($this->magistratura_exampage_id) && ! $this->grading_approved) {
+            $this->makeHidden(['score', 'magistratura_breakdown']);
         }
 
         return $this;
@@ -575,6 +611,150 @@ class ExamSession extends Model
         }
 
         return 1.0;
+    }
+
+    // ---------------------------------------------------------------------
+    // Magistratura scoring (simple, tunable: closed +1, codeable +1,
+    // written = admin points (max 2); final score = earned / max * 100).
+    // ---------------------------------------------------------------------
+
+    public function getMagistraturaBreakdownAttribute(): array
+    {
+        return $this->getMagistraturaBreakdown();
+    }
+
+    private function magistraturaSubjectStats(MagistraturaSubject $subj): array
+    {
+        $questions = MagistraturaQuestion::where('magistratura_exampage_id', $this->magistratura_exampage_id)
+            ->where('magistratura_group_id', $this->magistratura_group_id)
+            ->where('magistratura_subject_id', $subj->id)
+            ->get();
+
+        $earned = 0.0;
+        $max = 0.0;
+        $correct = 0;
+        $incorrect = 0;
+        $unanswered = 0;
+        $ungraded = 0;
+
+        foreach ($questions as $q) {
+            if ($q->question_type == MagistraturaQuestion::TYPE_CLOSED) {
+                $max += 1.0;
+                $ans = ExamAnswer::where('exam_session_id', $this->id)
+                    ->where('magistratura_question_id', $q->id)
+                    ->first();
+                if ($ans && !is_null($ans->magistratura_question_option_id)) {
+                    $correctOpt = $q->options()->where('is_true', true)->first();
+                    if ($correctOpt && $ans->magistratura_question_option_id == $correctOpt->id) {
+                        $earned += 1.0;
+                        $correct++;
+                        $ans->update(['is_correct' => true, 'points' => 1.0]);
+                    } else {
+                        $incorrect++;
+                        $ans->update(['is_correct' => false, 'points' => 0.0]);
+                    }
+                } else {
+                    $unanswered++;
+                }
+            } elseif ($q->question_type == MagistraturaQuestion::TYPE_CODEABLE) {
+                $max += 1.0;
+                $ans = MagistraturaWrittenAnswer::where('exam_session_id', $this->id)
+                    ->where('magistratura_question_id', $q->id)
+                    ->first();
+                if ($ans && !is_null($ans->written_answer) && trim($ans->written_answer) !== '') {
+                    $correctOpt = $q->options()->where('is_true', true)->first();
+                    if ($correctOpt && trim(strtolower($ans->written_answer)) === trim(strtolower((string) $correctOpt->text))) {
+                        $earned += 1.0;
+                        $correct++;
+                        $ans->update(['is_correct' => true, 'points' => 1.0]);
+                    } elseif ($correctOpt) {
+                        $incorrect++;
+                        $ans->update(['is_correct' => false, 'points' => 0.0]);
+                    } elseif (!is_null($ans->is_correct)) {
+                        if ($ans->is_correct) { $earned += 1.0; $correct++; } else { $incorrect++; }
+                    } else {
+                        $ungraded++;
+                    }
+                } else {
+                    $unanswered++;
+                }
+            } elseif ($q->question_type == MagistraturaQuestion::TYPE_WRITTEN) {
+                $max += 2.0;
+                $ans = MagistraturaWrittenAnswer::where('exam_session_id', $this->id)
+                    ->where('magistratura_question_id', $q->id)
+                    ->first();
+                if ($ans && !is_null($ans->written_answer) && trim($ans->written_answer) !== '') {
+                    if (!is_null($ans->points) && (float) $ans->points != 0.0) {
+                        $earned += (float) $ans->points;
+                        $correct++;
+                    } elseif (is_null($ans->is_correct)) {
+                        $ungraded++;
+                    } elseif ($ans->is_correct === true) {
+                        $earned += 2.0;
+                        $correct++;
+                    } else {
+                        $incorrect++;
+                    }
+                } else {
+                    $unanswered++;
+                }
+            }
+        }
+
+        return compact('earned', 'max', 'correct', 'incorrect', 'unanswered', 'ungraded') + [
+            'total_questions' => $questions->count(),
+        ];
+    }
+
+    public function calculateMagistraturaScore(): float
+    {
+        if (is_null($this->magistratura_exampage_id)) {
+            return 0.0;
+        }
+        $group = $this->magistraturaGroup;
+        if (!$group) {
+            return 0.0;
+        }
+
+        $earned = 0.0;
+        $max = 0.0;
+        foreach ($group->subjects as $subj) {
+            $s = $this->magistraturaSubjectStats($subj);
+            $earned += $s['earned'];
+            $max += $s['max'];
+        }
+
+        return $max > 0 ? round(min(100.0, max(0.0, $earned / $max * 100)), 2) : 0.0;
+    }
+
+    public function getMagistraturaBreakdown(): array
+    {
+        if (is_null($this->magistratura_exampage_id)) {
+            return [];
+        }
+        $group = $this->magistraturaGroup;
+        if (!$group) {
+            return [];
+        }
+
+        $breakdown = [];
+        foreach ($group->subjects as $subj) {
+            $s = $this->magistraturaSubjectStats($subj);
+            $breakdown[] = [
+                'subject_id' => $subj->id,
+                'subject_title' => $subj->title,
+                'correct' => $s['correct'],
+                'incorrect' => $s['incorrect'],
+                'unanswered' => $s['unanswered'],
+                'ungraded' => $s['ungraded'],
+                'earned' => round($s['earned'], 2),
+                'max' => round($s['max'], 2),
+                'subject_score' => $s['max'] > 0 ? round($s['earned'] / $s['max'] * 100, 2) : 0.0,
+                'total_questions' => $s['total_questions'],
+            ];
+        }
+
+        return $breakdown;
     }
 }
 

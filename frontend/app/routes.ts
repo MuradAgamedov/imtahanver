@@ -14,6 +14,9 @@ export default [
   route("applicant-exampages", "routes/applicant-exampages.tsx"),
   route("applicant-exampages/:exampageId/groups", "routes/applicant-exampage-groups.tsx"),
   route("exam/applicant/:exampageId/:groupId", "routes/applicant-exam.tsx"),
+  route("magistratura-exampages", "routes/magistratura-exampages.tsx"),
+  route("magistratura-exampages/:exampageId/groups", "routes/magistratura-exampage-groups.tsx"),
+  route("exam/magistratura/:exampageId/:groupId", "routes/magistratura-exam.tsx"),
   route("odenis/:registrationId", "routes/odenis.tsx"),
   route("api/exam-questions", "routes/api.exam-questions.ts"),
 
