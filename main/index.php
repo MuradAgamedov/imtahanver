@@ -83,38 +83,83 @@ require __DIR__ . '/inc/head.php';
 
 <main id="top">
 
-  <!-- HERO BANNER -->
+  <!-- MODERN EDTECH HERO BANNER -->
   <section class="hero-banner">
+    <div class="hero-glow-1"></div>
+    <div class="hero-glow-2"></div>
     <div class="wrap hero-banner-inner">
-      <div class="hero-banner-row">
-        <span class="hero-banner-text"><?php echo htmlspecialchars(st($t, 'hero.eyebrow_left', 'ONLAYN SINAQ'), ENT_QUOTES, 'UTF-8'); ?></span>
-        <div class="hero-banner-divider"></div>
-        <div class="hero-banner-mark">
-          <span class="ring">
-            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 9h14M7 14h10M7 19h12"/><circle cx="21" cy="19" r="3" fill="currentColor" stroke="none"/></svg>
-          </span>
-          <span>İmtahanVer</span>
-        </div>
-        <div class="hero-banner-divider"></div>
-        <span class="hero-banner-text"><?php echo htmlspecialchars(st($t, 'hero.eyebrow_right', 'İMTAHANLARI'), ENT_QUOTES, 'UTF-8'); ?></span>
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        <span><?php echo htmlspecialchars(st($t, 'hero.badge', 'DİM və MİQ Standartlarında Rəqəmsal İmtahan Mərkəzi'), ENT_QUOTES, 'UTF-8'); ?></span>
       </div>
-      <p><?php echo htmlspecialchars(st($t, 'hero.subtitle', 'MİQ imtahanına real sınaq sualları ilə hazırlaşın — pulsuz sınaqlarla başlayın, planlaşdırılmış rəsmi imtahanlara qoşulun.'), ENT_QUOTES, 'UTF-8'); ?></p>
-      <a class="btn btn-card-blue" style="padding:14px 28px; font-size:1rem;" href="https://panel.imtahanver.online/register" target="_blank" rel="noopener noreferrer"><?php echo htmlspecialchars(st($t, 'hero.cta_text', 'Pulsuz qeydiyyatdan keç'), ENT_QUOTES, 'UTF-8'); ?></a>
+      
+      <h1 class="hero-title">
+        Biliklərini real imtahan mühitində sına, <span class="gradient-text">hədəfinə inamla çat</span>
+      </h1>
+      
+      <p class="hero-subtitle">
+        <?php echo htmlspecialchars(st($t, 'hero.subtitle', 'MİQ, Abituriyent, Magistratura və Buraxılış imtahanlarına rəsmi sual strukturu, real vaxt taymeri və anlıq nəticə təhlili ilə hazırlaşın.'), ENT_QUOTES, 'UTF-8'); ?>
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn-primary-glow" href="https://panel.imtahanver.online/register" target="_blank" rel="noopener noreferrer">
+          <span><?php echo htmlspecialchars(st($t, 'hero.cta_text', 'Pulsuz sınaqlara başla'), ENT_QUOTES, 'UTF-8'); ?></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+        <a class="btn-secondary-glass" href="#nece-isleyir">
+          <span>Necə işləyir?</span>
+        </a>
+      </div>
+
+      <!-- Live metrics strip -->
+      <div class="hero-stats-strip">
+        <div class="stat-item">
+          <span class="stat-icon">🎯</span>
+          <div>
+            <strong>DİM Standartı</strong>
+            <small>Dəqiq bal hesablama</small>
+          </div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-icon">⏱</span>
+          <div>
+            <strong>Real Taymer</strong>
+            <small>Avtomatik bitmə</small>
+          </div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-icon">📊</span>
+          <div>
+            <strong>Anlıq Nəticə</strong>
+            <small>Düz və səhv təhlili</small>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- CATEGORY CARDS (admin-managed) -->
-  <section class="category-grid">
+  <section class="category-grid" id="fenler">
     <div class="wrap">
       <div class="card-grid">
         <?php foreach ($homeCategories as $category): ?>
         <?php $catTag = !empty($category['active']) && !empty($category['href']) ? 'a' : 'div'; ?>
         <<?php echo $catTag; ?> class="cat-card is-<?php echo htmlspecialchars($category['color'] ?? 'red', ENT_QUOTES, 'UTF-8'); ?><?php echo empty($category['active']) ? ' is-disabled' : ''; ?>"<?php echo ($catTag === 'a') ? ' href="' . htmlspecialchars($category['href'], ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer"' : ''; ?>>
-          <span class="cat-badge"><?php echo htmlspecialchars($category['badge'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
-          <span class="cat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><?php echo home_category_icon_svg($category['icon'] ?? 'rocket'); ?></svg>
-          </span>
-          <h3><?php echo htmlspecialchars($category['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?></h3>
+          <div class="cat-card-top">
+            <span class="cat-badge"><?php echo htmlspecialchars($category['badge'] ?? 'Aktivdir', ENT_QUOTES, 'UTF-8'); ?></span>
+            <span class="cat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><?php echo home_category_icon_svg($category['icon'] ?? 'rocket'); ?></svg>
+            </span>
+          </div>
+          <div class="cat-card-bottom">
+            <h3><?php echo htmlspecialchars($category['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?></h3>
+            <span class="cat-cta-link">
+              <span>Sınağa başla</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </span>
+          </div>
         </<?php echo $catTag; ?>>
         <?php endforeach; ?>
       </div>
