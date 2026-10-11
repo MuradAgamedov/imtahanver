@@ -138,6 +138,31 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Contracts\ApplicantExampageServiceInterface::class,
             \App\Services\ApplicantExampageService::class
         );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\MagistraturaSubjectRepositoryInterface::class,
+            \App\Repositories\Eloquent\MagistraturaSubjectRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MagistraturaSubjectServiceInterface::class,
+            \App\Services\MagistraturaSubjectService::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\MagistraturaGroupRepositoryInterface::class,
+            \App\Repositories\Eloquent\MagistraturaGroupRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MagistraturaGroupServiceInterface::class,
+            \App\Services\MagistraturaGroupService::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\MagistraturaExampageRepositoryInterface::class,
+            \App\Repositories\Eloquent\MagistraturaExampageRepository::class
+        );
+        $this->app->bind(
+            \App\Services\Contracts\MagistraturaExampageServiceInterface::class,
+            \App\Services\MagistraturaExampageService::class
+        );
         $this->app->bind(
             \App\Repositories\Contracts\ExamRegistrationRepositoryInterface::class,
             \App\Repositories\Eloquent\ExamRegistrationRepository::class
