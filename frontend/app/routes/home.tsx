@@ -255,11 +255,13 @@ function useStartCountdown(startsAt: string | null) {
 const CANCELLATION_CUTOFF_SECONDS = 24 * 60 * 60;
 
 function UpcomingRegistrationRow({ registration }: { registration: any }) {
-  const exampage = registration.miq_exampage || registration.applicant_exampage;
+  const exampage = registration.miq_exampage || registration.applicant_exampage || registration.magistratura_exampage;
   const countdown = useStartCountdown(exampage?.starts_at ?? null);
   const canStart = !exampage?.starts_at || countdown.isReady;
   const canCancel = !exampage?.starts_at || countdown.remaining > CANCELLATION_CUTOFF_SECONDS;
-  const href = registration.applicant_exampage_id
+  const href = registration.magistratura_exampage_id
+    ? `/magistratura-exampages/${registration.magistratura_exampage_id}/groups`
+    : registration.applicant_exampage_id
     ? `/applicant-exampages/${registration.applicant_exampage_id}/groups`
     : `/miq-exampages/${registration.miq_exampage_id}/subjects`;
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -768,6 +770,75 @@ export default function Home() {
                                     to={isCompleted
                                       ? `/exam/applicant/${sess.applicant_exampage_id}/${sess.applicant_group_id}?session_id=${sess.id}`
                                       : `/exam/applicant/${sess.applicant_exampage_id}/${sess.applicant_group_id}`}
+                                    className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+ isCompleted
+   ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 "
+   : "bg-amber-50 text-amber-600 hover:bg-amber-100 "
+ }`}
+                                  >
+                                    {isCompleted ? "Nəticəyə bax" : "Davam et"}
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          if (sess.magistratura_exampage_id) {
+                            const ungraded = sess.magistratura_breakdown?.reduce((acc: number, curr: any) => acc + (curr.ungraded || 0), 0) || 0;
+                            const isCompleted = sess.status === "completed";
+                            const awaitingApproval = isCompleted && sess.grading_approved === false;
+
+                            return (
+                              <tr key={sess.id} className="hover:bg-paper/50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div>
+                                    <p className="font-semibold text-ink">{sess.magistratura_exampage?.title}</p>
+                                    <p className="text-xs text-emerald-600 font-medium mt-0.5">Qrup: {sess.magistratura_group?.title}</p>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-xs text-ink-soft">{date.toLocaleString("az-AZ")}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+ isCompleted
+   ? "bg-emerald-50 text-emerald-700 border border-emerald-100 "
+   : "bg-amber-50 text-amber-700 border border-amber-100 animate-pulse"
+ }`}>
+                                    {isCompleted ? "Yekunlaşıb" : "Aktiv"}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  {isCompleted ? (
+                                    awaitingApproval ? (
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold">
+                                        Müəllim yoxlayır
+                                      </span>
+                                    ) : ungraded > 0 ? (
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-150 px-2.5 py-0.5 text-xs font-bold">
+                                        Yoxlanılır ({ungraded} sual)
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-150 px-2.5 py-0.5 text-xs font-bold">
+                                        Yoxlanılıb
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-ink-soft/70">-</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-right font-extrabold text-ink">
+                                  {awaitingApproval
+                                    ? <span className="text-xs font-semibold text-ink-soft/70">Müəllim yoxlayır</span>
+                                    : isCompleted
+                                    ? `${sess.score} / 100`
+                                    : "-"}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <Link
+                                    to={isCompleted
+                                      ? `/exam/magistratura/${sess.magistratura_exampage_id}/${sess.magistratura_group_id}?session_id=${sess.id}`
+                                      : `/exam/magistratura/${sess.magistratura_exampage_id}/${sess.magistratura_group_id}`}
                                     className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
  isCompleted
    ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 "

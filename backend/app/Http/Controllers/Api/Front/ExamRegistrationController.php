@@ -31,7 +31,7 @@ class ExamRegistrationController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'exam_type' => 'required|in:miq,applicant',
+            'exam_type' => 'required|in:miq,applicant,magistratura',
             'exampage_id' => 'required|integer',
         ]);
 

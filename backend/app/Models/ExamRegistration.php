@@ -10,6 +10,7 @@ class ExamRegistration extends Model
         'user_id',
         'miq_exampage_id',
         'applicant_exampage_id',
+        'magistratura_exampage_id',
         'status',
         'payment_reference',
         'amount',
@@ -34,5 +35,10 @@ class ExamRegistration extends Model
     public function applicantExampage()
     {
         return $this->belongsTo(ApplicantExampage::class);
+    }
+
+    public function magistraturaExampage()
+    {
+        return $this->belongsTo(MagistraturaExampage::class);
     }
 }

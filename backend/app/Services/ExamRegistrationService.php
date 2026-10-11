@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ApplicantExampage;
+use App\Models\MagistraturaExampage;
 use App\Models\MiqExampage;
 use App\Models\User;
 use App\Repositories\Contracts\ExamRegistrationRepositoryInterface;
@@ -17,11 +18,27 @@ class ExamRegistrationService implements ExamRegistrationServiceInterface
         $this->registrationRepository = $registrationRepository;
     }
 
+    private function findExampage(string $examType, int $exampageId)
+    {
+        return match ($examType) {
+            'applicant' => ApplicantExampage::find($exampageId),
+            'magistratura' => MagistraturaExampage::find($exampageId),
+            default => MiqExampage::find($exampageId),
+        };
+    }
+
+    private function exampageColumns(string $examType, int $exampageId): array
+    {
+        return [
+            'miq_exampage_id' => $examType === 'miq' ? $exampageId : null,
+            'applicant_exampage_id' => $examType === 'applicant' ? $exampageId : null,
+            'magistratura_exampage_id' => $examType === 'magistratura' ? $exampageId : null,
+        ];
+    }
+
     public function register(User $user, string $examType, int $exampageId): array
     {
-        $exampage = $examType === 'applicant'
-            ? ApplicantExampage::find($exampageId)
-            : MiqExampage::find($exampageId);
+        $exampage = $this->findExampage($examType, $exampageId);
 
         if (!$exampage) {
             return ['success' => false, 'message' => 'İmtahan vərəqi tapılmadı.', 'status_code' => 404];
@@ -37,13 +54,14 @@ class ExamRegistrationService implements ExamRegistrationServiceInterface
             ];
         }
 
-        $registration = $this->registrationRepository->create([
-            'user_id' => $user->id,
-            'miq_exampage_id' => $examType === 'applicant' ? null : $exampageId,
-            'applicant_exampage_id' => $examType === 'applicant' ? $exampageId : null,
-            'status' => 'pending_payment',
-            'amount' => $exampage->price,
-        ]);
+        $registration = $this->registrationRepository->create(array_merge(
+            $this->exampageColumns($examType, $exampageId),
+            [
+                'user_id' => $user->id,
+                'status' => 'pending_payment',
+                'amount' => $exampage->price,
+            ]
+        ));
 
         return [
             'success' => true,
@@ -114,9 +132,7 @@ class ExamRegistrationService implements ExamRegistrationServiceInterface
      */
     public function adminRegister(string $examType, int $exampageId, int $userId): array
     {
-        $exampage = $examType === 'applicant'
-            ? ApplicantExampage::find($exampageId)
-            : MiqExampage::find($exampageId);
+        $exampage = $this->findExampage($examType, $exampageId);
 
         if (!$exampage) {
             return ['success' => false, 'message' => 'İmtahan vərəqi tapılmadı.', 'status_code' => 404];
@@ -135,15 +151,16 @@ class ExamRegistrationService implements ExamRegistrationServiceInterface
             return ['success' => true, 'message' => 'İstifadəçi artıq qeydiyyatdadır, ödəniş təsdiqləndi.', 'data' => $existing, 'status_code' => 200];
         }
 
-        $registration = $this->registrationRepository->create([
-            'user_id' => $userId,
-            'miq_exampage_id' => $examType === 'applicant' ? null : $exampageId,
-            'applicant_exampage_id' => $examType === 'applicant' ? $exampageId : null,
-            'status' => 'paid',
-            'amount' => $exampage->price,
-            'payment_reference' => 'ADMIN-MANUAL',
-            'paid_at' => now(),
-        ]);
+        $registration = $this->registrationRepository->create(array_merge(
+            $this->exampageColumns($examType, $exampageId),
+            [
+                'user_id' => $userId,
+                'status' => 'paid',
+                'amount' => $exampage->price,
+                'payment_reference' => 'ADMIN-MANUAL',
+                'paid_at' => now(),
+            ]
+        ));
 
         return ['success' => true, 'message' => 'İstifadəçi qeydiyyata əlavə edildi.', 'data' => $registration, 'status_code' => 201];
     }
@@ -167,9 +184,11 @@ class ExamRegistrationService implements ExamRegistrationServiceInterface
             return ['success' => false, 'message' => 'Qeydiyyat tapılmadı.', 'status_code' => 404];
         }
 
-        $exampage = $registration->applicant_exampage_id
-            ? $registration->applicantExampage
-            : $registration->miqExampage;
+        $exampage = $registration->magistratura_exampage_id
+            ? $registration->magistraturaExampage
+            : ($registration->applicant_exampage_id
+                ? $registration->applicantExampage
+                : $registration->miqExampage);
 
         if ($exampage && $exampage->starts_at) {
             $cutoff = $exampage->starts_at->copy()->subHours(self::CANCELLATION_CUTOFF_HOURS);

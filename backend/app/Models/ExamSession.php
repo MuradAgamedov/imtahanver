@@ -679,7 +679,7 @@ class ExamSession extends Model
                     $unanswered++;
                 }
             } elseif ($q->question_type == MagistraturaQuestion::TYPE_WRITTEN) {
-                $max += 2.0;
+                $max += 5.0; // esse: maksimum 5 bal (DİM)
                 $ans = MagistraturaWrittenAnswer::where('exam_session_id', $this->id)
                     ->where('magistratura_question_id', $q->id)
                     ->first();
@@ -690,7 +690,7 @@ class ExamSession extends Model
                     } elseif (is_null($ans->is_correct)) {
                         $ungraded++;
                     } elseif ($ans->is_correct === true) {
-                        $earned += 2.0;
+                        $earned += 5.0;
                         $correct++;
                     } else {
                         $incorrect++;
@@ -716,15 +716,15 @@ class ExamSession extends Model
             return 0.0;
         }
 
+        // DİM magistratura: hər düzgün test 1 bal, səhv cavab bal çıxmır (cəza yoxdur),
+        // yazılı/esse admin balı; maksimum nəticə 100 bal (mütləq, nisbi deyil).
         $earned = 0.0;
-        $max = 0.0;
         foreach ($group->subjects as $subj) {
             $s = $this->magistraturaSubjectStats($subj);
             $earned += $s['earned'];
-            $max += $s['max'];
         }
 
-        return $max > 0 ? round(min(100.0, max(0.0, $earned / $max * 100)), 2) : 0.0;
+        return round(min(100.0, max(0.0, $earned)), 2);
     }
 
     public function getMagistraturaBreakdown(): array

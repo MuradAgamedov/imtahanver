@@ -8,9 +8,18 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ExamRegistrationRepository implements ExamRegistrationRepositoryInterface
 {
+    private function columnFor(string $examType): string
+    {
+        return match ($examType) {
+            'applicant' => 'applicant_exampage_id',
+            'magistratura' => 'magistratura_exampage_id',
+            default => 'miq_exampage_id',
+        };
+    }
+
     public function findForUser(int $userId, string $examType, int $exampageId): ?ExamRegistration
     {
-        $column = $examType === 'applicant' ? 'applicant_exampage_id' : 'miq_exampage_id';
+        $column = $this->columnFor($examType);
 
         return ExamRegistration::where('user_id', $userId)
             ->where($column, $exampageId)
@@ -19,7 +28,7 @@ class ExamRegistrationRepository implements ExamRegistrationRepositoryInterface
 
     public function findById(int $id): ?ExamRegistration
     {
-        return ExamRegistration::with(['miqExampage', 'applicantExampage'])->find($id);
+        return ExamRegistration::with(['miqExampage', 'applicantExampage', 'magistraturaExampage'])->find($id);
     }
 
     public function create(array $data): ExamRegistration
@@ -40,7 +49,7 @@ class ExamRegistrationRepository implements ExamRegistrationRepositoryInterface
 
     public function listForExampage(string $examType, int $exampageId, ?string $search = null, int $limit = 10): Collection
     {
-        $column = $examType === 'applicant' ? 'applicant_exampage_id' : 'miq_exampage_id';
+        $column = $this->columnFor($examType);
 
         $query = ExamRegistration::with('user')
             ->where($column, $exampageId);
@@ -59,7 +68,7 @@ class ExamRegistrationRepository implements ExamRegistrationRepositoryInterface
 
     public function listForUser(int $userId): Collection
     {
-        return ExamRegistration::with(['miqExampage', 'applicantExampage'])
+        return ExamRegistration::with(['miqExampage', 'applicantExampage', 'magistraturaExampage'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();

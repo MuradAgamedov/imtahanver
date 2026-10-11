@@ -93,7 +93,7 @@ class ExamResultController extends Controller
             'applicant_question_id' => 'nullable|exists:applicant_questions,id',
             'magistratura_question_id' => 'nullable|exists:magistratura_questions,id',
             'is_correct' => 'nullable|boolean',
-            'points' => 'nullable|numeric|min:0|max:2',
+            'points' => 'nullable|numeric|min:0|max:5',
         ]);
 
         $session = ExamSession::findOrFail($id);

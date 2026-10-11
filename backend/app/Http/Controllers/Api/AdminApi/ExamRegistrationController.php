@@ -19,7 +19,7 @@ class ExamRegistrationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'exam_type' => 'required|in:miq,applicant',
+            'exam_type' => 'required|in:miq,applicant,magistratura',
             'exampage_id' => 'required|integer',
         ]);
 
@@ -35,7 +35,7 @@ class ExamRegistrationController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'exam_type' => 'required|in:miq,applicant',
+            'exam_type' => 'required|in:miq,applicant,magistratura',
             'exampage_id' => 'required|integer',
             'user_id' => 'required|integer|exists:users,id',
         ]);
