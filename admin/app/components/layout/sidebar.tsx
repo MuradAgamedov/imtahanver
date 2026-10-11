@@ -81,6 +81,8 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
   const isApplicantPath = location.pathname.startsWith("/applicant");
   const [isApplicantOpen, setIsApplicantOpen] = useState(isApplicantPath);
+  const isMagistraturaPath = location.pathname.startsWith("/magistratura");
+  const [isMagistraturaOpen, setIsMagistraturaOpen] = useState(isMagistraturaPath);
 
   const isHomePath = location.pathname.startsWith("/home-") || location.pathname.startsWith("/site-texts");
   const [isHomeOpen, setIsHomeOpen] = useState(isHomePath);
@@ -497,6 +499,89 @@ export function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                       }
                     >
                       Abituriyent Vərəqləri
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* Magistratura Collapsible Dropdown */}
+            <li>
+              <button
+                onClick={() => setIsMagistraturaOpen(!isMagistraturaOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer text-slate-400 hover:bg-slate-800 hover:text-white",
+                  isMagistraturaPath && "text-white bg-slate-800/40"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                  <span>Magistratura</span>
+                </div>
+                <svg
+                  className={cn("h-4 w-4 transform transition-transform duration-200", isMagistraturaOpen && "rotate-90")}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {isMagistraturaOpen && (
+                <ul className="mt-1 pl-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                  <li>
+                    <NavLink
+                      to="/magistratura-subjects"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Magistratura Fənləri
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/magistratura-groups"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Magistratura Qrupları
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/magistratura-exampages"
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
+                          isActive
+                            ? "bg-indigo-650 text-white shadow-sm"
+                            : "text-slate-400 hover:bg-slate-800/70 hover:text-white"
+                        )
+                      }
+                    >
+                      Magistratura Vərəqləri
                     </NavLink>
                   </li>
                 </ul>
