@@ -305,4 +305,57 @@ class ApplicantQuestionController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Cavab sıralaması yeniləndi.']);
     }
+
+    public function copyQuestions(Request $request, int $exampageId, int $groupId, int $subjectId): JsonResponse
+    {
+        $request->validate([
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'integer|exists:applicant_questions,id',
+        ]);
+
+        $maxOrder = ApplicantQuestion::where('applicant_exampage_id', $exampageId)
+            ->where('applicant_group_id', $groupId)
+            ->where('applicant_subject_id', $subjectId)
+            ->max('order') ?? 0;
+
+        $sourceQuestions = ApplicantQuestion::with(['options'])
+            ->whereIn('id', $request->question_ids)
+            ->get();
+
+        $copiedCount = 0;
+
+        DB::transaction(function () use ($sourceQuestions, $exampageId, $groupId, $subjectId, &$maxOrder, &$copiedCount) {
+            foreach ($sourceQuestions as $src) {
+                $maxOrder++;
+                $newQuestion = ApplicantQuestion::create([
+                    'applicant_exampage_id' => $exampageId,
+                    'applicant_group_id' => $groupId,
+                    'applicant_subject_id' => $subjectId,
+                    'applicant_question_passage_id' => $src->applicant_question_passage_id,
+                    'question_type' => $src->question_type,
+                    'title' => $src->title,
+                    'description' => $src->description,
+                    'image' => $src->image,
+                    'audio' => $src->audio,
+                    'order' => $maxOrder,
+                ]);
+
+                foreach ($src->options as $opt) {
+                    ApplicantQuestionOption::create([
+                        'applicant_question_id' => $newQuestion->id,
+                        'text' => $opt->text,
+                        'is_true' => (bool)$opt->is_true,
+                        'image' => $opt->image,
+                        'order' => $opt->order,
+                    ]);
+                }
+                $copiedCount++;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$copiedCount} sual uğurla bu vərəqə kopyalandı.",
+        ]);
+    }
 }

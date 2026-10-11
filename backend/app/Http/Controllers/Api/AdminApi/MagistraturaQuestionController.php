@@ -297,4 +297,55 @@ class MagistraturaQuestionController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Cavab sıralaması yeniləndi.']);
     }
+
+    public function copyQuestions(Request $request, int $exampageId, int $subjectId): JsonResponse
+    {
+        $request->validate([
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'integer|exists:magistratura_questions,id',
+        ]);
+
+        $maxOrder = MagistraturaQuestion::where('magistratura_exampage_id', $exampageId)
+            ->where('magistratura_subject_id', $subjectId)
+            ->max('order') ?? 0;
+
+        $sourceQuestions = MagistraturaQuestion::with(['options'])
+            ->whereIn('id', $request->question_ids)
+            ->get();
+
+        $copiedCount = 0;
+
+        DB::transaction(function () use ($sourceQuestions, $exampageId, $subjectId, &$maxOrder, &$copiedCount) {
+            foreach ($sourceQuestions as $src) {
+                $maxOrder++;
+                $newQuestion = MagistraturaQuestion::create([
+                    'magistratura_exampage_id' => $exampageId,
+                    'magistratura_subject_id' => $subjectId,
+                    'magistratura_question_passage_id' => $src->magistratura_question_passage_id,
+                    'question_type' => $src->question_type,
+                    'title' => $src->title,
+                    'description' => $src->description,
+                    'image' => $src->image,
+                    'audio' => $src->audio,
+                    'order' => $maxOrder,
+                ]);
+
+                foreach ($src->options as $opt) {
+                    MagistraturaQuestionOption::create([
+                        'magistratura_question_id' => $newQuestion->id,
+                        'text' => $opt->text,
+                        'is_true' => (bool)$opt->is_true,
+                        'image' => $opt->image,
+                        'order' => $opt->order,
+                    ]);
+                }
+                $copiedCount++;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$copiedCount} sual uğurla bu vərəqə kopyalandı.",
+        ]);
+    }
 }

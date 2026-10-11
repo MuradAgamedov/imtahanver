@@ -318,5 +318,10 @@ Route::prefix('adminapi')->group(function () {
         Route::post('exam-results/{id}/approve-grading', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'approveGrading']);
         Route::post('exam-results/{id}/revoke-grading', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'revokeGrading']);
         Route::post('exam-results/{id}/written-answer', [\App\Http\Controllers\Api\AdminApi\ExamResultController::class, 'updateWrittenAnswer']);
+
+        Route::post('magistratura-exampages/{exampageId}/subjects/{subjectId}/copy-questions', [\App\Http\Controllers\Api\AdminApi\MagistraturaQuestionController::class, 'copyQuestions']);
+        Route::post('buraxilis-exampages/{exampageId}/subjects/{subjectId}/copy-questions', [\App\Http\Controllers\Api\AdminApi\BuraxilisQuestionController::class, 'copyQuestions']);
+        Route::post('applicant-exampages/{exampageId}/groups/{groupId}/subjects/{subjectId}/copy-questions', [\App\Http\Controllers\Api\AdminApi\ApplicantQuestionController::class, 'copyQuestions']);
+        Route::post('miq-exampages/{exampageId}/question-types/{questionTypeId}/copy-questions/{subjectId?}', [\App\Http\Controllers\Api\AdminApi\MiqQuestionController::class, 'copyQuestions']);
     });
 });

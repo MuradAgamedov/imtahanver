@@ -51,5 +51,6 @@ export default [
     route("results", "routes/results.tsx"),
     route("results/:id/grade", "routes/grade-applicant.tsx"),
     route("settings", "routes/settings.tsx"),
+    route("api/get-source-questions", "routes/api.get-source-questions.ts"),
   ]),
 ] satisfies RouteConfig;

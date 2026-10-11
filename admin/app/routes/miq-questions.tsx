@@ -1,3 +1,4 @@
+import { CopyQuestionsModal } from "../components/CopyQuestionsModal";
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Form, Link, redirect, useLoaderData, useActionData, useNavigation, useSubmit, useParams } from "react-router";
 import { sessionCookie, type AdminSession } from "../lib/session";
@@ -24,7 +25,8 @@ export async function loader({ params, request }: { params: any; request: Reques
   const subjectId = params.subjectId ?? "null";
 
   try {
-    const [res, paRes] = await Promise.all([
+    const [res, paRes, epRes] = await Promise.all([
+        fetch("http://backend:80/api/adminapi/miq-exampages", { headers: { "Accept": "application/json", "Authorization": `Bearer ${session.token}` } }),
       fetch(
         `http://backend:80/api/adminapi/miq-exampages/${exampageId}/question-types/${questionTypeId}/subjects/${subjectId}/questions`,
         {
@@ -274,6 +276,7 @@ export default function MiqQuestionsPage() {
 
   const [localQuestions, setLocalQuestions] = useState<any[]>(questions);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [addPassageId, setAddPassageId] = useState("");
@@ -497,6 +500,17 @@ export default function MiqQuestionsPage() {
               </svg>
               Sual Əlavə Et
             </button>
+
+            <button
+              onClick={() => setShowCopyModal(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 px-5 py-3 text-sm font-semibold shadow-sm hover:shadow transition-all cursor-pointer"
+            >
+              <svg className="h-4.5 w-4.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+              </svg>
+              Vərəqdən Sual Kopyala
+            </button>
+
           </div>
         </div>
       </div>
@@ -1150,6 +1164,24 @@ export default function MiqQuestionsPage() {
           </div>
         </div>
       )}
+
+      <CopyQuestionsModal
+        isOpen={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        onSubmitCopy={(qIds) => {
+          submit(
+            { intent: "copy-questions", question_ids: JSON.stringify(qIds) },
+            { method: "POST" }
+          );
+          setShowCopyModal(false);
+        }}
+        isSubmitting={navigation.state === "submitting"}
+        examType="miq"
+        allExampages={allExampages || []}
+        currentExampageId={exampageId}
+        subjectId={subjectId !== "null" ? subjectId : undefined}
+        questionTypeId={questionTypeId}
+      />
     </div>
   );
 }

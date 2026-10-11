@@ -181,4 +181,55 @@ class BuraxilisQuestionController extends Controller
         $path = $request->file('audio')->store('buraxilis_questions/audio', 'public');
         return response()->json(['success' => true, 'path' => '/storage/' . $path]);
     }
+
+    public function copyQuestions(Request $request, int $exampageId, int $subjectId): JsonResponse
+    {
+        $request->validate([
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'integer|exists:buraxilis_questions,id',
+        ]);
+
+        $maxOrder = BuraxilisQuestion::where('buraxilis_exampage_id', $exampageId)
+            ->where('buraxilis_subject_id', $subjectId)
+            ->max('order') ?? 0;
+
+        $sourceQuestions = BuraxilisQuestion::with(['options'])
+            ->whereIn('id', $request->question_ids)
+            ->get();
+
+        $copiedCount = 0;
+
+        DB::transaction(function () use ($sourceQuestions, $exampageId, $subjectId, &$maxOrder, &$copiedCount) {
+            foreach ($sourceQuestions as $src) {
+                $maxOrder++;
+                $newQuestion = BuraxilisQuestion::create([
+                    'buraxilis_exampage_id' => $exampageId,
+                    'buraxilis_subject_id' => $subjectId,
+                    'buraxilis_question_passage_id' => $src->buraxilis_question_passage_id,
+                    'question_type' => $src->question_type,
+                    'title' => $src->title,
+                    'description' => $src->description,
+                    'image' => $src->image,
+                    'audio' => $src->audio,
+                    'order' => $maxOrder,
+                ]);
+
+                foreach ($src->options as $opt) {
+                    BuraxilisQuestionOption::create([
+                        'buraxilis_question_id' => $newQuestion->id,
+                        'text' => $opt->text,
+                        'is_true' => (bool)$opt->is_true,
+                        'image' => $opt->image,
+                        'order' => $opt->order,
+                    ]);
+                }
+                $copiedCount++;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$copiedCount} sual uğurla bu vərəqə kopyalandı.",
+        ]);
+    }
 }

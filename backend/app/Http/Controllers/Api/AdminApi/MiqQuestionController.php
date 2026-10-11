@@ -188,4 +188,57 @@ class MiqQuestionController extends Controller
             ], 500);
         }
     }
+
+    public function copyQuestions(Request $request, $exampageId, $questionTypeId, $subjectId = null)
+    {
+        $subjId = $this->parseSubjectId($subjectId);
+
+        $request->validate([
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'integer|exists:miq_questions,id',
+        ]);
+
+        $maxOrder = \App\Models\MiqQuestion::where('miq_exampage_id', (int)$exampageId)
+            ->where('miq_question_type_id', (int)$questionTypeId)
+            ->where('miq_subject_id', $subjId)
+            ->max('order') ?? 0;
+
+        $sourceQuestions = \App\Models\MiqQuestion::with(['options'])
+            ->whereIn('id', $request->question_ids)
+            ->get();
+
+        $copiedCount = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($sourceQuestions, $exampageId, $questionTypeId, $subjId, &$maxOrder, &$copiedCount) {
+            foreach ($sourceQuestions as $src) {
+                $maxOrder++;
+                $newQuestion = \App\Models\MiqQuestion::create([
+                    'miq_exampage_id' => (int)$exampageId,
+                    'miq_question_type_id' => (int)$questionTypeId,
+                    'miq_subject_id' => $subjId,
+                    'miq_question_passage_id' => $src->miq_question_passage_id,
+                    'text' => $src->text,
+                    'image' => $src->image,
+                    'audio' => $src->audio,
+                    'order' => $maxOrder,
+                ]);
+
+                foreach ($src->options as $opt) {
+                    \App\Models\MiqQuestionOption::create([
+                        'miq_question_id' => $newQuestion->id,
+                        'text' => $opt->text,
+                        'image' => $opt->image,
+                        'is_true' => (bool)$opt->is_true,
+                        'order' => $opt->order,
+                    ]);
+                }
+                $copiedCount++;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$copiedCount} sual uğurla bu vərəqə kopyalandı.",
+        ]);
+    }
 }

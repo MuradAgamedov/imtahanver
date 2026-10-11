@@ -1,3 +1,4 @@
+import { CopyQuestionsModal } from "../components/CopyQuestionsModal";
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useLoaderData, useActionData, useNavigation, useSubmit, redirect } from "react-router";
 import type { Route } from "./+types/applicant-questions";
@@ -41,7 +42,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const subject = group?.subjects?.find((s: any) => s.id === Number(subjectId)) ?? null;
 
   return {
-    exampage, group, subject,
+    exampage, group, subject, allExampages: epData.success ? epData.data : [],
     questions: qData.success ? qData.data : [],
     counts: qData.counts ?? { 1: 0, 2: 0, 3: 0 },
     limits: qData.limits ?? { 1: 22, 2: 5, 3: 3 },
@@ -64,6 +65,18 @@ export async function action({ request, params }: Route.ActionArgs) {
   const passageBase = `http://backend:80/api/adminapi/applicant-exampages/${id}/groups/${groupId}/subjects/${subjectId}/passages`;
 
   try {
+    
+    if (intent === "copy-questions") {
+      const qIds = JSON.parse(formData.get("question_ids") as string);
+      const res = await fetch(`http://backend:80/api/adminapi/applicant-exampages/${id}/groups/${groupId}/subjects/${subjectId}/copy-questions`, {
+        method: "POST", headers,
+        body: JSON.stringify({ question_ids: qIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || "Suallar kopyalanmadı." };
+      return { success: data.message || "Suallar kopyalandı.", intent };
+    }
+
     if (intent === "create-question") {
       const passageId = formData.get("applicant_question_passage_id") as string;
       const res = await fetch(base, {
@@ -297,7 +310,7 @@ function AudioUploader({ storageBase, current, onChange }: {
 }
 
 export default function ApplicantQuestionsPage() {
-  const { exampage, group, subject, questions, counts, limits, passages, exampageId, groupId, subjectId, storageBase } = useLoaderData<typeof loader>();
+  const { exampage, group, subject, allExampages, questions, counts, limits, passages, exampageId, groupId, subjectId, storageBase } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -350,6 +363,7 @@ export default function ApplicantQuestionsPage() {
   };
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const [addStep, setAddStep] = useState<"type" | "form">("type");
   const [selectedType, setSelectedType] = useState(1);
   const [addTitle, setAddTitle] = useState("");
@@ -434,6 +448,14 @@ export default function ApplicantQuestionsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
             </svg>
             Yeni Keçid
+          </button>
+          
+          <button onClick={() => setShowCopyModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 px-4 py-2 text-xs font-bold shadow-sm cursor-pointer transition-all">
+            <svg className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+            Vərəqdən Sual Kopyala
           </button>
           <button onClick={() => { setShowAddModal(true); setAddStep("type"); setAddTitle(""); setAddImage(""); setAddAudio(""); setAddPassageId(""); }}
             className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-bold shadow-sm cursor-pointer transition-all">
@@ -850,6 +872,25 @@ export default function ApplicantQuestionsPage() {
           </div>
         </div>
       )}
+
+      <CopyQuestionsModal
+        isOpen={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        onSubmitCopy={(qIds) => {
+          submit(
+            { intent: "copy-questions", question_ids: JSON.stringify(qIds) },
+            { method: "POST" }
+          );
+          setShowCopyModal(false);
+        }}
+        isSubmitting={navigation.state === "submitting"}
+        examType="applicant"
+        allExampages={allExampages}
+        currentExampageId={exampageId}
+        subjectId={subjectId}
+        groupId={groupId}
+        storageBase={storageBase}
+      />
     </div>
   );
 }
